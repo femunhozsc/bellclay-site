@@ -50,7 +50,11 @@ export const getEvents = async (): Promise<BellclayEvent[]> => {
       const colRef = collection(db, 'events');
       const snap = await getDocs(colRef);
       if (!snap.empty) {
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as BellclayEvent));
+        const events = snap.docs.map(d => ({ id: d.id, ...d.data() } as BellclayEvent));
+        try {
+          localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
+        } catch {}
+        return events;
       }
     } catch (err) {
       console.warn('Erro ao buscar eventos do Firestore:', err);
@@ -68,34 +72,56 @@ export const getEvents = async (): Promise<BellclayEvent[]> => {
 };
 
 export const getSiteSettings = async (): Promise<SiteSettings> => {
+  // 1. Start with local cached settings for instant zero-delay render
   let settingsObj: SiteSettings = DEFAULT_SETTINGS;
+  const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed) {
+        settingsObj = { ...DEFAULT_SETTINGS, ...parsed };
+      }
+    } catch {}
+  }
 
+  // 2. Fetch fresh from Firestore with 4s timeout protection
   if (db) {
     try {
       const docRef = doc(db, 'settings', 'general');
-      const snap = await getDoc(docRef);
-      if (snap.exists()) {
-        settingsObj = { ...DEFAULT_SETTINGS, ...(snap.data() as SiteSettings) };
+      const fetchPromise = getDoc(docRef);
+      const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000));
+      const snap = await Promise.race([fetchPromise, timeoutPromise]);
+
+      if (snap && 'exists' in snap && snap.exists()) {
+        const remote = snap.data() as Partial<SiteSettings>;
+        settingsObj = {
+          ...settingsObj,
+          ...remote,
+          banners: Array.isArray(remote.banners) && remote.banners.length > 0
+            ? remote.banners
+            : (settingsObj.banners || []),
+          categories: Array.isArray(remote.categories) && remote.categories.length > 0
+            ? remote.categories
+            : (settingsObj.categories || DEFAULT_SETTINGS.categories)
+        };
+        // Persist immediately in localStorage so subsequent page reloads are 0ms instant!
+        try {
+          localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settingsObj));
+        } catch {}
       }
     } catch (err) {
-      console.warn('Erro ao buscar settings do Firestore, usando fallback:', err);
-    }
-  } else {
-    const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-    if (saved) {
-      try {
-        settingsObj = { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
-      } catch {
-        // fallback
-      }
+      console.warn('Erro ao buscar settings do Firestore, mantendo cache:', err);
     }
   }
 
-  // Enrich with events from dedicated events collection
+  // 3. Enrich with events from dedicated events collection
   try {
     const events = await getEvents();
     if (events && events.length > 0) {
       settingsObj.events = events;
+      try {
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settingsObj));
+      } catch {}
     }
   } catch (err) {
     console.warn('Erro ao enriquecer settings com eventos na loja:', err);
@@ -104,13 +130,61 @@ export const getSiteSettings = async (): Promise<SiteSettings> => {
   return settingsObj;
 };
 
+// Real-time live synchronization listener with local storage caching
+export const subscribeToSiteSettings = (
+  callback: (settings: SiteSettings) => void
+): (() => void) => {
+  if (!db) return () => {};
+  try {
+    const docRef = doc(db, 'settings', 'general');
+    return onSnapshot(
+      docRef,
+      (snap) => {
+        if (snap.exists()) {
+          const remote = snap.data() as Partial<SiteSettings>;
+          let current: SiteSettings = DEFAULT_SETTINGS;
+          try {
+            const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+            if (saved) current = { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+          } catch {}
+
+          const merged: SiteSettings = {
+            ...current,
+            ...remote,
+            banners: Array.isArray(remote.banners) && remote.banners.length > 0
+              ? remote.banners
+              : (current.banners || []),
+            categories: Array.isArray(remote.categories) && remote.categories.length > 0
+              ? remote.categories
+              : (current.categories || DEFAULT_SETTINGS.categories)
+          };
+
+          try {
+            localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(merged));
+          } catch {}
+          callback(merged);
+        }
+      },
+      (err) => {
+        console.warn('Listener de settings do Firestore:', err);
+      }
+    );
+  } catch {
+    return () => {};
+  }
+};
+
 export const getProducts = async (): Promise<Product[]> => {
   if (db) {
     try {
       const colRef = collection(db, 'products');
       const snap = await getDocs(colRef);
       if (!snap.empty) {
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+        const prods = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+        try {
+          localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(prods));
+        } catch {}
+        return prods;
       }
     } catch (err) {
       console.warn('Erro ao buscar produtos do Firestore, usando dados locais:', err);

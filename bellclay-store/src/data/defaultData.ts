@@ -14,41 +14,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   state: "PR",
   mercadoPagoPublicKey: "",
   melhorEnvioToken: "",
-  banners: [
-    {
-      id: "banner-1",
-      title: "Coleção Primavera Encantada",
-      subtitle: "Chaveiros e miniaturas de cogumelos, flores e animaizinhos em cerâmica fria com acabamento envernizado vitrificado.",
-      badge: "Lançamento Exclusivo",
-      imageUrl: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=1600&q=80",
-      buttonText: "Ver Coleção",
-      buttonLink: "#produtos",
-      bgColor: "from-[#FFE2E6] to-[#FFF6F7]",
-      active: true,
-    },
-    {
-      id: "banner-2",
-      title: "Bottons & Acessórios Fofos",
-      subtitle: "Personalize sua bolsa, jaqueta ou estojo com bottons artesanais esculpidos e pintados um a um com carinho.",
-      badge: "Mais Vendidos",
-      imageUrl: "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=1600&q=80",
-      buttonText: "Explorar Bottons",
-      buttonLink: "#produtos",
-      bgColor: "from-[#EBF6E4] to-[#F7FBF4]",
-      active: true,
-    },
-    {
-      id: "banner-3",
-      title: "Esculturas & Porta-Jóias Decorativos",
-      subtitle: "Decore seu cantinho ou presenteie alguém especial com pratinhos porta-anéis e mini estátuas originais Bellclay.",
-      badge: "Edição Especial",
-      imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1600&q=80",
-      buttonText: "Conhecer Peças",
-      buttonLink: "#produtos",
-      bgColor: "from-[#FFF3E8] to-[#FFFAF5]",
-      active: true,
-    }
-  ],
+  banners: [],
   categories: [
     {
       id: "cat-chaveiros",

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { SiteSettings, Product } from '../types';
-import { getSiteSettings, getProducts } from '../services/firebase';
+import { getSiteSettings, getProducts, subscribeToSiteSettings } from '../services/firebase';
 import { DEFAULT_SETTINGS, DEFAULT_PRODUCTS } from '../data/defaultData';
 
 interface SettingsContextType {
@@ -14,28 +14,44 @@ interface SettingsContextType {
   setSelectedProduct: (product: Product | null) => void;
   filteredProducts: Product[];
   isLoading: boolean;
+  isSettingsLoaded: boolean;
   refreshData: () => Promise<void>;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Load immediately from local cache so the user's real banners and announcement render with 0ms delay
   const [settings, setSettings] = useState<SiteSettings>(() => {
     try {
       const saved = localStorage.getItem('bellclay_site_settings');
       if (saved) {
-        return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+        const parsed = JSON.parse(saved);
+        if (parsed) return { ...DEFAULT_SETTINGS, ...parsed };
       }
     } catch (e) {
       // ignore
     }
     return DEFAULT_SETTINGS;
   });
-  const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS);
+
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const saved = localStorage.getItem('bellclay_products');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_PRODUCTS;
+  });
+
+  const hasCachedBanners = Boolean(settings.banners && settings.banners.length > 0);
+  const [isSettingsLoaded, setIsSettingsLoaded] = useState<boolean>(hasCachedBanners);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!hasCachedBanners);
 
   const refreshData = async (showLoading = false) => {
     if (showLoading) setIsLoading(true);
@@ -46,24 +62,35 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ]);
       setSettings(fetchedSettings);
       setProducts(fetchedProducts);
+      setIsSettingsLoaded(true);
     } catch (err) {
-      console.warn('Usando dados padrão:', err);
+      console.warn('Usando dados em cache:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    // 1. Initial refresh with timeout-safe Firestore fetch
     refreshData();
 
-    // Listen to local storage changes or window events for real-time preview sync
+    // 2. Real-time live listener from Firestore for instant sync on changes
+    const unsubscribeSettings = subscribeToSiteSettings((updatedSettings) => {
+      setSettings(updatedSettings);
+      setIsSettingsLoaded(true);
+      setIsLoading(false);
+    });
+
+    // 3. Listen to local storage changes or window events for live preview sync
     const handleStorageChange = () => {
       refreshData();
     };
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('bellclay_settings_updated', handleStorageChange);
     window.addEventListener('bellclay_events_updated', handleStorageChange);
+
     return () => {
+      unsubscribeSettings();
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('bellclay_settings_updated', handleStorageChange);
       window.removeEventListener('bellclay_events_updated', handleStorageChange);
@@ -117,6 +144,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setSelectedProduct,
         filteredProducts,
         isLoading,
+        isSettingsLoaded,
         refreshData
       }}
     >

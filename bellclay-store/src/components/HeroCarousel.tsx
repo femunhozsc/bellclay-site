@@ -92,7 +92,13 @@ export const HeroCarousel: React.FC = () => {
     return () => clearInterval(timer);
   }, [activeBanners.length, isPaused]);
 
-  if (activeBanners.length === 0) return null;
+  if (activeBanners.length === 0) {
+    return (
+      <div className="relative w-full h-[480px] sm:h-[580px] md:h-[640px] bg-[#F7F4EE] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-brand-pink border-t-transparent animate-spin opacity-30" />
+      </div>
+    );
+  }
 
   const current = activeBanners[currentIndex] || activeBanners[0];
 
