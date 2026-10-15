@@ -394,10 +394,11 @@ export const deletePanelEvent = async (eventId: string): Promise<void> => {
 };
 
 export const saveAllPanelEvents = async (events: BellclayEvent[]): Promise<void> => {
-  if (db) {
+  const currentDb = db;
+  if (currentDb) {
     try {
       await Promise.all(
-        events.map(ev => setDoc(doc(db, 'events', ev.id), { ...ev, updatedAt: serverTimestamp() }))
+        events.map(ev => setDoc(doc(currentDb, 'events', ev.id), { ...ev, updatedAt: serverTimestamp() }))
       );
     } catch (err) {
       console.warn('Erro ao salvar lote de eventos no Firestore:', err);
