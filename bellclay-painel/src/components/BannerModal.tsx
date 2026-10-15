@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Upload } from 'lucide-react';
 import { BannerSlide } from '../types';
-import { compressImage } from '../utils/imageCompressor';
+import { uploadToCloudinary } from '../services/cloudinaryService';
 
 interface BannerModalProps {
   banner: BannerSlide | null;
@@ -25,6 +25,7 @@ export const BannerModal: React.FC<BannerModalProps> = ({
   const [buttonText, setButtonText] = useState(banner?.buttonText || 'Ver Coleção');
   const [buttonLink, setButtonLink] = useState(banner?.buttonLink || '#produtos');
   const [active, setActive] = useState(banner?.active !== false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,11 +45,15 @@ export const BannerModal: React.FC<BannerModalProps> = ({
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setIsUploading(true);
       try {
-        const compressedBase64 = await compressImage(file, 1600, 0.82);
-        setImageUrl(compressedBase64);
+        const cloudUrl = await uploadToCloudinary(file, 'bellclay/banners');
+        setImageUrl(cloudUrl);
       } catch (err) {
-        console.error('Erro na compressão do banner:', err);
+        console.error('Erro no upload do banner para o Cloudinary:', err);
+      } finally {
+        setIsUploading(false);
+        e.target.value = '';
       }
     }
   };
@@ -138,10 +143,14 @@ export const BannerModal: React.FC<BannerModalProps> = ({
                 onChange={(e) => setImageUrl(e.target.value)}
                 className="flex-1 text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink"
               />
-              <label className="px-3 py-2.5 bg-white border border-brand-border hover:border-brand-pink rounded-xl text-xs font-bold text-brand-charcoal flex items-center gap-1 cursor-pointer">
-                <Upload className="w-4 h-4 text-brand-pink" />
-                <span>Arquivo</span>
-                <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+              <label className={`px-3 py-2.5 bg-white border border-brand-border hover:border-brand-pink rounded-xl text-xs font-bold text-brand-charcoal flex items-center gap-1.5 cursor-pointer ${isUploading ? 'opacity-60 pointer-events-none' : ''}`}>
+                {isUploading ? (
+                  <div className="w-4 h-4 border-2 border-brand-pink border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4 text-brand-pink" />
+                )}
+                <span>{isUploading ? 'Enviando...' : 'Arquivo'}</span>
+                <input type="file" accept="image/*" disabled={isUploading} onChange={handleFileUpload} className="hidden" />
               </label>
             </div>
             {imageUrl && (

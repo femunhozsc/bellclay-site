@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, Plus, Trash2, Scale, Box, DollarSign, Star } from 'lucide-react';
 import { Product } from '../types';
-import { compressImage } from '../utils/imageCompressor';
+import { uploadMultipleToCloudinary } from '../services/cloudinaryService';
 
 interface ProductFormModalProps {
   product: Product | null;
@@ -46,6 +46,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [active, setActive] = useState(product?.active !== false);
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Sync state whenever product or modal open changes
@@ -116,14 +117,20 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      try {
-        const compressedBase64 = await compressImage(file, 1000, 0.82);
-        setImages(prev => [...prev, compressedBase64]);
-      } catch (err) {
-        console.error('Erro na compressão:', err);
-      }
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploadingImage(true);
+    setError(null);
+    try {
+      const urls = await uploadMultipleToCloudinary(files, 'bellclay/produtos');
+      setImages(prev => [...prev, ...urls]);
+    } catch (err: any) {
+      console.error('Erro no upload para o Cloudinary:', err);
+      setError(err.message || 'Erro ao enviar foto para o Cloudinary.');
+    } finally {
+      setIsUploadingImage(false);
+      e.target.value = '';
     }
   };
 
@@ -298,11 +305,26 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               ))}
 
               {/* Upload button */}
-              <label className="border-2 border-dashed border-brand-border hover:border-brand-pink rounded-2xl flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-colors bg-[#FAF7F2]/50 hover:bg-brand-pink-light/30">
-                <Upload className="w-6 h-6 text-brand-pink mb-1" />
-                <span className="text-[11px] font-bold text-brand-charcoal">Enviar Foto</span>
-                <span className="text-[9px] text-brand-muted">PNG ou JPG</span>
-                <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+              <label className={`border-2 border-dashed border-brand-border hover:border-brand-pink rounded-2xl flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-colors bg-[#FAF7F2]/50 hover:bg-brand-pink-light/30 ${isUploadingImage ? 'opacity-60 pointer-events-none' : ''}`}>
+                {isUploadingImage ? (
+                  <div className="w-6 h-6 border-2 border-brand-pink border-t-transparent rounded-full animate-spin mb-1" />
+                ) : (
+                  <Upload className="w-6 h-6 text-brand-pink mb-1" />
+                )}
+                <span className="text-[11px] font-bold text-brand-charcoal">
+                  {isUploadingImage ? 'Enviando...' : 'Enviar Foto'}
+                </span>
+                <span className="text-[9px] text-brand-muted">
+                  {isUploadingImage ? 'Cloudinary' : 'PNG, JPG ou WebP'}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  disabled={isUploadingImage}
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
               </label>
             </div>
 

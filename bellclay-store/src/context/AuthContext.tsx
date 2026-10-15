@@ -179,8 +179,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return { success: true };
         }
       } catch (err: any) {
+        if (err.code === 'auth/email-already-in-use') {
+          try {
+            const loginRes = await loginWithEmail(email, pass);
+            if (loginRes.success) {
+              return { success: true };
+            }
+          } catch {}
+          return { success: false, error: 'Este e-mail já possui conta cadastrada. Verifique sua senha.' };
+        }
         let msg = 'Erro ao criar conta.';
-        if (err.code === 'auth/email-already-in-use') msg = 'Este e-mail já está em uso.';
         if (err.code === 'auth/weak-password') msg = 'A senha deve conter pelo menos 6 caracteres.';
         return { success: false, error: msg };
       }

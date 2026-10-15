@@ -5,7 +5,8 @@ import confetti from 'canvas-confetti';
 import {
   ShieldCheck, ArrowLeft, ArrowRight, Check, CheckCircle2,
   Truck, User, MapPin, CreditCard, QrCode, FileText,
-  Copy, ExternalLink, MessageCircle, AlertCircle, ShoppingBag, Edit3
+  Copy, ExternalLink, MessageCircle, AlertCircle, ShoppingBag, Edit3,
+  Lock, Eye, EyeOff, UserCheck
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -33,7 +34,7 @@ export const CheckoutPage: React.FC = () => {
     calculateFreight,
     clearCart
   } = useCart();
-  const { customerProfile, setCustomerProfile } = useAuth();
+  const { customerProfile, setCustomerProfile, registerWithEmail } = useAuth();
 
   // Steps: 1: Contato, 2: Endereço, 3: Envio, 4: Pagamento & Revisão, 5: Sucesso
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(1);
@@ -44,10 +45,14 @@ export const CheckoutPage: React.FC = () => {
   const [email, setEmail] = useState(customerProfile.email || '');
   const [phone, setPhone] = useState(customerProfile.phone || '');
   const [cpf, setCpf] = useState(customerProfile.cpf || '');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isAccountCreated, setIsAccountCreated] = useState(false);
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isEditingContact, setIsEditingContact] = useState(false);
 
-  // If customer has saved data, default to abbreviated view
-  const hasSavedContact = Boolean(customerProfile.name && customerProfile.email && customerProfile.phone);
+  // If customer is already logged in with saved data, default to abbreviated view
+  const hasSavedContact = Boolean(!customerProfile.isGuest && customerProfile.name && customerProfile.email && customerProfile.phone);
 
   // Step 2: Address Form
   const [cep, setCep] = useState('');
@@ -81,6 +86,42 @@ export const CheckoutPage: React.FC = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentStep]);
+
+  // Sync profile details if customer logs in or profile changes
+  useEffect(() => {
+    if (customerProfile.name && !name) setName(customerProfile.name);
+    if (customerProfile.email && !email) setEmail(customerProfile.email);
+    if (customerProfile.phone && !phone) setPhone(customerProfile.phone);
+    if (customerProfile.cpf && !cpf) setCpf(customerProfile.cpf);
+  }, [customerProfile]);
+
+  // Auto-create account upon reaching Step 4 (Payment stage) and keep user connected
+  useEffect(() => {
+    const handleAutoRegister = async () => {
+      if (
+        currentStep === 4 &&
+        customerProfile.isGuest &&
+        password.length >= 6 &&
+        !isAccountCreated &&
+        !isCreatingAccount
+      ) {
+        setIsCreatingAccount(true);
+        try {
+          const res = await registerWithEmail(name, email, password, phone, cpf);
+          if (res.success) {
+            setIsAccountCreated(true);
+          } else if (res.error) {
+            console.warn('Auto-registro no checkout:', res.error);
+          }
+        } catch (e) {
+          console.warn('Erro ao auto-criar conta:', e);
+        } finally {
+          setIsCreatingAccount(false);
+        }
+      }
+    };
+    handleAutoRegister();
+  }, [currentStep, customerProfile.isGuest, password, name, email, phone, cpf, isAccountCreated, isCreatingAccount, registerWithEmail]);
 
   useEffect(() => {
     if (currentStep === 5 && pixResult) {
@@ -137,6 +178,12 @@ export const CheckoutPage: React.FC = () => {
     if (cpf.replace(/\D/g, '').length < 11) {
       setErrorMessage('Por favor informe seu CPF para envio do pedido.');
       return false;
+    }
+    if (customerProfile.isGuest) {
+      if (!password || password.length < 6) {
+        setErrorMessage('Por favor, crie uma senha de no mínimo 6 caracteres para sua conta.');
+        return false;
+      }
     }
 
     // Save profile to context and local storage automatically
@@ -214,6 +261,18 @@ export const CheckoutPage: React.FC = () => {
     setIsProcessing(true);
 
     try {
+      // Ensure account is registered/connected if pending
+      if (customerProfile.isGuest && password.length >= 6 && !isAccountCreated) {
+        try {
+          const regRes = await registerWithEmail(name, email, password, phone, cpf);
+          if (regRes.success) {
+            setIsAccountCreated(true);
+          }
+        } catch (e) {
+          console.warn('Fallback registro no fechamento:', e);
+        }
+      }
+
       const orderId = `BC-${Date.now().toString().slice(-6)}`;
       
       const newOrder: Order = {
@@ -438,6 +497,10 @@ export const CheckoutPage: React.FC = () => {
                                 CPF: {cpf}
                               </span>
                             )}
+                            <div className="flex items-center gap-1.5 text-[11px] text-brand-green font-semibold mt-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Conta conectada</span>
+                            </div>
                           </div>
                         </div>
 
@@ -466,12 +529,24 @@ export const CheckoutPage: React.FC = () => {
                   ) : (
                     /* Full Editable Inputs */
                     <div className="space-y-4">
-                      {hasSavedContact && (
+                      {!customerProfile.isGuest && (
+                        <div className="p-3.5 rounded-2xl bg-brand-green/10 border border-brand-green/20 flex items-center gap-3 text-xs text-brand-charcoal">
+                          <div className="w-7 h-7 rounded-full bg-brand-green/20 text-brand-green flex items-center justify-center shrink-0">
+                            <UserCheck className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="font-bold">Você já está conectado como {customerProfile.name || name}</p>
+                            <p className="text-[11px] text-brand-muted">{customerProfile.email || email} • Este pedido será vinculado à sua conta.</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {hasSavedContact && !customerProfile.isGuest && (
                         <div className="flex justify-end">
                           <button
                             type="button"
                             onClick={() => setIsEditingContact(false)}
-                            className="text-xs font-semibold text-brand-muted hover:text-brand-charcoal"
+                            className="text-xs font-semibold text-brand-muted hover:text-brand-charcoal cursor-pointer"
                           >
                             Cancelar edição
                           </button>
@@ -549,6 +624,39 @@ export const CheckoutPage: React.FC = () => {
                           className="w-full text-xs sm:text-sm px-3.5 py-3 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
                         />
                       </div>
+
+                      {customerProfile.isGuest && (
+                        <div className="p-4 rounded-2xl bg-[#F6F2E9]/70 border border-brand-border/60 space-y-2">
+                          <label className="block text-xs font-bold text-brand-charcoal flex items-center justify-between">
+                            <span className="flex items-center gap-1.5">
+                              <Lock className="w-3.5 h-3.5 text-brand-pink" />
+                              Senha para conta *
+                            </span>
+                            <span className="text-[11px] font-normal text-brand-muted">Mínimo 6 caracteres</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showPassword ? 'text' : 'password'}
+                              placeholder="Crie uma senha para acessar sua conta..."
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              className="w-full text-xs sm:text-sm px-3.5 py-3 pr-10 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                              tabIndex={-1}
+                            >
+                              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                          <p className="text-[11px] text-brand-muted flex items-start gap-1.5 leading-relaxed">
+                            <ShieldCheck className="w-3.5 h-3.5 text-brand-green shrink-0 mt-0.5" />
+                            <span>Sua conta será criada e conectada automaticamente ao avançar para a etapa de pagamento, permitindo que você acompanhe seus pedidos e entregas no site.</span>
+                          </p>
+                        </div>
+                      )}
 
                       <div className="pt-3 flex justify-end">
                         <button
@@ -817,6 +925,29 @@ export const CheckoutPage: React.FC = () => {
                       Transação 100% protegida via Mercado Pago.
                     </p>
                   </div>
+
+                  {/* Account Connection Status Notification */}
+                  {(!customerProfile.isGuest || isAccountCreated) ? (
+                    <div className="p-3.5 rounded-2xl bg-brand-green/10 border border-brand-green/20 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-brand-green text-white flex items-center justify-center shrink-0">
+                        <Check className="w-4 h-4 stroke-[3]" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-brand-charcoal flex items-center gap-1.5">
+                          <span>Conta Bellclay conectada com sucesso!</span>
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-brand-green/20 text-brand-green uppercase tracking-wider">Conectado</span>
+                        </p>
+                        <p className="text-[11px] text-brand-muted truncate mt-0.5">
+                          Vinculada a <strong>{customerProfile.email || email}</strong> • Seu pedido ficará salvo na sua conta para você acompanhar.
+                        </p>
+                      </div>
+                    </div>
+                  ) : isCreatingAccount ? (
+                    <div className="p-3.5 rounded-2xl bg-brand-pink/10 border border-brand-pink/20 flex items-center gap-3 text-xs text-brand-charcoal animate-pulse">
+                      <div className="w-4 h-4 border-2 border-brand-pink border-t-transparent rounded-full animate-spin shrink-0" />
+                      <span>Criando sua conta Bellclay e conectando automaticamente...</span>
+                    </div>
+                  ) : null}
 
                   {/* Payment Method Selector */}
                   <div className="grid grid-cols-3 gap-2.5">

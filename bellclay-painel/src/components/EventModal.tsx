@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Upload, Plus, Trash2, Star, Calendar, MapPin, Sparkles } from 'lucide-react';
 import { BellclayEvent } from '../types';
-import { compressImage } from '../utils/imageCompressor';
+import { uploadToCloudinary, uploadMultipleToCloudinary } from '../services/cloudinaryService';
 
 interface EventModalProps {
   event: BellclayEvent | null;
@@ -58,14 +58,19 @@ export const EventModal: React.FC<EventModalProps> = ({
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setIsProcessingFiles(true);
       try {
-        const base64 = await compressImage(file);
-        setCoverImage(base64);
-        if (!images.includes(base64)) {
-          setImages(prev => [base64, ...prev]);
+        const cloudUrl = await uploadToCloudinary(file, 'bellclay/eventos');
+        setCoverImage(cloudUrl);
+        if (!images.includes(cloudUrl)) {
+          setImages(prev => [cloudUrl, ...prev]);
         }
-      } catch (err) {
-        console.error('Erro ao carregar foto de capa:', err);
+      } catch (err: any) {
+        console.error('Erro ao enviar foto de capa para o Cloudinary:', err);
+        setSaveError(err.message || 'Erro ao enviar foto de capa para o Cloudinary.');
+      } finally {
+        setIsProcessingFiles(false);
+        e.target.value = '';
       }
     }
   };
@@ -76,19 +81,17 @@ export const EventModal: React.FC<EventModalProps> = ({
 
     setIsProcessingFiles(true);
     try {
-      const newImgs: string[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const base64 = await compressImage(files[i]);
-        newImgs.push(base64);
+      const cloudUrls = await uploadMultipleToCloudinary(files, 'bellclay/eventos');
+      setImages(prev => [...prev, ...cloudUrls]);
+      if (!coverImage && cloudUrls.length > 0) {
+        setCoverImage(cloudUrls[0]);
       }
-      setImages(prev => [...prev, ...newImgs]);
-      if (!coverImage && newImgs.length > 0) {
-        setCoverImage(newImgs[0]);
-      }
-    } catch (err) {
-      console.error('Erro ao adicionar imagens à galeria:', err);
+    } catch (err: any) {
+      console.error('Erro ao adicionar imagens para o Cloudinary:', err);
+      setSaveError(err.message || 'Erro ao enviar fotos para o Cloudinary.');
     } finally {
       setIsProcessingFiles(false);
+      e.target.value = '';
     }
   };
 
