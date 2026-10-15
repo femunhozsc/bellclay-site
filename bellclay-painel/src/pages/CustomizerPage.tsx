@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sliders, Palette, Plus, Edit3, Trash2, CheckCircle2, Image, Layers, Megaphone, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
 import { SiteSettings, BannerSlide, CategoryItem } from '../types';
 
@@ -23,7 +23,13 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
   const [welcomeSubtitle, setWelcomeSubtitle] = useState(settings.welcomeSubtitle);
   const [announcementText, setAnnouncementText] = useState(settings.announcementText);
   const [announcementActive, setAnnouncementActive] = useState(settings.announcementActive);
-  const [freeShippingThreshold, setFreeShippingThreshold] = useState(String(settings.freeShippingThreshold));
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(String(settings.freeShippingThreshold || 149));
+
+  useEffect(() => {
+    if (settings.freeShippingThreshold) {
+      setFreeShippingThreshold(String(settings.freeShippingThreshold));
+    }
+  }, [settings.freeShippingThreshold]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -79,7 +85,10 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
         welcomeSubtitle,
         announcementText,
         announcementActive,
-        freeShippingThreshold: parseFloat(freeShippingThreshold) || 149
+        freeShippingThreshold:
+          !isNaN(parseFloat(freeShippingThreshold)) && parseFloat(freeShippingThreshold) > 0
+            ? parseFloat(freeShippingThreshold)
+            : (settings.freeShippingThreshold || 149)
       };
       await onSaveSettings(updated);
       setSaveSuccess(true);

@@ -28,6 +28,19 @@ export const calculateShipping = async ({
     return acc + (item.product.weightKg || 0.05) * item.quantity;
   }, 0);
 
+  // Address and State lookup
+  const addressInfo = await fetchAddressByCep(cleanDestCep);
+  const state = addressInfo?.uf?.toUpperCase() || getUfFromCepPrefix(cleanDestCep);
+  const isCampoMourao = Boolean(
+    addressInfo?.localidade?.toLowerCase().includes('campo mourão') ||
+    cleanDestCep.startsWith('8730') ||
+    cleanDestCep.startsWith('8731')
+  );
+
+  const rawThreshold = Number(freeShippingThreshold);
+  const minOrderValue = !isNaN(rawThreshold) && rawThreshold > 0 ? rawThreshold : 149;
+  const reachedThreshold = subtotal >= minOrderValue;
+
   // If live Melhor Envio token is configured, try direct API first
   if (melhorEnvioToken && melhorEnvioToken.trim().length > 15) {
     try {
@@ -59,11 +72,21 @@ export const calculateShipping = async ({
           const apiOptions: ShippingOption[] = data
             .filter((item: any) => !item.error && item.price)
             .map((item: any) => {
-              let finalPrice = parseFloat(item.price);
-              const isFreeCandidate = item.name?.toLowerCase().includes('pac') || item.name?.toLowerCase().includes('mini');
-              if (subtotal >= freeShippingThreshold && isFreeCandidate) {
-                finalPrice = 0;
+              const originalPrice = parseFloat(item.price);
+              const isMini = item.name?.toLowerCase().includes('mini');
+              const isPac = item.name?.toLowerCase().includes('pac');
+
+              // Regra de Frete Grátis: Apenas se atingir o valor mínimo E (estado for PR OU mini envios < R$ 15)
+              let isFree = false;
+              if (reachedThreshold) {
+                if (state === 'PR' && (isMini || isPac)) {
+                  isFree = true;
+                } else if (isMini && originalPrice < 15) {
+                  isFree = true;
+                }
               }
+
+              const finalPrice = isFree ? 0 : originalPrice;
               return {
                 id: `me-${item.id}`,
                 name: item.name,
@@ -77,7 +100,7 @@ export const calculateShipping = async ({
 
           if (apiOptions.length > 0) {
             // Check Campo Mourão pickup
-            if (cleanDestCep.startsWith('8730') || cleanDestCep.startsWith('8731')) {
+            if (isCampoMourao) {
               apiOptions.unshift({
                 id: 'pickup-cm',
                 name: 'Retirada no Ateliê Bellclay',
@@ -98,12 +121,6 @@ export const calculateShipping = async ({
 
   // Fallback intelligent & accurate calculation engine
   // Calibrated for Campo Mourão (PR 87302-060) to Brazil destinations
-  const addressInfo = await fetchAddressByCep(cleanDestCep);
-  const state = addressInfo?.uf?.toUpperCase() || getUfFromCepPrefix(cleanDestCep);
-  const isCampoMourao = (addressInfo?.localidade?.toLowerCase().includes('campo mourão') ||
-                         cleanDestCep.startsWith('8730') ||
-                         cleanDestCep.startsWith('8731'));
-
   const options: ShippingOption[] = [];
 
   // Local Pickup in Campo Mourão
@@ -184,7 +201,10 @@ export const calculateShipping = async ({
   sedexBase += weightSurcharge * 1.5;
   jadlogBase += weightSurcharge;
 
-  const isFreeShipping = subtotal >= freeShippingThreshold;
+  // Regra de Frete Grátis:
+  // Frete grátis apenas se atingir a meta do pedido E (estado for PR OU mini envios < R$ 15,00)
+  const isMiniFree = reachedThreshold && (state === 'PR' || miniBase < 15);
+  const isPacFree = reachedThreshold && (state === 'PR' && totalWeightKg > 0.3);
 
   // Option 1: Correios Mini Envios (If light crafts <= 300g)
   if (totalWeightKg <= 0.3) {
@@ -192,9 +212,9 @@ export const calculateShipping = async ({
       id: 'correios-mini',
       name: 'Correios Mini Envios (Artesanatos Leves)',
       company: 'Correios',
-      price: isFreeShipping ? 0 : Number(miniBase.toFixed(2)),
+      price: isMiniFree ? 0 : Number(miniBase.toFixed(2)),
       deliveryDays: miniDays,
-      badge: isFreeShipping ? 'Grátis' : 'Mais Econômico',
+      badge: isMiniFree ? 'Grátis' : 'Mais Econômico',
       serviceCode: '04227'
     });
   }
@@ -204,9 +224,9 @@ export const calculateShipping = async ({
     id: 'correios-pac',
     name: 'Correios PAC Econômico',
     company: 'Correios',
-    price: (isFreeShipping && totalWeightKg > 0.3) ? 0 : Number(pacBase.toFixed(2)),
+    price: isPacFree ? 0 : Number(pacBase.toFixed(2)),
     deliveryDays: pacDays,
-    badge: (isFreeShipping && totalWeightKg > 0.3) ? 'Grátis' : (totalWeightKg > 0.3 ? 'Mais Econômico' : undefined),
+    badge: isPacFree ? 'Grátis' : (totalWeightKg > 0.3 ? 'Mais Econômico' : undefined),
     serviceCode: '04510'
   });
 
@@ -235,6 +255,7 @@ export const calculateShipping = async ({
 };
 
 function getUfFromCepPrefix(cep: string): string {
+  if (!cep || cep.length < 2) return 'OUTRO';
   const prefix = parseInt(cep.substring(0, 2), 10);
   if (prefix >= 1 && prefix <= 19) return 'SP';
   if (prefix >= 20 && prefix <= 28) return 'RJ';
@@ -260,5 +281,5 @@ function getUfFromCepPrefix(cep: string): string {
   if (prefix >= 80 && prefix <= 87) return 'PR';
   if (prefix >= 88 && prefix <= 89) return 'SC';
   if (prefix >= 90 && prefix <= 99) return 'RS';
-  return 'PR';
+  return 'OUTRO';
 }

@@ -4,6 +4,8 @@ import { ArrowRight } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 
+import { resolveCategorySlug, scrollToCatalogSection } from '../utils/categoryResolver';
+
 const normalizeText = (str: string) =>
   (str || '')
     .toLowerCase()
@@ -29,49 +31,24 @@ export const HeroCarousel: React.FC = () => {
 
     if (isAnchorOrCategory) {
       e.preventDefault();
-      const rawTarget = link.replace(/^#/, '').trim();
-      const targetNorm = normalizeText(rawTarget);
+      const rawTarget = decodeURIComponent(link.replace(/^#/, '')).trim();
+      const targetSlug = resolveCategorySlug(rawTarget, settings.categories);
 
-      // If target is empty, 'produtos', 'todos', or 'catalogo' -> show all products
-      if (!targetNorm || targetNorm === 'produtos' || targetNorm === 'todos' || targetNorm === 'catalogo') {
-        setSelectedCategory('all');
-      } else {
-        // Search category by slug or name
-        const matchedCategory =
-          settings.categories.find(
-            (c) => normalizeText(c.slug) === targetNorm || normalizeText(c.name) === targetNorm
-          ) ||
-          settings.categories.find(
-            (c) =>
-              normalizeText(c.name).includes(targetNorm) ||
-              targetNorm.includes(normalizeText(c.name)) ||
-              normalizeText(c.slug).includes(targetNorm) ||
-              targetNorm.includes(normalizeText(c.slug))
-          );
-
-        if (matchedCategory) {
-          setSelectedCategory(matchedCategory.slug);
-        } else {
-          // If no pre-configured category matches, set as raw target so custom filters still work
-          setSelectedCategory(rawTarget);
-        }
-      }
-
-      // Always clear search query so the category items are immediately visible
+      setSelectedCategory(targetSlug);
       setSearchQuery('');
 
-      const scrollToCatalog = () => {
-        const catalogEl = document.getElementById('produtos');
-        if (catalogEl) {
-          catalogEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      };
+      const newHash = targetSlug === 'all' ? '#produtos' : `#${targetSlug}`;
+      if (window.location.hash !== newHash) {
+        window.history.pushState(null, '', newHash);
+      }
 
       if (location.pathname !== '/') {
-        navigate('/');
-        setTimeout(scrollToCatalog, 150);
+        navigate('/' + newHash);
+        setTimeout(scrollToCatalogSection, 150);
       } else {
-        scrollToCatalog();
+        scrollToCatalogSection();
+        setTimeout(scrollToCatalogSection, 80);
+        setTimeout(scrollToCatalogSection, 250);
       }
       return;
     }
@@ -185,7 +162,8 @@ export const HeroCarousel: React.FC = () => {
                 <a
                   href={current.buttonLink || "#produtos"}
                   onClick={(e) => handleBannerButtonClick(e, current.buttonLink)}
-                  className="inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-4.5 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white font-extrabold text-sm sm:text-base shadow-xl transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-4.5 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white font-extrabold text-sm sm:text-base shadow-xl transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer touch-auto"
                 >
                   <span>{current.buttonText || "Ver Coleção"}</span>
                   <ArrowRight className="w-5 h-5 stroke-[2.5]" />

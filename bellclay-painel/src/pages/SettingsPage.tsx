@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, ShieldCheck, Truck, MessageCircle, MapPin, CheckCircle2, Key } from 'lucide-react';
 import { SiteSettings } from '../types';
 
@@ -20,6 +20,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
   const [melhorEnvioToken, setMelhorEnvioToken] = useState(settings.melhorEnvioToken || '');
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(String(settings.freeShippingThreshold || 149));
 
+  useEffect(() => {
+    if (settings.freeShippingThreshold) {
+      setFreeShippingThreshold(String(settings.freeShippingThreshold));
+    }
+  }, [settings.freeShippingThreshold]);
+
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -27,6 +33,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
     e.preventDefault();
     setIsSaving(true);
     try {
+      const parsedThreshold = parseFloat(freeShippingThreshold);
       const updated: SiteSettings = {
         ...settings,
         originCep: originCep.replace(/\D/g, ''),
@@ -37,7 +44,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
         mercadoPagoPublicKey,
         mercadoPagoAccessToken,
         melhorEnvioToken,
-        freeShippingThreshold: parseFloat(freeShippingThreshold) || 149
+        freeShippingThreshold: !isNaN(parsedThreshold) && parsedThreshold > 0 ? parsedThreshold : 149
       };
       await onSaveSettings(updated);
       setSaveSuccess(true);
@@ -126,7 +133,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
                 className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink"
               />
               <span className="text-[10px] text-brand-muted mt-1 block">
-                Compras acima deste valor ganham frete grátis
+                Valor do pedido mínimo para ativar o frete grátis (aplicável ao PR ou envios até R$ 15)
               </span>
             </div>
           </div>

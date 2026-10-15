@@ -1,12 +1,49 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { HeroCarousel } from '../components/HeroCarousel';
 import { CategoryPills } from '../components/CategoryPills';
 import { ProductCard } from '../components/ProductCard';
 import { useSettings } from '../context/SettingsContext';
 import { Heart, ShieldCheck, Truck, CheckCircle2 } from 'lucide-react';
+import { resolveCategorySlug, scrollToCatalogSection } from '../utils/categoryResolver';
 
 export const HomePage: React.FC = () => {
-  const { settings, filteredProducts, isLoading, searchQuery } = useSettings();
+  const {
+    settings,
+    filteredProducts,
+    isLoading,
+    searchQuery,
+    setSelectedCategory,
+    setSearchQuery
+  } = useSettings();
+
+  useEffect(() => {
+    const handleHashNavigation = () => {
+      const hash = window.location.hash;
+      if (!hash) return;
+
+      const rawTag = decodeURIComponent(hash.slice(1)).trim();
+      if (!rawTag) return;
+
+      const targetSlug = resolveCategorySlug(rawTag, settings.categories);
+      setSelectedCategory(targetSlug);
+      setSearchQuery('');
+
+      // Execute smooth scrolling with retries to account for image loads / layout settling
+      scrollToCatalogSection();
+      const t1 = setTimeout(scrollToCatalogSection, 80);
+      const t2 = setTimeout(scrollToCatalogSection, 250);
+
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    };
+
+    handleHashNavigation();
+
+    window.addEventListener('hashchange', handleHashNavigation);
+    return () => window.removeEventListener('hashchange', handleHashNavigation);
+  }, [settings.categories, setSelectedCategory, setSearchQuery]);
 
   return (
     <div className="flex-1 w-full flex flex-col">
@@ -76,7 +113,7 @@ export const HomePage: React.FC = () => {
         </section>
 
         {/* Categories & Catalog Section */}
-        <section id="produtos" className="space-y-4 sm:space-y-6">
+        <section id="produtos" className="space-y-4 sm:space-y-6 scroll-mt-24 sm:scroll-mt-28">
           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-brand-border/60 pb-3 px-1">
             <div>
               <h3 className="font-serif text-xl sm:text-2xl md:text-3xl font-extrabold text-brand-charcoal tracking-tight">

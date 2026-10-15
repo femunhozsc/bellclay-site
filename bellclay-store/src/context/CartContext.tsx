@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, CartItem, ShippingOption } from '../types';
 import { calculateShipping } from '../services/shippingService';
 import { trackEvent } from '../services/firebase';
+import { useSettings } from './SettingsContext';
 
 interface CartContextType {
   items: CartItem[];
@@ -30,8 +31,12 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode; freeShippingThreshold?: number }> = ({
   children,
-  freeShippingThreshold = 149
+  freeShippingThreshold: propThreshold
 }) => {
+  const { settings } = useSettings();
+  const rawThreshold = Number(propThreshold ?? settings?.freeShippingThreshold);
+  const freeShippingThreshold = !isNaN(rawThreshold) && rawThreshold > 0 ? rawThreshold : 149;
+
   const [items, setItems] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('bellclay_cart');
@@ -54,12 +59,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode; freeShippingThr
     localStorage.setItem('bellclay_cart', JSON.stringify(items));
   }, [items]);
 
-  useEffect(() => {
-    if (destinationCep && destinationCep.replace(/\D/g, '').length === 8 && items.length > 0) {
-      calculateFreight(destinationCep);
-    }
-  }, [items.length]);
-
   const subtotal = items.reduce((acc, item) => {
     const price = item.product.promotionalPrice ?? item.product.price;
     return acc + price * item.quantity;
@@ -68,6 +67,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode; freeShippingThr
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
   const freeShippingRemaining = Math.max(0, freeShippingThreshold - subtotal);
   const freeShippingProgress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
+
+  useEffect(() => {
+    const clean = destinationCep.replace(/\D/g, '');
+    if (clean.length === 8 && items.length > 0) {
+      calculateFreight(clean);
+    } else if (items.length === 0) {
+      setShippingOptions([]);
+      setSelectedShipping(null);
+    }
+  }, [subtotal, destinationCep, freeShippingThreshold]);
 
   const addItem = (product: Product, quantity = 1, customObservation?: string) => {
     setItems(prev => {
@@ -124,7 +133,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode; freeShippingThr
       const options = await calculateShipping({
         destinationCep: clean,
         items,
-        freeShippingThreshold
+        freeShippingThreshold,
+        melhorEnvioToken: settings?.melhorEnvioToken
       });
 
       setShippingOptions(options);

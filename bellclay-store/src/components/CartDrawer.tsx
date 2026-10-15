@@ -82,15 +82,40 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
               <div className="p-3.5 sm:p-4 bg-gradient-to-r from-brand-pink-light to-brand-green-light border-b border-brand-border/40">
                 <div className="flex items-center justify-between text-xs font-semibold text-brand-charcoal mb-1.5">
                   <div className="flex items-center gap-1.5">
-                    {freeShippingRemaining > 0 ? (
-                      <span>
-                        Faltam <strong className="text-brand-pink">R$ {freeShippingRemaining.toFixed(2).replace('.', ',')}</strong> para Frete Grátis!
-                      </span>
-                    ) : (
-                      <span className="text-brand-green font-bold flex items-center gap-1">
-                        <CheckCircle2 className="w-4 h-4" /> Parabéns! Você ganhou Frete Grátis!
-                      </span>
-                    )}
+                    {(() => {
+                      const hasFreeOption = shippingOptions.some((opt) => opt.price === 0);
+                      const hasCep = Boolean(destinationCep && destinationCep.replace(/\D/g, '').length === 8);
+
+                      if (hasCep && shippingOptions.length > 0) {
+                        if (hasFreeOption) {
+                          return (
+                            <span className="text-brand-green font-bold flex items-center gap-1">
+                              <CheckCircle2 className="w-4 h-4" /> Parabéns! Você ganhou Frete Grátis!
+                            </span>
+                          );
+                        } else if (freeShippingRemaining === 0) {
+                          return (
+                            <span className="text-brand-charcoal font-semibold text-[11px] sm:text-xs">
+                              Frete Grátis acima de R$ {freeShippingThreshold.toFixed(0)} exclusivo para PR ou envios até R$ 15
+                            </span>
+                          );
+                        }
+                      }
+
+                      if (freeShippingRemaining > 0) {
+                        return (
+                          <span>
+                            Faltam <strong className="text-brand-pink">R$ {freeShippingRemaining.toFixed(2).replace('.', ',')}</strong> para Frete Grátis (pedido mínimo R$ {freeShippingThreshold.toFixed(0)})!
+                          </span>
+                        );
+                      }
+
+                      return (
+                        <span className="text-brand-green font-bold flex items-center gap-1">
+                          <CheckCircle2 className="w-4 h-4" /> Frete Grátis liberado para o Paraná (ou envios até R$ 15)!
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
                 <div className="w-full bg-white/80 h-2 rounded-full overflow-hidden shadow-inner">

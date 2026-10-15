@@ -20,7 +20,10 @@ export const CategoryPills: React.FC = () => {
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-max pb-1">
           {/* All items pill */}
           <button
-            onClick={() => setSelectedCategory('all')}
+            onClick={() => {
+              setSelectedCategory('all');
+              window.history.pushState(null, '', '#produtos');
+            }}
             className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full text-xs sm:text-base font-bold transition-all duration-200 cursor-pointer shadow-xs active:scale-95 ${
               selectedCategory === 'all'
                 ? 'bg-brand-charcoal text-white shadow-md'
@@ -43,7 +46,10 @@ export const CategoryPills: React.FC = () => {
             return (
               <button
                 key={cat.id}
-                onClick={() => setSelectedCategory(cat.slug)}
+                onClick={() => {
+                  setSelectedCategory(cat.slug);
+                  window.history.pushState(null, '', `#${cat.slug}`);
+                }}
                 className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full text-xs sm:text-base font-bold transition-all duration-200 cursor-pointer shadow-xs active:scale-95 ${
                   isSelected
                     ? 'bg-gradient-to-r from-brand-pink to-brand-green text-white shadow-soft'
