@@ -422,6 +422,39 @@ export const ProductPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Trust Badges - Feito à Mão, Resina Vitrificada & Envio Seguro */}
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 py-1">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-1.5 sm:gap-2.5 p-2.5 sm:p-3 rounded-2xl bg-[#FAF8F5] border border-brand-border/70 hover:border-brand-pink/40 transition-colors">
+                  <div className="w-8 h-8 rounded-xl bg-brand-pink/15 flex items-center justify-center text-brand-pink shrink-0">
+                    <Heart className="w-4 h-4 fill-brand-pink/30" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="block text-[11px] sm:text-xs font-bold text-brand-charcoal leading-tight">Feito à Mão</span>
+                    <span className="block text-[9px] sm:text-[10px] text-brand-muted mt-0.5 leading-tight">100% manual</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-1.5 sm:gap-2.5 p-2.5 sm:p-3 rounded-2xl bg-[#FAF8F5] border border-brand-border/70 hover:border-brand-green/40 transition-colors">
+                  <div className="w-8 h-8 rounded-xl bg-brand-green/15 flex items-center justify-center text-brand-green shrink-0">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="block text-[11px] sm:text-xs font-bold text-brand-charcoal leading-tight">Resina Vitrificada</span>
+                    <span className="block text-[9px] sm:text-[10px] text-brand-muted mt-0.5 leading-tight">Alta proteção</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-1.5 sm:gap-2.5 p-2.5 sm:p-3 rounded-2xl bg-[#FAF8F5] border border-brand-border/70 hover:border-brand-pink/40 transition-colors">
+                  <div className="w-8 h-8 rounded-xl bg-brand-pink/15 flex items-center justify-center text-brand-pink shrink-0">
+                    <Truck className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="block text-[11px] sm:text-xs font-bold text-brand-charcoal leading-tight">Envio Seguro</span>
+                    <span className="block text-[9px] sm:text-[10px] text-brand-muted mt-0.5 leading-tight">Todo o Brasil</span>
+                  </div>
+                </div>
+              </div>
+
               {/* Short Description */}
               <p className="text-sm sm:text-base text-brand-charcoal/85 leading-relaxed">
                 {product.description}
