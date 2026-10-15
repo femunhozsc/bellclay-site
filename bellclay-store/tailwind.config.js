@@ -25,7 +25,7 @@ export default {
         }
       },
       fontFamily: {
-        serif: ['"Playfair Display"', 'Georgia', 'serif'],
+        serif: ['"Fraunces"', 'Georgia', 'serif'],
         sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
         display: ['"Fraunces"', 'serif'],
       },

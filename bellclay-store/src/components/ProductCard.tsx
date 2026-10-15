@@ -37,15 +37,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           loading="lazy"
         />
 
-        {product.images[1] && (
-          <img
-            src={product.images[1]}
-            alt={product.title}
-            className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-            loading="lazy"
-          />
-        )}
-
         {/* Badges */}
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10">
           {product.isNew && (

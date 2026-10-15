@@ -36,7 +36,7 @@ export const ProductPage: React.FC = () => {
 
   // Reset scroll and selection on route change
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
     setActiveImageIndex(0);
     setQuantity(1);
     setCustomObservation('');
@@ -138,7 +138,13 @@ export const ProductPage: React.FC = () => {
     .slice(0, 4);
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] pb-24 md:pb-16">
+    <motion.div
+      key={slug}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      className="min-h-screen bg-[#FDFBF7] pb-24 md:pb-16"
+    >
       {/* Breadcrumbs */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4">
         <nav className="flex items-center gap-1.5 text-xs sm:text-sm text-brand-muted">
@@ -586,6 +592,6 @@ export const ProductPage: React.FC = () => {
         </button>
       </div>
 
-    </div>
+    </motion.div>
   );
 };

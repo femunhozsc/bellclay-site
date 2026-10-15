@@ -81,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (auth && hasValidFirebaseConfig) {
       try {
         const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
         const res = await signInWithPopup(auth, provider);
         if (res.user) {
           setCustomerProfile((prev) => ({
@@ -94,7 +95,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (err: any) {
         console.error('Erro no login Google:', err);
-        return { success: false, error: err.message || 'Erro ao conectar com Google' };
+        let errorMsg = 'Não foi possível concluir o login com o Google.';
+        if (err.code === 'auth/popup-blocked') {
+          errorMsg = 'O pop-up do Google foi bloqueado pelo seu navegador. Por favor, permita pop-ups para este site.';
+        } else if (err.code === 'auth/popup-closed-by-user') {
+          errorMsg = 'A janela do Google foi fechada antes de concluir o login.';
+        } else if (err.code === 'auth/unauthorized-domain') {
+          errorMsg = 'Domínio da Vercel não autorizado no Firebase. Adicione o seu domínio em Firebase Console > Authentication > Settings > Authorized Domains.';
+        } else if (err.code === 'auth/operation-not-allowed' || err.code === 'auth/configuration-not-found') {
+          errorMsg = 'O login com Google precisa ser ativado no Firebase Console: vá em Authentication > Sign-in method > Google e clique em Ativar.';
+        } else if (err.message) {
+          errorMsg = `Erro no Google: ${err.message}`;
+        }
+        return { success: false, error: errorMsg };
       }
     }
 
