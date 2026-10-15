@@ -125,6 +125,7 @@ export interface SiteSettings {
   promoBannerLink?: string;
   promoBannerActive?: boolean;
   instagram: string;
+  tiktok?: string;
   whatsapp: string;
   city: string;
   state: string;

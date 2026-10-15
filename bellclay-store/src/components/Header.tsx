@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Search, User, MessageCircle, X, ChevronRight } from 'lucide-react';
+import { ShoppingBag, Search, User, X, ChevronRight } from 'lucide-react';
+import { WhatsAppIcon } from './SocialIcons';
 import { useCart } from '../context/CartContext';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -15,7 +16,7 @@ export const Header: React.FC = () => {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  const whatsappNumber = "5544991074932";
+  const whatsappNumber = (settings.whatsapp || "5544991074932").replace(/\D/g, '') || "5544991074932";
   const whatsappMessage = encodeURIComponent(
     "Olá Bellclay! Estive no site e adorei os artesanatos em cerâmica fria. Gostaria de tirar uma dúvida sobre uma peça!"
   );
@@ -197,7 +198,7 @@ export const Header: React.FC = () => {
               className="flex items-center gap-1.5 text-xs font-bold px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full bg-brand-green-subtle text-brand-green hover:bg-brand-green hover:text-white transition-all duration-200 cursor-pointer shadow-xs"
               title="Fale conosco no WhatsApp"
             >
-              <MessageCircle className="w-4 h-4 shrink-0" />
+              <WhatsAppIcon className="w-4 h-4 shrink-0 fill-current" />
               <span className="hidden sm:inline">WhatsApp</span>
             </a>
 

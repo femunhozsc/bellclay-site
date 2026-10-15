@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, ShieldCheck, Truck, MessageCircle, MapPin, CheckCircle2, Key } from 'lucide-react';
+import { Settings, ShieldCheck, Truck, MapPin, CheckCircle2, Key } from 'lucide-react';
 import { SiteSettings } from '../types';
+import { WhatsAppIcon, InstagramIcon, TikTokIcon } from '../components/SocialIcons';
 
 interface SettingsPageProps {
   settings: SiteSettings;
@@ -11,8 +12,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
   const [originCep, setOriginCep] = useState(settings.originCep || '87302060');
   const [city, setCity] = useState(settings.city || 'Campo Mourão');
   const [state, setState] = useState(settings.state || 'PR');
-  const [whatsapp, setWhatsapp] = useState(settings.whatsapp || '5544999998888');
-  const [instagram, setInstagram] = useState(settings.instagram || '@bellclay.art');
+  const [whatsapp, setWhatsapp] = useState(settings.whatsapp || '5544991074932');
+  const [instagram, setInstagram] = useState(settings.instagram || '@bellclayart');
+  const [tiktok, setTiktok] = useState(settings.tiktok || '@bellclayart');
   
   // API credentials
   const [mercadoPagoPublicKey, setMercadoPagoPublicKey] = useState(settings.mercadoPagoPublicKey || '');
@@ -24,7 +26,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
     if (settings.freeShippingThreshold) {
       setFreeShippingThreshold(String(settings.freeShippingThreshold));
     }
-  }, [settings.freeShippingThreshold]);
+    if (settings.tiktok) setTiktok(settings.tiktok);
+    if (settings.instagram) setInstagram(settings.instagram);
+    if (settings.whatsapp) setWhatsapp(settings.whatsapp);
+  }, [settings.freeShippingThreshold, settings.tiktok, settings.instagram, settings.whatsapp]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -41,6 +46,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
         state,
         whatsapp: whatsapp.replace(/\D/g, ''),
         instagram,
+        tiktok,
         mercadoPagoPublicKey,
         mercadoPagoAccessToken,
         melhorEnvioToken,
@@ -216,29 +222,51 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
         {/* Contact info */}
         <div className="bg-white p-6 rounded-3xl border border-brand-border/70 shadow-xs space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-brand-border/60">
-            <MessageCircle className="w-5 h-5 text-brand-green" />
+            <WhatsAppIcon className="w-5 h-5 text-[#25D366]" />
             <h3 className="font-bold text-sm text-brand-charcoal">
               Redes Sociais & Contato
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-bold text-brand-charcoal mb-1">WhatsApp de Atendimento</label>
+              <label className="flex items-center gap-1.5 text-xs font-bold text-brand-charcoal mb-1">
+                <WhatsAppIcon className="w-3.5 h-3.5 text-[#25D366]" />
+                <span>WhatsApp de Atendimento</span>
+              </label>
               <input
                 type="tel"
                 value={whatsapp}
                 onChange={(e) => setWhatsapp(e.target.value)}
+                placeholder="Ex: 5544991074932"
                 className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-brand-charcoal mb-1">Instagram (@)</label>
+              <label className="flex items-center gap-1.5 text-xs font-bold text-brand-charcoal mb-1">
+                <InstagramIcon className="w-3.5 h-3.5 text-brand-pink" />
+                <span>Instagram (@)</span>
+              </label>
               <input
                 type="text"
                 value={instagram}
                 onChange={(e) => setInstagram(e.target.value)}
+                placeholder="@bellclayart"
+                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink"
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-bold text-brand-charcoal mb-1">
+                <TikTokIcon className="w-3.5 h-3.5 text-brand-charcoal" />
+                <span>TikTok (@)</span>
+              </label>
+              <input
+                type="text"
+                value={tiktok}
+                onChange={(e) => setTiktok(e.target.value)}
+                placeholder="@bellclayart"
                 className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink"
               />
             </div>

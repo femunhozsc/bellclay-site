@@ -11,6 +11,7 @@ import {
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { WhatsAppIcon } from '../components/SocialIcons';
 import { fetchAddressByCep } from '../services/viaCepService';
 import {
   generatePixPayment,
@@ -1331,14 +1332,14 @@ export const CheckoutPage: React.FC = () => {
             {/* WhatsApp Confirmation CTA - WITHOUT phone number in button */}
             <div className="pt-2 max-w-md mx-auto space-y-3">
               <a
-                href={`https://wa.me/5544991074932?text=${encodeURIComponent(
+                href={`https://wa.me/${(settings.whatsapp || '5544991074932').replace(/\D/g, '') || '5544991074932'}?text=${encodeURIComponent(
                   `Olá Bellclay! Acabei de fazer o pedido #${completedOrder?.id} no site no valor de R$ ${grandTotal.toFixed(2).replace('.', ',')} e gostaria de acompanhar a produção!`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-brand-green hover:bg-brand-green-hover text-white font-bold text-xs sm:text-sm shadow-green-soft transition-all"
               >
-                <MessageCircle className="w-5 h-5" />
+                <WhatsAppIcon className="w-5 h-5 fill-white text-white shrink-0" />
                 <span>Confirmar Pedido no WhatsApp</span>
               </a>
 

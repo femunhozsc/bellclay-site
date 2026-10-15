@@ -8,11 +8,11 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
-  MessageCircle,
   Share2,
   CheckCircle2,
   Info
 } from 'lucide-react';
+import { WhatsAppIcon } from '../components/SocialIcons';
 import { useSettings } from '../context/SettingsContext';
 
 export const EventPage: React.FC = () => {
@@ -78,7 +78,8 @@ export const EventPage: React.FC = () => {
   const whatsappMessage = encodeURIComponent(
     `Olá Bellclay! Estive no site e adorei os detalhes do evento "${event.title}". Gostaria de saber mais informações!`
   );
-  const whatsappUrl = `https://wa.me/5544991074932?text=${whatsappMessage}`;
+  const whatsappPhone = (settings.whatsapp || '5544991074932').replace(/\D/g, '') || '5544991074932';
+  const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${whatsappMessage}`;
 
   return (
     <div className="flex-1 w-full bg-[#FDFBF7] py-6 sm:py-10">
@@ -251,7 +252,7 @@ export const EventPage: React.FC = () => {
                 rel="noopener noreferrer"
                 className="w-full flex items-center justify-center gap-2.5 py-3.5 px-5 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white font-bold text-xs sm:text-sm shadow-md transition-all transform hover:scale-102 active:scale-98 cursor-pointer"
               >
-                <MessageCircle className="w-4 h-4 fill-white" />
+                <WhatsAppIcon className="w-4 h-4 fill-white text-white shrink-0" />
                 <span>Conversar no WhatsApp</span>
               </a>
 

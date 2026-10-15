@@ -12,6 +12,7 @@ import { calculateShipping } from '../services/shippingService';
 import { ShippingOption } from '../types';
 import { ProductCard } from '../components/ProductCard';
 import { ProductImageLightbox } from '../components/ProductImageLightbox';
+import { WhatsAppIcon } from '../components/SocialIcons';
 
 export const ProductPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -529,12 +530,12 @@ export const ProductPage: React.FC = () => {
 
                 {/* Ask Question on WhatsApp */}
                 <a
-                  href={`https://wa.me/5544991074932?text=${whatsappMessage}`}
+                  href={`https://wa.me/${(settings.whatsapp || '5544991074932').replace(/\D/g, '') || '5544991074932'}?text=${whatsappMessage}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-brand-muted hover:text-brand-green hover:bg-brand-green-subtle/50 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-brand-muted hover:text-[#25D366] hover:bg-brand-green-subtle/50 transition-colors"
                 >
-                  <MessageCircle className="w-4 h-4 text-brand-green" />
+                  <WhatsAppIcon className="w-4 h-4 text-[#25D366] shrink-0" />
                   <span>Dúvidas sobre esta peça? Fale conosco no WhatsApp</span>
                 </a>
               </div>

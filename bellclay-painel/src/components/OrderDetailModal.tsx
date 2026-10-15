@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, MessageCircle, Truck, PackageCheck, CheckCircle2, Clock, MapPin, Hash, MessageSquare } from 'lucide-react';
+import { WhatsAppIcon } from './SocialIcons';
 import { Order } from '../types';
 
 interface OrderDetailModalProps {
@@ -89,7 +90,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-green text-white text-xs font-bold shadow-xs hover:bg-brand-green-hover transition-colors"
               >
-                <MessageCircle className="w-3.5 h-3.5" />
+                <WhatsAppIcon className="w-3.5 h-3.5 fill-current shrink-0" />
                 <span>Conversar no WhatsApp</span>
               </a>
             </div>
