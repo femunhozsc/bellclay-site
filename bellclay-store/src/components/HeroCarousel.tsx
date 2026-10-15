@@ -1,13 +1,90 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 
+const normalizeText = (str: string) =>
+  (str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+
 export const HeroCarousel: React.FC = () => {
-  const { settings } = useSettings();
+  const { settings, setSelectedCategory, setSearchQuery } = useSettings();
+  const navigate = useNavigate();
+  const location = useLocation();
   const activeBanners = settings.banners.filter((b) => b.active);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+
+  const handleBannerButtonClick = (e: React.MouseEvent<HTMLAnchorElement>, rawLink?: string) => {
+    const link = (rawLink || '#produtos').trim();
+
+    // Check if it's an anchor starting with '#' or a simple category/product target
+    const isAnchorOrCategory =
+      link.startsWith('#') ||
+      (!link.startsWith('http://') && !link.startsWith('https://') && !link.startsWith('/'));
+
+    if (isAnchorOrCategory) {
+      e.preventDefault();
+      const rawTarget = link.replace(/^#/, '').trim();
+      const targetNorm = normalizeText(rawTarget);
+
+      // If target is empty, 'produtos', 'todos', or 'catalogo' -> show all products
+      if (!targetNorm || targetNorm === 'produtos' || targetNorm === 'todos' || targetNorm === 'catalogo') {
+        setSelectedCategory('all');
+      } else {
+        // Search category by slug or name
+        const matchedCategory =
+          settings.categories.find(
+            (c) => normalizeText(c.slug) === targetNorm || normalizeText(c.name) === targetNorm
+          ) ||
+          settings.categories.find(
+            (c) =>
+              normalizeText(c.name).includes(targetNorm) ||
+              targetNorm.includes(normalizeText(c.name)) ||
+              normalizeText(c.slug).includes(targetNorm) ||
+              targetNorm.includes(normalizeText(c.slug))
+          );
+
+        if (matchedCategory) {
+          setSelectedCategory(matchedCategory.slug);
+        } else {
+          // If no pre-configured category matches, set as raw target so custom filters still work
+          setSelectedCategory(rawTarget);
+        }
+      }
+
+      // Always clear search query so the category items are immediately visible
+      setSearchQuery('');
+
+      const scrollToCatalog = () => {
+        const catalogEl = document.getElementById('produtos');
+        if (catalogEl) {
+          catalogEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      };
+
+      if (location.pathname !== '/') {
+        navigate('/');
+        setTimeout(scrollToCatalog, 150);
+      } else {
+        scrollToCatalog();
+      }
+      return;
+    }
+
+    // Internal path route (e.g. /checkout, /minha-conta)
+    if (link.startsWith('/')) {
+      e.preventDefault();
+      navigate(link);
+      return;
+    }
+
+    // External link: allowed to navigate normally
+  };
 
   useEffect(() => {
     if (activeBanners.length <= 1 || isPaused) return;
@@ -107,6 +184,7 @@ export const HeroCarousel: React.FC = () => {
               >
                 <a
                   href={current.buttonLink || "#produtos"}
+                  onClick={(e) => handleBannerButtonClick(e, current.buttonLink)}
                   className="inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-4.5 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white font-extrabold text-sm sm:text-base shadow-xl transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer"
                 >
                   <span>{current.buttonText || "Ver Coleção"}</span>

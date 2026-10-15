@@ -268,8 +268,13 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
                   <p className="text-[11px] text-brand-muted line-clamp-2 mt-1">{banner.subtitle}</p>
                 </div>
 
-                <div className="pt-3 mt-3 border-t border-brand-border/60 flex items-center justify-between">
-                  <span className="text-[10px] text-brand-muted font-mono">{banner.buttonText}</span>
+                <div className="pt-3 mt-3 border-t border-brand-border/60 flex items-center justify-between gap-2">
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-[10px] text-brand-charcoal font-bold truncate">{banner.buttonText || 'Ver Coleção'}</span>
+                    <span className="text-[9px] text-brand-pink font-mono truncate" title={banner.buttonLink || '#produtos'}>
+                      {banner.buttonLink || '#produtos'}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => onOpenBannerModal(banner)}

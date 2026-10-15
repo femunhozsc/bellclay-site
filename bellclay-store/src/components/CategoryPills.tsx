@@ -33,7 +33,11 @@ export const CategoryPills: React.FC = () => {
 
           {/* Dynamic categories from settings */}
           {settings.categories.map((cat) => {
-            const isSelected = selectedCategory.toLowerCase() === cat.slug.toLowerCase();
+            const normalize = (str: string) =>
+              (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+            const isSelected =
+              normalize(selectedCategory) === normalize(cat.slug) ||
+              normalize(selectedCategory) === normalize(cat.name);
             const icon = ICON_MAP[cat.iconName] || <Palette className="w-4 h-4 sm:w-5 sm:h-5" />;
 
             return (

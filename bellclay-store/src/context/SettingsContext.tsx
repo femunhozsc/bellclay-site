@@ -80,7 +80,16 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // When not searching, filter by category
     if (selectedCategory === 'all') return true;
-    return normalize(product.category) === normalize(selectedCategory);
+
+    const activeCat = settings.categories.find(
+      c => normalize(c.slug) === normalize(selectedCategory) || normalize(c.name) === normalize(selectedCategory)
+    );
+
+    const targetSlug = activeCat ? normalize(activeCat.slug) : normalize(selectedCategory);
+    const targetName = activeCat ? normalize(activeCat.name) : normalize(selectedCategory);
+    const prodCat = normalize(product.category);
+
+    return prodCat === targetSlug || prodCat === targetName || (activeCat && prodCat.includes(targetSlug));
   });
 
   return (
