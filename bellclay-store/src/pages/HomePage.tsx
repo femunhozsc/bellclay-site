@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HeroCarousel } from '../components/HeroCarousel';
 import { CategoryPills } from '../components/CategoryPills';
 import { ProductCard } from '../components/ProductCard';
+import { EventsCarousel } from '../components/EventsCarousel';
 import { useSettings } from '../context/SettingsContext';
-import { Heart, ShieldCheck, Truck, CheckCircle2 } from 'lucide-react';
+import { Heart, ShieldCheck, Truck, CheckCircle2, ChevronDown } from 'lucide-react';
 import { resolveCategorySlug, scrollToCatalogSection } from '../utils/categoryResolver';
 
 export const HomePage: React.FC = () => {
@@ -12,9 +13,37 @@ export const HomePage: React.FC = () => {
     filteredProducts,
     isLoading,
     searchQuery,
+    selectedCategory,
     setSelectedCategory,
     setSearchQuery
   } = useSettings();
+
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 640;
+    }
+    return false;
+  });
+
+  const [showAllProducts, setShowAllProducts] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Reset pagination when category or search changes
+  useEffect(() => {
+    setShowAllProducts(false);
+  }, [selectedCategory, searchQuery]);
+
+  const initialLimit = isMobile ? 6 : 8;
+  const displayedProducts = showAllProducts
+    ? filteredProducts
+    : filteredProducts.slice(0, initialLimit);
+  const hasMoreProducts = filteredProducts.length > initialLimit;
+  const remainingCount = filteredProducts.length - initialLimit;
 
   useEffect(() => {
     const handleHashNavigation = () => {
@@ -152,13 +181,38 @@ export const HomePage: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6 lg:gap-8 pt-2">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6 lg:gap-8 pt-2">
+                {displayedProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+
+              {/* "Ver mais" Button (6 on mobile, 8 on computer initial limit) */}
+              {hasMoreProducts && !showAllProducts && (
+                <div className="pt-8 sm:pt-10 flex flex-col items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllProducts(true)}
+                    className="group inline-flex items-center gap-2.5 px-8 sm:px-10 py-3.5 sm:py-4 rounded-full bg-white hover:bg-brand-pink-subtle border-2 border-brand-pink/35 hover:border-brand-pink text-brand-charcoal hover:text-brand-pink font-extrabold text-xs sm:text-sm shadow-xs hover:shadow-md transition-all duration-200 transform hover:scale-102 active:scale-98 cursor-pointer"
+                  >
+                    <span>Ver mais anúncios</span>
+                    <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-brand-pink/15 text-brand-pink font-extrabold group-hover:bg-brand-pink group-hover:text-white transition-colors">
+                      +{remainingCount}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-brand-pink group-hover:translate-y-0.5 transition-transform" />
+                  </button>
+                  <span className="text-[11px] text-brand-muted mt-2">
+                    Exibindo {displayedProducts.length} de {filteredProducts.length} peças
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </section>
+
+        {/* Section: Eventos Bellclay */}
+        <EventsCarousel />
 
       </div>
     </div>

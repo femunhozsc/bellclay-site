@@ -95,6 +95,21 @@ export interface CategoryItem {
   image?: string;
 }
 
+export interface BellclayEvent {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string;
+  badge?: string;
+  coverImage: string;
+  images: string[];
+  dateText?: string;
+  locationText?: string;
+  description: string;
+  buttonText?: string;
+  active: boolean;
+}
+
 export interface SiteSettings {
   welcomeTitle: string;
   welcomeSubtitle: string;
@@ -105,6 +120,7 @@ export interface SiteSettings {
   originCep: string;
   banners: BannerSlide[];
   categories: CategoryItem[];
+  events?: BellclayEvent[];
   instagram: string;
   whatsapp: string;
   city: string;

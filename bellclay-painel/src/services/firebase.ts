@@ -128,6 +128,43 @@ export const DEFAULT_PANEL_SETTINGS: SiteSettings = {
       iconName: "HeartHandshake",
       description: "Sets e conjuntos temáticos limitados para colecionar ou presentear."
     }
+  ],
+  events: [
+    {
+      id: "evento-1",
+      slug: "feira-criativa-campo-mourao",
+      title: "Feira de Artesanato & Criatividade de Campo Mourão",
+      subtitle: "Venha conhecer nosso estande repleto de chaveiros, miniaturas e novidades exclusivas em cerâmica fria!",
+      badge: "Feira Presencial",
+      coverImage: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1600&q=80",
+      images: [
+        "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80"
+      ],
+      dateText: "Sábado e Domingo • 09:00 às 18:00",
+      locationText: "Praça Getúlio Vargas, Centro - Campo Mourão, PR",
+      description: "Um final de semana especial dedicado ao artesanato autoral e à criatividade local! O estande da Bellclay contará com todas as coleções de chaveiros, mini esculturas, bottons colecionáveis e pratinhos porta-jóias, além de brindes e demonstração de modelagem manual ao vivo. Venha bater um papo com a gente, escolher suas peças favoritas de pertinho e aproveitar condições exclusivas para quem visitar nosso espaço!",
+      buttonText: "Conhecer Evento",
+      active: true
+    },
+    {
+      id: "evento-2",
+      slug: "workshop-modelagem-ceramica-fria",
+      title: "Oficina Criativa: Modelagem de Miniaturas Fofas",
+      subtitle: "Aprenda o passo a passo da porcelana fria, desde a mistura de cores até o acabamento vitrificado.",
+      badge: "Workshop",
+      coverImage: "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=1600&q=80",
+      images: [
+        "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1200&q=80"
+      ],
+      dateText: "Próxima Turma: 14 de Novembro • 14h às 17h",
+      locationText: "Ateliê Bellclay - Campo Mourão, PR",
+      description: "Uma tarde deliciosa e relaxante para você colocar a mão na massa! Nessa oficina para iniciantes, você vai aprender a modelar seus próprios chaveiros de cogumelos, gatinhos e comidinhas fofas. Todo o material está incluso (massa especial de porcelana fria, estecas, tintas, argolas de chaveiro e resina protetora), com direito a coffee break e você leva suas criações prontas para casa!",
+      buttonText: "Ver Detalhes do Workshop",
+      active: true
+    }
   ]
 };
 

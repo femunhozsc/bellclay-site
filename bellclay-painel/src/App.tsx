@@ -12,6 +12,7 @@ import { ProductFormModal } from './components/ProductFormModal';
 import { OrderDetailModal } from './components/OrderDetailModal';
 import { BannerModal } from './components/BannerModal';
 import { CategoryModal } from './components/CategoryModal';
+import { EventModal } from './components/EventModal';
 import {
   fetchPanelProducts,
   savePanelProduct,
@@ -22,7 +23,7 @@ import {
   updateOrderStatus,
   fetchMetrics
 } from './services/firebase';
-import { Product, SiteSettings, Order, MetricsSummary, BannerSlide, CategoryItem } from './types';
+import { Product, SiteSettings, Order, MetricsSummary, BannerSlide, CategoryItem, BellclayEvent } from './types';
 import { DEFAULT_PANEL_SETTINGS, DEFAULT_PANEL_PRODUCTS } from './services/firebase';
 
 export const App: React.FC = () => {
@@ -55,6 +56,9 @@ export const App: React.FC = () => {
 
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
+
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<BellclayEvent | null>(null);
 
   const loadData = async () => {
     try {
@@ -160,6 +164,28 @@ export const App: React.FC = () => {
     await handleSaveSettings(updated);
   };
 
+  // Handlers for events
+  const handleSaveEvent = async (event: BellclayEvent) => {
+    const events = settings.events || [];
+    const existingIndex = events.findIndex(e => e.id === event.id);
+    let updatedEvents: BellclayEvent[];
+    if (existingIndex >= 0) {
+      updatedEvents = [...events];
+      updatedEvents[existingIndex] = event;
+    } else {
+      updatedEvents = [...events, event];
+    }
+    const updated = { ...settings, events: updatedEvents };
+    await handleSaveSettings(updated);
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    const events = settings.events || [];
+    const updatedEvents = events.filter(e => e.id !== eventId);
+    const updated = { ...settings, events: updatedEvents };
+    await handleSaveSettings(updated);
+  };
+
   // Handlers for orders
   const handleUpdateOrderStatus = async (
     orderId: string,
@@ -242,8 +268,13 @@ export const App: React.FC = () => {
                 setEditingCategory(cat || null);
                 setIsCategoryModalOpen(true);
               }}
+              onOpenEventModal={(event) => {
+                setEditingEvent(event || null);
+                setIsEventModalOpen(true);
+              }}
               onDeleteBanner={handleDeleteBanner}
               onDeleteCategory={handleDeleteCategory}
+              onDeleteEvent={handleDeleteEvent}
             />
           )}
 
@@ -284,6 +315,13 @@ export const App: React.FC = () => {
         isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}
         onSave={handleSaveCategory}
+      />
+
+      <EventModal
+        event={editingEvent}
+        isOpen={isEventModalOpen}
+        onClose={() => setIsEventModalOpen(false)}
+        onSave={handleSaveEvent}
       />
     </div>
   );
