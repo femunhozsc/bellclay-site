@@ -19,30 +19,28 @@ export const CategoryPills: React.FC = () => {
       <div className="max-w-7xl mx-auto px-1 sm:px-2">
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-max pb-1">
           {/* All items pill */}
-          <motion.button
-            whileTap={{ scale: 0.95 }}
+          <button
             onClick={() => setSelectedCategory('all')}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer shadow-xs ${
+            className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full text-xs sm:text-base font-bold transition-all duration-200 cursor-pointer shadow-xs active:scale-95 ${
               selectedCategory === 'all'
                 ? 'bg-brand-charcoal text-white shadow-md'
                 : 'bg-white hover:bg-[#F5EFE6] text-brand-charcoal border border-brand-border/80'
             }`}
           >
-            <Grid className="w-4 h-4" />
+            <Grid className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>Todos os Artesanatos</span>
-          </motion.button>
+          </button>
 
           {/* Dynamic categories from settings */}
           {settings.categories.map((cat) => {
             const isSelected = selectedCategory.toLowerCase() === cat.slug.toLowerCase();
-            const icon = ICON_MAP[cat.iconName] || <Palette className="w-4 h-4" />;
+            const icon = ICON_MAP[cat.iconName] || <Palette className="w-4 h-4 sm:w-5 sm:h-5" />;
 
             return (
-              <motion.button
+              <button
                 key={cat.id}
-                whileTap={{ scale: 0.95 }}
                 onClick={() => setSelectedCategory(cat.slug)}
-                className={`flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer shadow-xs ${
+                className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full text-xs sm:text-base font-bold transition-all duration-200 cursor-pointer shadow-xs active:scale-95 ${
                   isSelected
                     ? 'bg-brand-pink text-white shadow-pink-soft'
                     : 'bg-white hover:bg-brand-pink-subtle text-brand-charcoal border border-brand-border/80 hover:border-brand-pink/30'
@@ -52,7 +50,7 @@ export const CategoryPills: React.FC = () => {
                   {icon}
                 </span>
                 <span>{cat.name}</span>
-              </motion.button>
+              </button>
             );
           })}
         </div>

@@ -24,6 +24,15 @@
   * {
     -webkit-tap-highlight-color: transparent;
   }
+
+  input:focus, textarea:focus, select:focus, button:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  img {
+    content-visibility: auto;
+  }
 }
 
 /* Custom delicate scrollbar */

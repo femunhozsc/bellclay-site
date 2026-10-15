@@ -3,12 +3,12 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Star, Heart, ShoppingBag, Truck, ShieldCheck, Check,
-  ChevronRight, ArrowLeft, MessageCircle, Info, CheckCircle2, RotateCcw
+  ChevronRight, ArrowLeft, MessageCircle, Info, CheckCircle2
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useCart } from '../context/CartContext';
 import { calculateShipping } from '../services/shippingService';
-import { ShippingOption, Product } from '../types';
+import { ShippingOption } from '../types';
 import { ProductCard } from '../components/ProductCard';
 
 export const ProductPage: React.FC = () => {
@@ -140,8 +140,8 @@ export const ProductPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FDFBF7] pb-24 md:pb-16">
       {/* Breadcrumbs */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <nav className="flex items-center gap-1.5 text-xs text-brand-muted">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4">
+        <nav className="flex items-center gap-1.5 text-xs sm:text-sm text-brand-muted">
           <Link to="/" className="hover:text-brand-pink transition-colors">
             Início
           </Link>
@@ -156,407 +156,402 @@ export const ProductPage: React.FC = () => {
         </nav>
       </div>
 
-      {/* Main Product Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-3xl border border-brand-border/60 shadow-xs p-4 sm:p-6 lg:p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-            
-            {/* Left: Image Gallery */}
-            <div className="space-y-4">
-              {/* Main Photo */}
-              <div className="relative aspect-square w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-[#FAF7F2] border border-brand-border/40">
-                <img
-                  src={product.images[activeImageIndex] || product.images[0]}
-                  alt={product.title}
-                  className="w-full h-full object-cover transition-all duration-300"
-                />
+      {/* Main Product Container - Frameless with edge-to-edge photo on mobile */}
+      <main className="max-w-7xl mx-auto px-0 md:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-14 items-start">
+          
+          {/* Left Column: Image Gallery (Full width 100vw on mobile, rounded on desktop) */}
+          <div className="lg:col-span-7 space-y-4">
+            {/* Main Photo: Full Width on Mobile like the Hero Banner */}
+            <div className="relative aspect-square sm:aspect-4/3 lg:aspect-square w-full md:rounded-3xl overflow-hidden bg-[#FAF7F2] shadow-sm">
+              <img
+                src={product.images[activeImageIndex] || product.images[0]}
+                alt={product.title}
+                className="w-full h-full object-cover transition-all duration-300"
+              />
 
-                {/* Badges without sparkles */}
-                <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
-                  <span className="px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-brand-charcoal text-white shadow-xs">
-                    Cerâmica Fria
+              {/* Badges */}
+              <div className="absolute top-4 left-4 flex flex-col gap-1.5 z-10">
+                <span className="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-brand-charcoal text-white shadow-md">
+                  Cerâmica Fria
+                </span>
+                {product.isNew && (
+                  <span className="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-brand-green text-white shadow-md">
+                    Novo
                   </span>
-                  {product.isNew && (
-                    <span className="px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-brand-green text-white shadow-xs">
-                      Novo
-                    </span>
-                  )}
-                  {hasDiscount && (
-                    <span className="px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-brand-pink text-white shadow-xs">
-                      -{discountPercent}% OFF
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Thumbnails Row */}
-              {product.images.length > 1 && (
-                <div className="flex gap-2.5 overflow-x-auto pb-1">
-                  {product.images.map((img, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setActiveImageIndex(idx)}
-                      className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
-                        activeImageIndex === idx
-                          ? 'border-brand-pink ring-2 ring-brand-pink/20 scale-105'
-                          : 'border-brand-border/60 hover:border-brand-pink/50 opacity-70 hover:opacity-100'
-                      }`}
-                    >
-                      <img src={img} alt={`${product.title} miniatura ${idx + 1}`} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Trust Badges under Image */}
-              <div className="grid grid-cols-3 gap-2 pt-2">
-                <div className="flex flex-col items-center text-center p-2.5 rounded-xl bg-[#FAF8F5]">
-                  <Heart className="w-4 h-4 text-brand-pink mb-1" />
-                  <span className="text-[10px] font-bold text-brand-charcoal">Feito à Mão</span>
-                  <span className="text-[9px] text-brand-muted">Peça exclusiva</span>
-                </div>
-                <div className="flex flex-col items-center text-center p-2.5 rounded-xl bg-[#FAF8F5]">
-                  <ShieldCheck className="w-4 h-4 text-brand-green mb-1" />
-                  <span className="text-[10px] font-bold text-brand-charcoal">Resina e Verniz</span>
-                  <span className="text-[9px] text-brand-muted">Alta proteção</span>
-                </div>
-                <div className="flex flex-col items-center text-center p-2.5 rounded-xl bg-[#FAF8F5]">
-                  <Truck className="w-4 h-4 text-brand-pink mb-1" />
-                  <span className="text-[10px] font-bold text-brand-charcoal">Envio Protegido</span>
-                  <span className="text-[9px] text-brand-muted">Embalagem fofa</span>
-                </div>
+                )}
+                {hasDiscount && (
+                  <span className="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-brand-pink text-white shadow-md">
+                    -{discountPercent}% OFF
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Right: Product Info & Actions */}
-            <div className="flex flex-col justify-between space-y-6">
-              
-              <div className="space-y-4">
-                {/* Category & Rating */}
-                <div className="flex items-center justify-between gap-2">
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-brand-pink-subtle text-brand-pink">
-                    {product.category || 'Artesanato'}
-                  </span>
-                  
-                  <div className="flex items-center gap-1.5 bg-[#F6F1E8] px-2.5 py-1 rounded-full">
-                    <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                    <span className="text-xs font-bold text-brand-charcoal">
-                      {product.rating?.toFixed(1) || '5.0'}
-                    </span>
-                    <span className="text-[11px] text-brand-muted">
-                      ({product.reviewsCount || 18} avaliações)
-                    </span>
-                  </div>
-                </div>
-
-                {/* Title */}
-                <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-extrabold text-brand-charcoal leading-tight">
-                  {product.title}
-                </h1>
-
-                {/* Price Display */}
-                <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 space-y-2">
-                  <div className="flex items-baseline gap-2">
-                    {hasDiscount && (
-                      <span className="text-sm text-brand-muted line-through">
-                        R$ {product.price.toFixed(2).replace('.', ',')}
-                      </span>
-                    )}
-                    <span className="text-xs font-bold text-brand-pink">R$</span>
-                    <span className="text-3xl sm:text-4xl font-black text-brand-charcoal tracking-tight">
-                      {currentPrice.toFixed(2).replace('.', ',')}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col gap-1 text-xs text-brand-muted">
-                    <p className="font-medium text-brand-charcoal">
-                      ou até <strong className="text-brand-pink">3x de R$ {installment3x}</strong> sem juros no cartão
-                    </p>
-                    <p className="text-[11px] text-brand-green font-semibold">
-                      • R$ {pixPrice} no Pix (5% de desconto automático)
-                    </p>
-                  </div>
-                </div>
-
-                {/* Short Description */}
-                <p className="text-sm text-brand-charcoal/80 leading-relaxed">
-                  {product.description}
-                </p>
-
-                {/* Customization / Observation Field */}
-                <div className="space-y-1.5 pt-2">
-                  <label className="block text-xs font-bold text-brand-charcoal">
-                    Personalização ou observações da peça:
-                  </label>
-                  <input
-                    type="text"
-                    value={customObservation}
-                    onChange={(e) => setCustomObservation(e.target.value)}
-                    placeholder="Ex: cor específica do detalhe, iniciais, modelo de fecho..."
-                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-[#FAF7F2]"
-                  />
-                  <p className="text-[10px] text-brand-muted">
-                    Cada peça é feita artesanalmente. Pode deixar observações para a artesã!
-                  </p>
-                </div>
-
-                {/* Quantity and Action Buttons */}
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center border border-brand-border rounded-full bg-white px-3 py-1.5 shadow-2xs">
-                      <button
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="text-base font-bold text-brand-charcoal px-2 hover:text-brand-pink transition-colors"
-                        aria-label="Diminuir quantidade"
-                      >
-                        -
-                      </button>
-                      <span className="text-sm font-bold text-brand-charcoal px-3">
-                        {quantity}
-                      </span>
-                      <button
-                        onClick={() => setQuantity(quantity + 1)}
-                        className="text-base font-bold text-brand-charcoal px-2 hover:text-brand-pink transition-colors"
-                        aria-label="Aumentar quantidade"
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={handleAddToCart}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 px-5 rounded-full bg-white border-2 border-brand-pink text-brand-pink hover:bg-brand-pink hover:text-white font-bold text-sm shadow-xs transition-all duration-200 cursor-pointer"
-                    >
-                      {isAdded ? (
-                        <>
-                          <Check className="w-4 h-4 stroke-[3]" />
-                          <span>Adicionado!</span>
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingBag className="w-4 h-4" />
-                          <span>Adicionar ao Carrinho</span>
-                        </>
-                      )}
-                    </motion.button>
-                  </div>
-
-                  {/* Buy Now (Direct to Checkout) */}
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleBuyNow}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-brand-green hover:bg-brand-green-hover text-white font-bold text-sm shadow-green-soft hover:shadow-soft-hover transition-all duration-200 cursor-pointer"
+            {/* Thumbnails Row (Padding applied on mobile for clean touch) */}
+            {product.images.length > 1 && (
+              <div className="flex gap-3 overflow-x-auto pb-1 px-4 md:px-0">
+                {product.images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImageIndex(idx)}
+                    className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
+                      activeImageIndex === idx
+                        ? 'border-brand-pink ring-2 ring-brand-pink/30 scale-105'
+                        : 'border-brand-border/60 hover:border-brand-pink/50 opacity-70 hover:opacity-100'
+                    }`}
                   >
-                    <span>Comprar Agora</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </motion.button>
-
-                  {/* Ask Question on WhatsApp */}
-                  <a
-                    href={`https://wa.me/5544991074932?text=${whatsappMessage}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold text-brand-muted hover:text-brand-green hover:bg-brand-green-subtle/50 transition-colors"
-                  >
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    <span>Dúvidas sobre esta peça? Fale comigo no WhatsApp (44 99107-4932)</span>
-                  </a>
-                </div>
-
-                {/* Freight Calculator Box */}
-                <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-brand-charcoal flex items-center gap-1.5">
-                      <Truck className="w-4 h-4 text-brand-pink" />
-                      Calcular Frete e Prazo de Entrega:
-                    </span>
-                    <span className="text-[10px] text-brand-muted">
-                      Origem: Campo Mourão - PR
-                    </span>
-                  </div>
-
-                  <form onSubmit={handleCalculateShipping} className="flex gap-2">
-                    <input
-                      type="text"
-                      maxLength={9}
-                      placeholder="00000-000"
-                      value={simulatedCep}
-                      onChange={(e) => {
-                        const v = e.target.value.replace(/\D/g, '').slice(0, 8);
-                        setSimulatedCep(v.length > 5 ? `${v.slice(0, 5)}-${v.slice(5)}` : v);
-                      }}
-                      className="flex-1 text-xs px-3 py-2 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-white"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isCalculatingFreight}
-                      className="px-4 py-2 rounded-xl bg-brand-charcoal hover:bg-black text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
-                    >
-                      {isCalculatingFreight ? 'Calculando...' : 'Calcular'}
-                    </button>
-                  </form>
-
-                  {freightError && (
-                    <p className="text-[11px] text-red-500">{freightError}</p>
-                  )}
-
-                  {shippingOptions.length > 0 && (
-                    <div className="space-y-1.5 pt-2 border-t border-brand-border/60">
-                      {shippingOptions.map((opt) => (
-                        <div
-                          key={opt.id}
-                          className="flex items-center justify-between text-xs p-2 rounded-xl bg-white border border-brand-border/60"
-                        >
-                          <div className="flex flex-col">
-                            <span className="font-bold text-brand-charcoal">{opt.name}</span>
-                            <span className="text-[10px] text-brand-muted">
-                              Chega em cerca de {opt.deliveryDays} {opt.deliveryDays === 1 ? 'dia útil' : 'dias úteis'}
-                            </span>
-                          </div>
-                          <div className="text-right">
-                            <span className="font-extrabold text-brand-charcoal">
-                              {opt.price === 0 ? (
-                                <span className="text-brand-green">Grátis</span>
-                              ) : (
-                                `R$ ${opt.price.toFixed(2).replace('.', ',')}`
-                              )}
-                            </span>
-                            {opt.badge && (
-                              <span className="block text-[9px] font-bold text-brand-pink uppercase">
-                                {opt.badge}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
+                    <img src={img} alt={`${product.title} miniatura ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
               </div>
+            )}
 
+            {/* Trust Highlights - Clean Ribbon without card boxes */}
+            <div className="px-4 md:px-0 pt-2">
+              <div className="grid grid-cols-3 gap-3 py-3 px-4 rounded-2xl bg-[#F6F1E8]/70">
+                <div className="flex flex-col items-center text-center">
+                  <Heart className="w-5 h-5 text-brand-pink mb-1 fill-brand-pink/20" />
+                  <span className="text-xs font-bold text-brand-charcoal">Feito à Mão</span>
+                  <span className="text-[10px] text-brand-muted">Peça única</span>
+                </div>
+                <div className="flex flex-col items-center text-center">
+                  <ShieldCheck className="w-5 h-5 text-brand-green mb-1" />
+                  <span className="text-xs font-bold text-brand-charcoal">Resina Vitrificada</span>
+                  <span className="text-[10px] text-brand-muted">Alta durabilidade</span>
+                </div>
+                <div className="flex flex-col items-center text-center">
+                  <Truck className="w-5 h-5 text-brand-pink mb-1" />
+                  <span className="text-xs font-bold text-brand-charcoal">Envio Seguro</span>
+                  <span className="text-[10px] text-brand-muted">Embalagem protegida</span>
+                </div>
+              </div>
             </div>
-
           </div>
 
-          {/* Product Specifications & Care Tabs */}
-          <div className="mt-12 pt-8 border-t border-brand-border/60">
-            {/* Tab Headers */}
-            <div className="flex gap-2 sm:gap-4 border-b border-brand-border/60 pb-2">
-              <button
-                onClick={() => setActiveTab('details')}
-                className={`pb-2 px-3 text-xs sm:text-sm font-bold transition-colors cursor-pointer relative ${
-                  activeTab === 'details'
-                    ? 'text-brand-pink'
-                    : 'text-brand-muted hover:text-brand-charcoal'
-                }`}
-              >
-                Detalhes da Peça
-                {activeTab === 'details' && (
-                  <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-pink" />
-                )}
-              </button>
+          {/* Right Column: Product Info & Actions (Padded on mobile) */}
+          <div className="lg:col-span-5 px-4 md:px-0 space-y-6">
+            
+            <div className="space-y-4">
+              {/* Category & Rating */}
+              <div className="flex items-center justify-between gap-2">
+                <span className="px-3.5 py-1 rounded-full text-xs sm:text-sm font-semibold bg-brand-pink-subtle text-brand-pink">
+                  {product.category || 'Artesanato'}
+                </span>
+                
+                <div className="flex items-center gap-1.5 bg-[#F6F1E8] px-3 py-1 rounded-full">
+                  <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                  <span className="text-xs sm:text-sm font-bold text-brand-charcoal">
+                    {product.rating?.toFixed(1) || '5.0'}
+                  </span>
+                  <span className="text-xs text-brand-muted">
+                    ({product.reviewsCount || 18} avaliações)
+                  </span>
+                </div>
+              </div>
 
-              <button
-                onClick={() => setActiveTab('specs')}
-                className={`pb-2 px-3 text-xs sm:text-sm font-bold transition-colors cursor-pointer relative ${
-                  activeTab === 'specs'
-                    ? 'text-brand-pink'
-                    : 'text-brand-muted hover:text-brand-charcoal'
-                }`}
-              >
-                Dimensões & Peso
-                {activeTab === 'specs' && (
-                  <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-pink" />
-                )}
-              </button>
+              {/* Title - Enlarged & Elegant */}
+              <h1 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-extrabold text-brand-charcoal leading-tight">
+                {product.title}
+              </h1>
 
-              <button
-                onClick={() => setActiveTab('care')}
-                className={`pb-2 px-3 text-xs sm:text-sm font-bold transition-colors cursor-pointer relative ${
-                  activeTab === 'care'
-                    ? 'text-brand-pink'
-                    : 'text-brand-muted hover:text-brand-charcoal'
-                }`}
-              >
-                Cuidados com a Cerâmica Fria
-                {activeTab === 'care' && (
-                  <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-pink" />
+              {/* Price Display */}
+              <div className="py-4 space-y-2 border-y border-brand-border/60">
+                <div className="flex items-baseline gap-2">
+                  {hasDiscount && (
+                    <span className="text-base sm:text-lg text-brand-muted line-through">
+                      R$ {product.price.toFixed(2).replace('.', ',')}
+                    </span>
+                  )}
+                  <span className="text-base font-bold text-brand-pink">R$</span>
+                  <span className="text-3xl sm:text-5xl font-black text-brand-charcoal tracking-tight">
+                    {currentPrice.toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-1 text-xs sm:text-sm text-brand-muted">
+                  <p className="font-medium text-brand-charcoal">
+                    ou em até <strong className="text-brand-pink font-bold">3x de R$ {installment3x}</strong> sem juros no cartão
+                  </p>
+                  <p className="text-xs sm:text-sm text-brand-green font-semibold">
+                    • R$ {pixPrice} no Pix (5% de desconto automático)
+                  </p>
+                </div>
+              </div>
+
+              {/* Short Description */}
+              <p className="text-sm sm:text-base text-brand-charcoal/85 leading-relaxed">
+                {product.description}
+              </p>
+
+              {/* Customization / Observation Field */}
+              <div className="space-y-1.5 pt-2">
+                <label className="block text-xs sm:text-sm font-bold text-brand-charcoal">
+                  Deseja personalizar sua peça? (Opcional):
+                </label>
+                <input
+                  type="text"
+                  value={customObservation}
+                  onChange={(e) => setCustomObservation(e.target.value)}
+                  placeholder="Ex: cor específica, inicial gravada, detalhes..."
+                  className="w-full text-xs sm:text-sm px-4 py-3 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
+                />
+                <p className="text-[11px] text-brand-muted">
+                  Cada peça é feita artesanalmente. Pode deixar observações para a artesã!
+                </p>
+              </div>
+
+              {/* Quantity and Action Buttons */}
+              <div className="space-y-3.5 pt-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center border border-brand-border rounded-full bg-white px-3 py-2 shadow-2xs">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="text-lg font-bold text-brand-charcoal px-2 hover:text-brand-pink transition-colors"
+                      aria-label="Diminuir quantidade"
+                    >
+                      -
+                    </button>
+                    <span className="text-sm sm:text-base font-bold text-brand-charcoal px-3">
+                      {quantity}
+                    </span>
+                    <button
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="text-lg font-bold text-brand-charcoal px-2 hover:text-brand-pink transition-colors"
+                      aria-label="Aumentar quantidade"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={handleAddToCart}
+                    className="flex-1 flex items-center justify-center gap-2 py-3.5 px-5 rounded-full bg-white border-2 border-brand-pink text-brand-pink hover:bg-brand-pink hover:text-white font-bold text-xs sm:text-sm shadow-xs transition-all duration-200 cursor-pointer"
+                  >
+                    {isAdded ? (
+                      <>
+                        <Check className="w-4 h-4 stroke-[3]" />
+                        <span>Adicionado ao Carrinho!</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingBag className="w-4 h-4" />
+                        <span>Adicionar ao Carrinho</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Buy Now (Direct to Checkout) */}
+                <button
+                  onClick={handleBuyNow}
+                  className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full bg-brand-green hover:bg-brand-green-hover text-white font-extrabold text-sm sm:text-base shadow-green-soft hover:shadow-soft-hover transition-all duration-200 cursor-pointer"
+                >
+                  <span>Comprar Agora</span>
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+
+                {/* Ask Question on WhatsApp */}
+                <a
+                  href={`https://wa.me/5544991074932?text=${whatsappMessage}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-brand-muted hover:text-brand-green hover:bg-brand-green-subtle/50 transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4 text-brand-green" />
+                  <span>Dúvidas sobre esta peça? Fale comigo no WhatsApp (44 99107-4932)</span>
+                </a>
+              </div>
+
+              {/* Freight Calculator Box */}
+              <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-bold text-brand-charcoal flex items-center gap-1.5">
+                    <Truck className="w-4 h-4 text-brand-pink" />
+                    Calcular Frete e Prazo de Entrega:
+                  </span>
+                  <span className="text-[11px] text-brand-muted">
+                    Origem: Campo Mourão - PR
+                  </span>
+                </div>
+
+                <form onSubmit={handleCalculateShipping} className="flex gap-2">
+                  <input
+                    type="text"
+                    maxLength={9}
+                    placeholder="00000-000"
+                    value={simulatedCep}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/\D/g, '').slice(0, 8);
+                      setSimulatedCep(v.length > 5 ? `${v.slice(0, 5)}-${v.slice(5)}` : v);
+                    }}
+                    className="flex-1 text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isCalculatingFreight}
+                    className="px-4 py-2.5 rounded-xl bg-brand-charcoal hover:bg-black text-white text-xs sm:text-sm font-bold transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {isCalculatingFreight ? 'Calculando...' : 'Calcular'}
+                  </button>
+                </form>
+
+                {freightError && (
+                  <p className="text-xs text-red-500">{freightError}</p>
                 )}
-              </button>
+
+                {shippingOptions.length > 0 && (
+                  <div className="space-y-1.5 pt-2 border-t border-brand-border/60">
+                    {shippingOptions.map((opt) => (
+                      <div
+                        key={opt.id}
+                        className="flex items-center justify-between text-xs sm:text-sm p-2.5 rounded-xl bg-white border border-brand-border/60"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-bold text-brand-charcoal">{opt.name}</span>
+                          <span className="text-[11px] text-brand-muted">
+                            Chega em cerca de {opt.deliveryDays} {opt.deliveryDays === 1 ? 'dia útil' : 'dias úteis'}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-extrabold text-brand-charcoal">
+                            {opt.price === 0 ? (
+                              <span className="text-brand-green font-bold">Grátis</span>
+                            ) : (
+                              `R$ ${opt.price.toFixed(2).replace('.', ',')}`
+                            )}
+                          </span>
+                          {opt.badge && (
+                            <span className="block text-[10px] font-bold text-brand-pink uppercase">
+                              {opt.badge}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
             </div>
 
-            {/* Tab Content */}
-            <div className="py-6 text-xs sm:text-sm text-brand-charcoal leading-relaxed max-w-3xl">
-              {activeTab === 'details' && (
-                <div className="space-y-3">
-                  <p>
-                    Esta peça é modelada à mão uma a uma em nosso ateliê Bellclay em Campo Mourão - PR, utilizando porcelana fria de altíssima qualidade (cerâmica plástica/fria que seca ao ar e ganha solidez de porcelana).
-                  </p>
-                  <p>
-                    Após a secagem completa de até 72 horas, recebe pintura detalhada e camadas de resina vitrificada/verniz impermeabilizante de alta durabilidade, garantindo acabamento brilhante, suave ao toque e resistente ao uso diário.
-                  </p>
-                  <div className="flex items-center gap-2 pt-2 text-brand-green font-semibold text-xs">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Peça autoral e exclusiva — nenhuma sai exatamente idêntica à outra!</span>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'specs' && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="p-3 rounded-xl bg-[#FAF8F5]">
-                      <span className="text-[10px] text-brand-muted block">Altura aproximada</span>
-                      <strong className="text-sm font-bold">{product.dimensions?.heightCm || 4} cm</strong>
-                    </div>
-                    <div className="p-3 rounded-xl bg-[#FAF8F5]">
-                      <span className="text-[10px] text-brand-muted block">Largura aproximada</span>
-                      <strong className="text-sm font-bold">{product.dimensions?.widthCm || 4} cm</strong>
-                    </div>
-                    <div className="p-3 rounded-xl bg-[#FAF8F5]">
-                      <span className="text-[10px] text-brand-muted block">Comprimento aproximado</span>
-                      <strong className="text-sm font-bold">{product.dimensions?.lengthCm || 4} cm</strong>
-                    </div>
-                    <div className="p-3 rounded-xl bg-[#FAF8F5]">
-                      <span className="text-[10px] text-brand-muted block">Peso aproximado</span>
-                      <strong className="text-sm font-bold">{Math.round((product.weightKg || 0.05) * 1000)} g</strong>
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-brand-muted italic">
-                    *Por ser um artesanato manual, pequenas variações milimétricas e de tonalidade fazem parte do charme único de cada criação.
-                  </p>
-                </div>
-              )}
-
-              {activeTab === 'care' && (
-                <div className="space-y-3">
-                  <p className="font-semibold text-brand-charcoal">
-                    Como manter sua peça linda por muitos anos:
-                  </p>
-                  <ul className="space-y-2 list-disc pl-5">
-                    <li>Limpe suavemente com um pano macio e seco ou levemente umedecido em água.</li>
-                    <li>Evite submergir ou lavar em água quente/fervente ou produtos químicos abrasivos como álcool ou acetona.</li>
-                    <li>Embora seja resistente e envernizada, evite quedas bruscas em superfícies de pedra ou atritos pontiagudos.</li>
-                    <li>Guarde com carinho em local protegido do calor excessivo direto.</li>
-                  </ul>
-                </div>
-              )}
-            </div>
           </div>
 
         </div>
 
+        {/* Product Specifications & Care Tabs */}
+        <div className="mt-12 sm:mt-16 pt-8 border-t border-brand-border/60 px-4 md:px-0">
+          {/* Tab Headers */}
+          <div className="flex gap-4 sm:gap-6 border-b border-brand-border/60 pb-3">
+            <button
+              onClick={() => setActiveTab('details')}
+              className={`pb-2 text-sm sm:text-base font-bold transition-colors cursor-pointer relative ${
+                activeTab === 'details'
+                  ? 'text-brand-pink'
+                  : 'text-brand-muted hover:text-brand-charcoal'
+              }`}
+            >
+              Detalhes da Peça
+              {activeTab === 'details' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-pink" />
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('specs')}
+              className={`pb-2 text-sm sm:text-base font-bold transition-colors cursor-pointer relative ${
+                activeTab === 'specs'
+                  ? 'text-brand-pink'
+                  : 'text-brand-muted hover:text-brand-charcoal'
+              }`}
+            >
+              Dimensões & Peso
+              {activeTab === 'specs' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-pink" />
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('care')}
+              className={`pb-2 text-sm sm:text-base font-bold transition-colors cursor-pointer relative ${
+                activeTab === 'care'
+                  ? 'text-brand-pink'
+                  : 'text-brand-muted hover:text-brand-charcoal'
+              }`}
+            >
+              Cuidados Especiais
+              {activeTab === 'care' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-pink" />
+              )}
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="py-6 text-sm sm:text-base text-brand-charcoal leading-relaxed max-w-3xl">
+            {activeTab === 'details' && (
+              <div className="space-y-3">
+                <p>
+                  Esta peça é modelada à mão uma a uma em nosso ateliê Bellclay em Campo Mourão - PR, utilizando porcelana fria de altíssima qualidade (cerâmica plástica/fria que seca ao ar e ganha solidez de porcelana).
+                </p>
+                <p>
+                  Após a secagem completa de até 72 horas, recebe pintura detalhada e camadas de resina vitrificada/verniz impermeabilizante de alta durabilidade, garantindo acabamento brilhante, suave ao toque e resistente ao uso diário.
+                </p>
+                <div className="flex items-center gap-2 pt-2 text-brand-green font-semibold text-sm">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Peça autoral e exclusiva — nenhuma sai exatamente idêntica à outra!</span>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'specs' && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3.5 rounded-xl bg-[#FAF8F5]">
+                    <span className="text-xs text-brand-muted block">Altura aprox.</span>
+                    <strong className="text-base font-bold">{product.dimensions?.heightCm || 4} cm</strong>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-[#FAF8F5]">
+                    <span className="text-xs text-brand-muted block">Largura aprox.</span>
+                    <strong className="text-base font-bold">{product.dimensions?.widthCm || 4} cm</strong>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-[#FAF8F5]">
+                    <span className="text-xs text-brand-muted block">Comprimento aprox.</span>
+                    <strong className="text-base font-bold">{product.dimensions?.lengthCm || 4} cm</strong>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-[#FAF8F5]">
+                    <span className="text-xs text-brand-muted block">Peso aprox.</span>
+                    <strong className="text-base font-bold">{Math.round((product.weightKg || 0.05) * 1000)} g</strong>
+                  </div>
+                </div>
+                <p className="text-xs text-brand-muted italic">
+                  *Por ser um artesanato manual, pequenas variações milimétricas e de tonalidade fazem parte do charme único de cada criação.
+                </p>
+              </div>
+            )}
+
+            {activeTab === 'care' && (
+              <div className="space-y-3">
+                <p className="font-semibold text-brand-charcoal">
+                  Como manter sua peça linda por muitos anos:
+                </p>
+                <ul className="space-y-2 list-disc pl-5">
+                  <li>Limpe suavemente com um pano macio e seco ou levemente umedecido em água.</li>
+                  <li>Evite submergir ou lavar em água quente/fervente ou produtos químicos abrasivos como álcool ou acetona.</li>
+                  <li>Embora seja resistente e envernizada, evite quedas bruscas em superfícies de pedra ou atritos pontiagudos.</li>
+                  <li>Guarde com carinho em local protegido do calor excessivo direto.</li>
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Related Products Section */}
         {relatedProducts.length > 0 && (
-          <section className="mt-12 space-y-4">
-            <h2 className="font-serif text-xl sm:text-2xl font-bold text-brand-charcoal">
+          <section className="mt-14 sm:mt-18 space-y-6 px-4 md:px-0">
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-brand-charcoal">
               Você Também Pode Amar
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6 lg:gap-8">
               {relatedProducts.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
@@ -565,19 +560,19 @@ export const ProductPage: React.FC = () => {
         )}
       </main>
 
-      {/* Mobile Sticky Bottom Action Bar (Price + Quick Buy) */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 md:hidden bg-white/95 backdrop-blur-md border-t border-brand-border/80 px-4 py-2.5 shadow-lg flex items-center justify-between gap-3">
+      {/* Mobile Sticky Bottom Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 md:hidden bg-white/95 backdrop-blur-md border-t border-brand-border/80 px-4 py-3 shadow-lg flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <img
             src={product.images[0]}
             alt={product.title}
-            className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0"
+            className="w-11 h-11 rounded-lg object-cover bg-gray-100 shrink-0"
           />
           <div className="min-w-0">
             <span className="text-xs font-bold text-brand-charcoal truncate block">
               {product.title}
             </span>
-            <span className="text-xs font-extrabold text-brand-pink">
+            <span className="text-sm font-extrabold text-brand-pink">
               R$ {currentPrice.toFixed(2).replace('.', ',')}
             </span>
           </div>
@@ -585,7 +580,7 @@ export const ProductPage: React.FC = () => {
 
         <button
           onClick={handleBuyNow}
-          className="shrink-0 px-5 py-2.5 rounded-full bg-brand-green text-white font-bold text-xs shadow-green-soft active:scale-95 transition-all"
+          className="shrink-0 px-6 py-2.5 rounded-full bg-brand-green text-white font-extrabold text-xs sm:text-sm shadow-green-soft active:scale-95 transition-all"
         >
           Comprar Agora
         </button>

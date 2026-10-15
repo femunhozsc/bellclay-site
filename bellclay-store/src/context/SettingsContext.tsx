@@ -59,17 +59,28 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const filteredProducts = products.filter(product => {
-    const matchesCategory =
-      selectedCategory === 'all' ||
-      product.category.toLowerCase() === selectedCategory.toLowerCase();
+    const normalize = (str: string) =>
+      (str || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
 
-    const matchesSearch =
-      searchQuery.trim() === '' ||
-      product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+    const cleanQuery = normalize(searchQuery);
 
-    return matchesCategory && matchesSearch;
+    if (cleanQuery) {
+      // When searching, match across title, description, category, and tags
+      const matchesTitle = normalize(product.title).includes(cleanQuery);
+      const matchesDesc = normalize(product.description).includes(cleanQuery);
+      const matchesCategory = normalize(product.category).includes(cleanQuery);
+      const matchesTags = product.tags?.some(tag => normalize(tag).includes(cleanQuery));
+
+      return matchesTitle || matchesDesc || matchesCategory || matchesTags;
+    }
+
+    // When not searching, filter by category
+    if (selectedCategory === 'all') return true;
+    return normalize(product.category) === normalize(selectedCategory);
   });
 
   return (

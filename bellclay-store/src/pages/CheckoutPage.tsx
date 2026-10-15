@@ -320,8 +320,8 @@ export const CheckoutPage: React.FC = () => {
       {/* Dedicated Checkout Header */}
       <header className="bg-white border-b border-brand-border/60 sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center transition-transform hover:scale-105 duration-200">
-            <img src="/bellclay_logo.png" alt="Bellclay" className="h-10 sm:h-12 w-auto object-contain" />
+          <Link to="/" className="flex items-center transition-transform hover:scale-105 duration-200 pl-1 sm:pl-2">
+            <img src="/bellclay_logo.png" alt="Bellclay" className="h-13 sm:h-16 w-auto object-contain" />
           </Link>
 
           <div className="flex items-center gap-2 text-xs font-semibold text-brand-charcoal/80 bg-[#FAF8F5] px-3 py-1.5 rounded-full border border-brand-border/60">
