@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Sparkles, Upload } from 'lucide-react';
 import { BannerSlide } from '../types';
+import { compressImage } from '../utils/imageCompressor';
 
 interface BannerModalProps {
   banner: BannerSlide | null;
@@ -40,16 +41,15 @@ export const BannerModal: React.FC<BannerModalProps> = ({
     onClose();
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setImageUrl(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressedBase64 = await compressImage(file, 1600, 0.82);
+        setImageUrl(compressedBase64);
+      } catch (err) {
+        console.error('Erro na compressão do banner:', err);
+      }
     }
   };
 

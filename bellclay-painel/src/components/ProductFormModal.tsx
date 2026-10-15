@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Upload, Plus, Trash2, Sparkles, Scale, Box, DollarSign } from 'lucide-react';
 import { Product } from '../types';
+import { compressImage } from '../utils/imageCompressor';
 
 interface ProductFormModalProps {
   product: Product | null;
@@ -66,16 +67,15 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setImages(prev => [...prev, reader.result as string]);
-        }
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressedBase64 = await compressImage(file, 1000, 0.82);
+        setImages(prev => [...prev, compressedBase64]);
+      } catch (err) {
+        console.error('Erro na compressão:', err);
+      }
     }
   };
 
