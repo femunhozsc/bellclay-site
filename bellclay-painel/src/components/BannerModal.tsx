@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Sparkles, Upload } from 'lucide-react';
+import { X, Upload } from 'lucide-react';
 import { BannerSlide } from '../types';
 import { compressImage } from '../utils/imageCompressor';
 

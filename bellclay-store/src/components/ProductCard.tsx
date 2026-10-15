@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Star, Sparkles, Check } from 'lucide-react';
+import { Plus, Star, Check } from 'lucide-react';
 import { Product } from '../types';
 import { useCart } from '../context/CartContext';
-import { useSettings } from '../context/SettingsContext';
 
 interface ProductCardProps {
   product: Product;
@@ -11,10 +11,10 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { addItem } = useCart();
-  const { setSelectedProduct } = useSettings();
-  const [isAdded, setIsAdded] = React.useState(false);
+  const [isAdded, setIsAdded] = useState(false);
 
   const handleQuickAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     addItem(product, 1);
     setIsAdded(true);
@@ -25,22 +25,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const currentPrice = product.promotionalPrice || product.price;
 
   return (
-    <motion.div
-      whileHover={{ y: -6 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
-      onClick={() => setSelectedProduct(product)}
-      className="group relative bg-white rounded-3xl p-3.5 sm:p-4 border border-brand-border/70 hover:border-brand-pink/40 shadow-soft hover:shadow-soft-hover transition-all duration-300 flex flex-col justify-between cursor-pointer overflow-hidden"
+    <Link
+      to={`/produto/${product.slug}`}
+      className="group flex flex-col justify-between bg-white rounded-2xl sm:rounded-3xl p-2 sm:p-3 border border-brand-border/60 hover:border-brand-pink/40 shadow-xs hover:shadow-soft transition-all duration-300 cursor-pointer overflow-hidden"
     >
-      {/* Image Container */}
-      <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-[#FAF7F2] mb-3.5">
+      {/* Product Image */}
+      <div className="relative w-full aspect-square rounded-xl sm:rounded-2xl overflow-hidden bg-[#FAF7F2] mb-2 sm:mb-3">
         <img
           src={product.images[0]}
           alt={product.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-108"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
         />
 
-        {/* Secondary image hover transition if exists */}
         {product.images[1] && (
           <img
             src={product.images[1]}
@@ -50,31 +47,25 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           />
         )}
 
-        {/* Badges */}
-        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5 z-10">
+        {/* Badges without sparkle */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
           {product.isNew && (
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-brand-green text-white shadow-xs">
+            <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-brand-green text-white shadow-xs">
               Novo
             </span>
           )}
           {hasDiscount && (
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-brand-pink text-white shadow-xs">
+            <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-brand-pink text-white shadow-xs">
               Oferta
-            </span>
-          )}
-          {product.featured && !product.isNew && !hasDiscount && (
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/90 backdrop-blur-xs text-brand-charcoal shadow-xs">
-              Destaque
             </span>
           )}
         </div>
 
-        {/* Quick Add Button on Hover */}
-        <div className="absolute bottom-2.5 right-2.5 z-10">
-          <motion.button
-            whileTap={{ scale: 0.88 }}
+        {/* Floating Quick Add Button */}
+        <div className="absolute bottom-2 right-2 z-10">
+          <button
             onClick={handleQuickAdd}
-            className={`p-2.5 rounded-full shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center ${
+            className={`p-2 sm:p-2.5 rounded-full shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center ${
               isAdded
                 ? 'bg-brand-green text-white'
                 : 'bg-white/95 text-brand-charcoal hover:bg-brand-pink hover:text-white'
@@ -82,58 +73,52 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             title="Adicionar ao carrinho"
             aria-label={`Adicionar ${product.title} ao carrinho`}
           >
-            {isAdded ? <Check className="w-4 h-4 stroke-[2.5]" /> : <Plus className="w-4 h-4 stroke-[2.5]" />}
-          </motion.button>
+            {isAdded ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" /> : <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />}
+          </button>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col justify-between">
+      {/* Info */}
+      <div className="flex-1 flex flex-col justify-between px-0.5">
         <div>
-          {/* Rating & Reviews */}
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <div className="flex items-center text-amber-400">
-              <Star className="w-3.5 h-3.5 fill-current" />
-            </div>
-            <span className="text-[11px] font-bold text-brand-charcoal">
+          {/* Rating */}
+          <div className="flex items-center gap-1 mb-1">
+            <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+            <span className="text-[10px] sm:text-[11px] font-bold text-brand-charcoal">
               {product.rating?.toFixed(1) || '5.0'}
             </span>
-            <span className="text-[11px] text-brand-muted">
-              ({product.reviewsCount || 12})
+            <span className="text-[9px] sm:text-[10px] text-brand-muted">
+              ({product.reviewsCount || 14})
             </span>
           </div>
 
           {/* Title */}
-          <h3 className="font-semibold text-sm sm:text-base text-brand-charcoal group-hover:text-brand-pink transition-colors line-clamp-2 leading-snug">
+          <h3 className="font-semibold text-xs sm:text-sm text-brand-charcoal group-hover:text-brand-pink transition-colors line-clamp-2 leading-snug">
             {product.title}
           </h3>
-
-          <p className="text-xs text-brand-muted line-clamp-1 mt-1 font-normal">
-            {product.description}
-          </p>
         </div>
 
-        {/* Price & Action */}
-        <div className="pt-3 mt-2 border-t border-brand-border/40 flex items-baseline justify-between">
+        {/* Pricing */}
+        <div className="pt-2 mt-1 flex items-baseline justify-between border-t border-brand-border/40">
           <div className="flex flex-col">
             {hasDiscount && (
-              <span className="text-[11px] text-brand-muted line-through">
+              <span className="text-[10px] text-brand-muted line-through">
                 R$ {product.price.toFixed(2).replace('.', ',')}
               </span>
             )}
-            <div className="flex items-baseline gap-1">
-              <span className="text-xs font-semibold text-brand-pink">R$</span>
-              <span className="text-lg sm:text-xl font-extrabold text-brand-charcoal">
+            <div className="flex items-baseline gap-0.5">
+              <span className="text-[10px] font-bold text-brand-pink">R$</span>
+              <span className="text-sm sm:text-base font-extrabold text-brand-charcoal">
                 {currentPrice.toFixed(2).replace('.', ',')}
               </span>
             </div>
           </div>
 
-          <span className="text-[11px] font-medium text-brand-muted group-hover:text-brand-pink transition-colors flex items-center gap-1">
-            <span>Ver detalhes</span>
+          <span className="text-[10px] sm:text-[11px] font-semibold text-brand-pink group-hover:underline">
+            Ver detalhes
           </span>
         </div>
       </div>
-    </motion.div>
+    </Link>
   );
 };

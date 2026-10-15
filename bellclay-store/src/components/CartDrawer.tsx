@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Trash2, ShoppingBag, ArrowRight, Truck, Sparkles, CheckCircle2 } from 'lucide-react';
+import { X, Trash2, ShoppingBag, ArrowRight, Truck, CheckCircle2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 interface CartDrawerProps {
-  onProceedToCheckout: () => void;
+  onProceedToCheckout?: () => void;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) => {
+  const navigate = useNavigate();
   const {
     items,
     isOpen,
@@ -51,19 +53,19 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
             className="absolute inset-0 bg-brand-charcoal/40 backdrop-blur-xs transition-opacity"
           />
 
-          <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+          <div className="fixed inset-y-0 right-0 max-w-full flex w-full sm:w-auto">
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-              className="w-screen max-w-md bg-white shadow-2xl border-l border-brand-border/60 flex flex-col justify-between"
+              className="w-full sm:w-[420px] bg-white shadow-2xl border-l border-brand-border/60 flex flex-col justify-between h-full"
             >
               {/* Header */}
-              <div className="p-5 border-b border-brand-border/60 flex items-center justify-between bg-[#FDFBF7]">
+              <div className="p-4 sm:p-5 border-b border-brand-border/60 flex items-center justify-between bg-[#FDFBF7]">
                 <div className="flex items-center gap-2">
                   <ShoppingBag className="w-5 h-5 text-brand-pink" />
-                  <h2 className="font-serif text-lg font-bold text-brand-charcoal">
+                  <h2 className="font-serif text-base sm:text-lg font-bold text-brand-charcoal">
                     Seu Carrinho ({items.length})
                   </h2>
                 </div>
@@ -77,10 +79,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
               </div>
 
               {/* Free Shipping Meter */}
-              <div className="p-4 bg-gradient-to-r from-brand-pink-light to-brand-green-light border-b border-brand-border/40">
+              <div className="p-3.5 sm:p-4 bg-gradient-to-r from-brand-pink-light to-brand-green-light border-b border-brand-border/40">
                 <div className="flex items-center justify-between text-xs font-semibold text-brand-charcoal mb-1.5">
                   <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-brand-pink" />
                     {freeShippingRemaining > 0 ? (
                       <span>
                         Faltam <strong className="text-brand-pink">R$ {freeShippingRemaining.toFixed(2).replace('.', ',')}</strong> para Frete Grátis!
@@ -296,7 +297,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
                       setIsOpen(false);
-                      onProceedToCheckout();
+                      if (onProceedToCheckout) {
+                        onProceedToCheckout();
+                      } else {
+                        navigate('/checkout');
+                      }
                     }}
                     className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-brand-green hover:bg-brand-green-hover text-white font-bold text-sm shadow-green-soft hover:shadow-soft-hover transition-all duration-200 cursor-pointer"
                   >

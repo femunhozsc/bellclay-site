@@ -3,13 +3,13 @@ import { Product, SiteSettings } from '../types';
 export const DEFAULT_SETTINGS: SiteSettings = {
   welcomeTitle: "Peças Únicas Feitas com Amor em Cerâmica Fria",
   welcomeSubtitle: "Arte modelada à mão em Campo Mourão - PR. Chaveiros, bottons, esculturas e acessórios colecionáveis para deixar seu dia mais colorido e fofo.",
-  announcementText: "✨ Frete Grátis para todo o Paraná em compras acima de R$ 149! Peças 100% artesanais.",
+  announcementText: "Frete Grátis para todo o Paraná em compras acima de R$ 149 • Envio de Campo Mourão - PR",
   announcementActive: true,
   announcementLink: "#produtos",
   freeShippingThreshold: 149,
   originCep: "87302060",
   instagram: "@bellclay.art",
-  whatsapp: "5544999998888",
+  whatsapp: "5544991074932",
   city: "Campo Mourão",
   state: "PR",
   mercadoPagoPublicKey: "",
@@ -61,7 +61,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
       id: "cat-bottons",
       name: "Bottons & Pins",
       slug: "bottons",
-      iconName: "Sparkles",
+      iconName: "Palette",
       description: "Pins e bottons esmaltados em cerâmica fria para dar personalidade aos seus looks."
     },
     {

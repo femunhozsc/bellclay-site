@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Sparkles, MapPin } from 'lucide-react';
+import { Bell, MapPin } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 
 interface AdminHeaderProps {

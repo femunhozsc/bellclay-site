@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, ShoppingBag, Eye, TrendingUp, AlertTriangle, Package, Sparkles } from 'lucide-react';
+import { DollarSign, ShoppingBag, Eye, TrendingUp, AlertTriangle, Package, Heart } from 'lucide-react';
 import { MetricCard } from '../components/MetricCard';
 import { ChartWidget } from '../components/ChartWidget';
 import { MetricsSummary, Order, Product } from '../types';
@@ -47,7 +47,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           value={metrics.addToCartClicks}
           change="+26%"
           isPositive={true}
-          icon={<Sparkles className="w-5 h-5 text-amber-500" />}
+          icon={<Heart className="w-5 h-5 text-brand-pink fill-brand-pink/30" />}
           subtitle="Interesse alto dos visitantes"
         />
         <MetricCard

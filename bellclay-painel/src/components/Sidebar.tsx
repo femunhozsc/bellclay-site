@@ -7,7 +7,7 @@ import {
   Settings,
   LogOut,
   ExternalLink,
-  Sparkles,
+  Heart,
   BarChart3
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
@@ -77,7 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
           className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#FAF7F2] text-brand-charcoal text-xs font-semibold hover:bg-brand-pink-light hover:text-brand-pink transition-all"
         >
           <span className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-brand-pink" />
+            <ShoppingBag className="w-3.5 h-3.5 text-brand-pink" />
             <span>Abrir Loja</span>
           </span>
           <ExternalLink className="w-3.5 h-3.5" />

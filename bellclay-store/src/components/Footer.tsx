@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, Sparkles, MapPin, Truck, ShieldCheck, MessageCircle } from 'lucide-react';
+import { Heart, MapPin, Truck, ShieldCheck, MessageCircle } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 
 export const Footer: React.FC = () => {
@@ -68,13 +68,13 @@ export const Footer: React.FC = () => {
             </h4>
             <div className="space-y-2">
               <a
-                href={`https://wa.me/${settings.whatsapp}`}
+                href={`https://wa.me/5544991074932?text=${encodeURIComponent('Olá Bellclay! Estive no site e adorei os artesanatos em cerâmica fria. Gostaria de tirar uma dúvida sobre uma peça!')}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-xs text-brand-charcoal hover:text-brand-green transition-colors"
               >
                 <MessageCircle className="w-4 h-4 text-brand-green" />
-                <span>WhatsApp de Atendimento</span>
+                <span>WhatsApp: (44) 99107-4932</span>
               </a>
               <a
                 href={`https://instagram.com/${settings.instagram.replace('@', '')}`}
@@ -97,7 +97,7 @@ export const Footer: React.FC = () => {
           <p>© {new Date().getFullYear()} Bellclay Artesanatos. Todos os direitos reservados. Feito com amor em Campo Mourão, PR.</p>
           <div className="flex items-center gap-2">
             <span>Modelagem Artesanal em Cerâmica Fria</span>
-            <Sparkles className="w-3.5 h-3.5 text-brand-pink" />
+            <Heart className="w-3.5 h-3.5 text-brand-pink fill-brand-pink" />
           </div>
         </div>
 

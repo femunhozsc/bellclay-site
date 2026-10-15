@@ -1,0 +1,596 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import {
+  Star, Heart, ShoppingBag, Truck, ShieldCheck, Check,
+  ChevronRight, ArrowLeft, MessageCircle, Info, CheckCircle2, RotateCcw
+} from 'lucide-react';
+import { useSettings } from '../context/SettingsContext';
+import { useCart } from '../context/CartContext';
+import { calculateShipping } from '../services/shippingService';
+import { ShippingOption, Product } from '../types';
+import { ProductCard } from '../components/ProductCard';
+
+export const ProductPage: React.FC = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const { products, settings, isLoading } = useSettings();
+  const { addItem, setIsOpen: setIsCartOpen } = useCart();
+
+  // Find product by slug or id
+  const product = products.find((p) => p.slug === slug || p.id === slug);
+
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const [customObservation, setCustomObservation] = useState('');
+  const [isAdded, setIsAdded] = useState(false);
+
+  // Freight calculation
+  const [simulatedCep, setSimulatedCep] = useState('');
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [isCalculatingFreight, setIsCalculatingFreight] = useState(false);
+  const [freightError, setFreightError] = useState<string | null>(null);
+
+  // Active specs tab
+  const [activeTab, setActiveTab] = useState<'details' | 'specs' | 'care'>('details');
+
+  // Reset scroll and selection on route change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setActiveImageIndex(0);
+    setQuantity(1);
+    setCustomObservation('');
+    setIsAdded(false);
+  }, [slug]);
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full animate-pulse space-y-8">
+        <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="aspect-square bg-gray-200 rounded-3xl"></div>
+          <div className="space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+            <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+            <div className="h-24 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-20 text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-brand-pink-subtle flex items-center justify-center mx-auto text-brand-pink">
+          <Info className="w-8 h-8" />
+        </div>
+        <h1 className="font-serif text-2xl font-bold text-brand-charcoal">Peça não encontrada</h1>
+        <p className="text-sm text-brand-muted">
+          O produto que você procura pode ter esgotado ou mudado de link. Explore nossas outras peças exclusivas!
+        </p>
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-brand-pink text-white font-bold text-sm shadow-pink-soft hover:shadow-soft-hover transition-all"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Voltar para o Início</span>
+        </Link>
+      </div>
+    );
+  }
+
+  const currentPrice = product.promotionalPrice || product.price;
+  const hasDiscount = Boolean(product.promotionalPrice && product.promotionalPrice < product.price);
+  const discountPercent = hasDiscount
+    ? Math.round(((product.price - currentPrice) / product.price) * 100)
+    : 0;
+
+  const installment3x = (currentPrice / 3).toFixed(2).replace('.', ',');
+  const pixPrice = (currentPrice * 0.95).toFixed(2).replace('.', ',');
+
+  const handleAddToCart = () => {
+    addItem(product, quantity, customObservation);
+    setIsAdded(true);
+    setTimeout(() => setIsAdded(false), 2000);
+    setIsCartOpen(true);
+  };
+
+  const handleBuyNow = () => {
+    addItem(product, quantity, customObservation);
+    navigate('/checkout');
+  };
+
+  const handleCalculateShipping = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanCep = simulatedCep.replace(/\D/g, '');
+    if (cleanCep.length !== 8) {
+      setFreightError('Digite um CEP válido com 8 dígitos.');
+      return;
+    }
+    setIsCalculatingFreight(true);
+    setFreightError(null);
+    try {
+      const options = await calculateShipping({
+        destinationCep: cleanCep,
+        items: [{ product, quantity }],
+        freeShippingThreshold: settings.freeShippingThreshold,
+        melhorEnvioToken: settings.melhorEnvioToken
+      });
+      setShippingOptions(options);
+      if (options.length === 0) {
+        setFreightError('Nenhum frete disponível para o CEP informado.');
+      }
+    } catch {
+      setFreightError('Erro ao calcular frete. Tente novamente.');
+    } finally {
+      setIsCalculatingFreight(false);
+    }
+  };
+
+  const whatsappMessage = encodeURIComponent(
+    `Olá Bellclay! Estou na página da peça "${product.title}" (R$ ${currentPrice.toFixed(2).replace('.', ',')}) e gostaria de tirar uma dúvida!`
+  );
+
+  // Related products from same category or general list
+  const relatedProducts = products
+    .filter((p) => p.id !== product.id && (p.category === product.category || !product.category))
+    .slice(0, 4);
+
+  return (
+    <div className="min-h-screen bg-[#FDFBF7] pb-24 md:pb-16">
+      {/* Breadcrumbs */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <nav className="flex items-center gap-1.5 text-xs text-brand-muted">
+          <Link to="/" className="hover:text-brand-pink transition-colors">
+            Início
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 text-brand-border" />
+          <Link to={`/?categoria=${encodeURIComponent(product.category)}`} className="hover:text-brand-pink transition-colors">
+            {product.category || 'Artesanatos'}
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 text-brand-border" />
+          <span className="text-brand-charcoal font-semibold truncate max-w-[200px] sm:max-w-none">
+            {product.title}
+          </span>
+        </nav>
+      </div>
+
+      {/* Main Product Container */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-3xl border border-brand-border/60 shadow-xs p-4 sm:p-6 lg:p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            
+            {/* Left: Image Gallery */}
+            <div className="space-y-4">
+              {/* Main Photo */}
+              <div className="relative aspect-square w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-[#FAF7F2] border border-brand-border/40">
+                <img
+                  src={product.images[activeImageIndex] || product.images[0]}
+                  alt={product.title}
+                  className="w-full h-full object-cover transition-all duration-300"
+                />
+
+                {/* Badges without sparkles */}
+                <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+                  <span className="px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-brand-charcoal text-white shadow-xs">
+                    Cerâmica Fria
+                  </span>
+                  {product.isNew && (
+                    <span className="px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-brand-green text-white shadow-xs">
+                      Novo
+                    </span>
+                  )}
+                  {hasDiscount && (
+                    <span className="px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-brand-pink text-white shadow-xs">
+                      -{discountPercent}% OFF
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Thumbnails Row */}
+              {product.images.length > 1 && (
+                <div className="flex gap-2.5 overflow-x-auto pb-1">
+                  {product.images.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
+                        activeImageIndex === idx
+                          ? 'border-brand-pink ring-2 ring-brand-pink/20 scale-105'
+                          : 'border-brand-border/60 hover:border-brand-pink/50 opacity-70 hover:opacity-100'
+                      }`}
+                    >
+                      <img src={img} alt={`${product.title} miniatura ${idx + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Trust Badges under Image */}
+              <div className="grid grid-cols-3 gap-2 pt-2">
+                <div className="flex flex-col items-center text-center p-2.5 rounded-xl bg-[#FAF8F5]">
+                  <Heart className="w-4 h-4 text-brand-pink mb-1" />
+                  <span className="text-[10px] font-bold text-brand-charcoal">Feito à Mão</span>
+                  <span className="text-[9px] text-brand-muted">Peça exclusiva</span>
+                </div>
+                <div className="flex flex-col items-center text-center p-2.5 rounded-xl bg-[#FAF8F5]">
+                  <ShieldCheck className="w-4 h-4 text-brand-green mb-1" />
+                  <span className="text-[10px] font-bold text-brand-charcoal">Resina e Verniz</span>
+                  <span className="text-[9px] text-brand-muted">Alta proteção</span>
+                </div>
+                <div className="flex flex-col items-center text-center p-2.5 rounded-xl bg-[#FAF8F5]">
+                  <Truck className="w-4 h-4 text-brand-pink mb-1" />
+                  <span className="text-[10px] font-bold text-brand-charcoal">Envio Protegido</span>
+                  <span className="text-[9px] text-brand-muted">Embalagem fofa</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Product Info & Actions */}
+            <div className="flex flex-col justify-between space-y-6">
+              
+              <div className="space-y-4">
+                {/* Category & Rating */}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-brand-pink-subtle text-brand-pink">
+                    {product.category || 'Artesanato'}
+                  </span>
+                  
+                  <div className="flex items-center gap-1.5 bg-[#F6F1E8] px-2.5 py-1 rounded-full">
+                    <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                    <span className="text-xs font-bold text-brand-charcoal">
+                      {product.rating?.toFixed(1) || '5.0'}
+                    </span>
+                    <span className="text-[11px] text-brand-muted">
+                      ({product.reviewsCount || 18} avaliações)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Title */}
+                <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-extrabold text-brand-charcoal leading-tight">
+                  {product.title}
+                </h1>
+
+                {/* Price Display */}
+                <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 space-y-2">
+                  <div className="flex items-baseline gap-2">
+                    {hasDiscount && (
+                      <span className="text-sm text-brand-muted line-through">
+                        R$ {product.price.toFixed(2).replace('.', ',')}
+                      </span>
+                    )}
+                    <span className="text-xs font-bold text-brand-pink">R$</span>
+                    <span className="text-3xl sm:text-4xl font-black text-brand-charcoal tracking-tight">
+                      {currentPrice.toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-1 text-xs text-brand-muted">
+                    <p className="font-medium text-brand-charcoal">
+                      ou até <strong className="text-brand-pink">3x de R$ {installment3x}</strong> sem juros no cartão
+                    </p>
+                    <p className="text-[11px] text-brand-green font-semibold">
+                      • R$ {pixPrice} no Pix (5% de desconto automático)
+                    </p>
+                  </div>
+                </div>
+
+                {/* Short Description */}
+                <p className="text-sm text-brand-charcoal/80 leading-relaxed">
+                  {product.description}
+                </p>
+
+                {/* Customization / Observation Field */}
+                <div className="space-y-1.5 pt-2">
+                  <label className="block text-xs font-bold text-brand-charcoal">
+                    Personalização ou observações da peça:
+                  </label>
+                  <input
+                    type="text"
+                    value={customObservation}
+                    onChange={(e) => setCustomObservation(e.target.value)}
+                    placeholder="Ex: cor específica do detalhe, iniciais, modelo de fecho..."
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-[#FAF7F2]"
+                  />
+                  <p className="text-[10px] text-brand-muted">
+                    Cada peça é feita artesanalmente. Pode deixar observações para a artesã!
+                  </p>
+                </div>
+
+                {/* Quantity and Action Buttons */}
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center border border-brand-border rounded-full bg-white px-3 py-1.5 shadow-2xs">
+                      <button
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        className="text-base font-bold text-brand-charcoal px-2 hover:text-brand-pink transition-colors"
+                        aria-label="Diminuir quantidade"
+                      >
+                        -
+                      </button>
+                      <span className="text-sm font-bold text-brand-charcoal px-3">
+                        {quantity}
+                      </span>
+                      <button
+                        onClick={() => setQuantity(quantity + 1)}
+                        className="text-base font-bold text-brand-charcoal px-2 hover:text-brand-pink transition-colors"
+                        aria-label="Aumentar quantidade"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleAddToCart}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 px-5 rounded-full bg-white border-2 border-brand-pink text-brand-pink hover:bg-brand-pink hover:text-white font-bold text-sm shadow-xs transition-all duration-200 cursor-pointer"
+                    >
+                      {isAdded ? (
+                        <>
+                          <Check className="w-4 h-4 stroke-[3]" />
+                          <span>Adicionado!</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingBag className="w-4 h-4" />
+                          <span>Adicionar ao Carrinho</span>
+                        </>
+                      )}
+                    </motion.button>
+                  </div>
+
+                  {/* Buy Now (Direct to Checkout) */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleBuyNow}
+                    className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-brand-green hover:bg-brand-green-hover text-white font-bold text-sm shadow-green-soft hover:shadow-soft-hover transition-all duration-200 cursor-pointer"
+                  >
+                    <span>Comprar Agora</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </motion.button>
+
+                  {/* Ask Question on WhatsApp */}
+                  <a
+                    href={`https://wa.me/5544991074932?text=${whatsappMessage}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold text-brand-muted hover:text-brand-green hover:bg-brand-green-subtle/50 transition-colors"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>Dúvidas sobre esta peça? Fale comigo no WhatsApp (44 99107-4932)</span>
+                  </a>
+                </div>
+
+                {/* Freight Calculator Box */}
+                <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-brand-charcoal flex items-center gap-1.5">
+                      <Truck className="w-4 h-4 text-brand-pink" />
+                      Calcular Frete e Prazo de Entrega:
+                    </span>
+                    <span className="text-[10px] text-brand-muted">
+                      Origem: Campo Mourão - PR
+                    </span>
+                  </div>
+
+                  <form onSubmit={handleCalculateShipping} className="flex gap-2">
+                    <input
+                      type="text"
+                      maxLength={9}
+                      placeholder="00000-000"
+                      value={simulatedCep}
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/\D/g, '').slice(0, 8);
+                        setSimulatedCep(v.length > 5 ? `${v.slice(0, 5)}-${v.slice(5)}` : v);
+                      }}
+                      className="flex-1 text-xs px-3 py-2 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-white"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isCalculatingFreight}
+                      className="px-4 py-2 rounded-xl bg-brand-charcoal hover:bg-black text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {isCalculatingFreight ? 'Calculando...' : 'Calcular'}
+                    </button>
+                  </form>
+
+                  {freightError && (
+                    <p className="text-[11px] text-red-500">{freightError}</p>
+                  )}
+
+                  {shippingOptions.length > 0 && (
+                    <div className="space-y-1.5 pt-2 border-t border-brand-border/60">
+                      {shippingOptions.map((opt) => (
+                        <div
+                          key={opt.id}
+                          className="flex items-center justify-between text-xs p-2 rounded-xl bg-white border border-brand-border/60"
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-bold text-brand-charcoal">{opt.name}</span>
+                            <span className="text-[10px] text-brand-muted">
+                              Chega em cerca de {opt.deliveryDays} {opt.deliveryDays === 1 ? 'dia útil' : 'dias úteis'}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-extrabold text-brand-charcoal">
+                              {opt.price === 0 ? (
+                                <span className="text-brand-green">Grátis</span>
+                              ) : (
+                                `R$ ${opt.price.toFixed(2).replace('.', ',')}`
+                              )}
+                            </span>
+                            {opt.badge && (
+                              <span className="block text-[9px] font-bold text-brand-pink uppercase">
+                                {opt.badge}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* Product Specifications & Care Tabs */}
+          <div className="mt-12 pt-8 border-t border-brand-border/60">
+            {/* Tab Headers */}
+            <div className="flex gap-2 sm:gap-4 border-b border-brand-border/60 pb-2">
+              <button
+                onClick={() => setActiveTab('details')}
+                className={`pb-2 px-3 text-xs sm:text-sm font-bold transition-colors cursor-pointer relative ${
+                  activeTab === 'details'
+                    ? 'text-brand-pink'
+                    : 'text-brand-muted hover:text-brand-charcoal'
+                }`}
+              >
+                Detalhes da Peça
+                {activeTab === 'details' && (
+                  <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-pink" />
+                )}
+              </button>
+
+              <button
+                onClick={() => setActiveTab('specs')}
+                className={`pb-2 px-3 text-xs sm:text-sm font-bold transition-colors cursor-pointer relative ${
+                  activeTab === 'specs'
+                    ? 'text-brand-pink'
+                    : 'text-brand-muted hover:text-brand-charcoal'
+                }`}
+              >
+                Dimensões & Peso
+                {activeTab === 'specs' && (
+                  <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-pink" />
+                )}
+              </button>
+
+              <button
+                onClick={() => setActiveTab('care')}
+                className={`pb-2 px-3 text-xs sm:text-sm font-bold transition-colors cursor-pointer relative ${
+                  activeTab === 'care'
+                    ? 'text-brand-pink'
+                    : 'text-brand-muted hover:text-brand-charcoal'
+                }`}
+              >
+                Cuidados com a Cerâmica Fria
+                {activeTab === 'care' && (
+                  <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-pink" />
+                )}
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            <div className="py-6 text-xs sm:text-sm text-brand-charcoal leading-relaxed max-w-3xl">
+              {activeTab === 'details' && (
+                <div className="space-y-3">
+                  <p>
+                    Esta peça é modelada à mão uma a uma em nosso ateliê Bellclay em Campo Mourão - PR, utilizando porcelana fria de altíssima qualidade (cerâmica plástica/fria que seca ao ar e ganha solidez de porcelana).
+                  </p>
+                  <p>
+                    Após a secagem completa de até 72 horas, recebe pintura detalhada e camadas de resina vitrificada/verniz impermeabilizante de alta durabilidade, garantindo acabamento brilhante, suave ao toque e resistente ao uso diário.
+                  </p>
+                  <div className="flex items-center gap-2 pt-2 text-brand-green font-semibold text-xs">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Peça autoral e exclusiva — nenhuma sai exatamente idêntica à outra!</span>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'specs' && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-3 rounded-xl bg-[#FAF8F5]">
+                      <span className="text-[10px] text-brand-muted block">Altura aproximada</span>
+                      <strong className="text-sm font-bold">{product.dimensions?.heightCm || 4} cm</strong>
+                    </div>
+                    <div className="p-3 rounded-xl bg-[#FAF8F5]">
+                      <span className="text-[10px] text-brand-muted block">Largura aproximada</span>
+                      <strong className="text-sm font-bold">{product.dimensions?.widthCm || 4} cm</strong>
+                    </div>
+                    <div className="p-3 rounded-xl bg-[#FAF8F5]">
+                      <span className="text-[10px] text-brand-muted block">Comprimento aproximado</span>
+                      <strong className="text-sm font-bold">{product.dimensions?.lengthCm || 4} cm</strong>
+                    </div>
+                    <div className="p-3 rounded-xl bg-[#FAF8F5]">
+                      <span className="text-[10px] text-brand-muted block">Peso aproximado</span>
+                      <strong className="text-sm font-bold">{Math.round((product.weightKg || 0.05) * 1000)} g</strong>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-brand-muted italic">
+                    *Por ser um artesanato manual, pequenas variações milimétricas e de tonalidade fazem parte do charme único de cada criação.
+                  </p>
+                </div>
+              )}
+
+              {activeTab === 'care' && (
+                <div className="space-y-3">
+                  <p className="font-semibold text-brand-charcoal">
+                    Como manter sua peça linda por muitos anos:
+                  </p>
+                  <ul className="space-y-2 list-disc pl-5">
+                    <li>Limpe suavemente com um pano macio e seco ou levemente umedecido em água.</li>
+                    <li>Evite submergir ou lavar em água quente/fervente ou produtos químicos abrasivos como álcool ou acetona.</li>
+                    <li>Embora seja resistente e envernizada, evite quedas bruscas em superfícies de pedra ou atritos pontiagudos.</li>
+                    <li>Guarde com carinho em local protegido do calor excessivo direto.</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Related Products Section */}
+        {relatedProducts.length > 0 && (
+          <section className="mt-12 space-y-4">
+            <h2 className="font-serif text-xl sm:text-2xl font-bold text-brand-charcoal">
+              Você Também Pode Amar
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-6">
+              {relatedProducts.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
+
+      {/* Mobile Sticky Bottom Action Bar (Price + Quick Buy) */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 md:hidden bg-white/95 backdrop-blur-md border-t border-brand-border/80 px-4 py-2.5 shadow-lg flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <img
+            src={product.images[0]}
+            alt={product.title}
+            className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0"
+          />
+          <div className="min-w-0">
+            <span className="text-xs font-bold text-brand-charcoal truncate block">
+              {product.title}
+            </span>
+            <span className="text-xs font-extrabold text-brand-pink">
+              R$ {currentPrice.toFixed(2).replace('.', ',')}
+            </span>
+          </div>
+        </div>
+
+        <button
+          onClick={handleBuyNow}
+          className="shrink-0 px-5 py-2.5 rounded-full bg-brand-green text-white font-bold text-xs shadow-green-soft active:scale-95 transition-all"
+        >
+          Comprar Agora
+        </button>
+      </div>
+
+    </div>
+  );
+};

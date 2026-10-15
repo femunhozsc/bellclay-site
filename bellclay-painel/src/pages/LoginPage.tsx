@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Mail, Sparkles, AlertCircle, ArrowRight } from 'lucide-react';
+import { Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 
 export const LoginPage: React.FC = () => {

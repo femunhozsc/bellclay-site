@@ -104,7 +104,7 @@ export const DEFAULT_PANEL_SETTINGS: SiteSettings = {
       id: "cat-bottons",
       name: "Bottons & Pins",
       slug: "bottons",
-      iconName: "Sparkles",
+      iconName: "Palette",
       description: "Pins e bottons esmaltados em cerâmica fria para dar personalidade aos seus looks."
     },
     {

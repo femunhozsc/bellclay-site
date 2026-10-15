@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Upload, Plus, Trash2, Sparkles, Scale, Box, DollarSign } from 'lucide-react';
+import { X, Upload, Plus, Trash2, Scale, Box, DollarSign } from 'lucide-react';
 import { Product } from '../types';
 import { compressImage } from '../utils/imageCompressor';
 

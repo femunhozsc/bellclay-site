@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Sparkles, KeyRound, Smile, Gem, HeartHandshake } from 'lucide-react';
+import { X, Palette, KeyRound, Smile, Gem, HeartHandshake } from 'lucide-react';
 import { CategoryItem } from '../types';
 
 interface CategoryModalProps {
@@ -20,7 +20,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   const [name, setName] = useState(category?.name || '');
   const [slug, setSlug] = useState(category?.slug || '');
   const [description, setDescription] = useState(category?.description || '');
-  const [iconName, setIconName] = useState(category?.iconName || 'Sparkles');
+  const [iconName, setIconName] = useState(category?.iconName || 'Palette');
 
   const handleNameChange = (val: string) => {
     setName(val);
@@ -93,7 +93,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
               onChange={(e) => setIconName(e.target.value)}
               className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink"
             >
-              <option value="Sparkles">Sparkles (Brilho / Geral)</option>
+              <option value="Palette">Palette (Pintura / Artesanato)</option>
               <option value="KeyRound">KeyRound (Chaveiro)</option>
               <option value="Smile">Smile (Rostinhos / Fofura)</option>
               <option value="Gem">Gem (Jóias / Acessórios)</option>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sliders, Sparkles, Plus, Edit3, Trash2, CheckCircle2, Image, Layers, Megaphone } from 'lucide-react';
+import { Sliders, Palette, Plus, Edit3, Trash2, CheckCircle2, Image, Layers, Megaphone } from 'lucide-react';
 import { SiteSettings, BannerSlide, CategoryItem } from '../types';
 
 interface CustomizerPageProps {
@@ -69,7 +69,7 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
       {/* Section 1: Welcome Header & Announcement Bar */}
       <form onSubmit={handleSaveTextChanges} className="bg-white p-6 rounded-3xl border border-brand-border/70 shadow-xs space-y-6">
         <div className="flex items-center gap-2 pb-2 border-b border-brand-border/60">
-          <Sparkles className="w-5 h-5 text-brand-pink" />
+          <Palette className="w-5 h-5 text-brand-pink" />
           <h3 className="font-bold text-sm text-brand-charcoal">
             Títulos de Boas-Vindas da Página Inicial
           </h3>
