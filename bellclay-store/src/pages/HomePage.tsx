@@ -17,7 +17,7 @@ export const HomePage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-10 w-full space-y-8 sm:space-y-12">
         
         {/* Welcome Section - Balanced typography & elegant proportion */}
-        <section className="text-center max-w-3xl mx-auto space-y-2.5 pt-1 px-1">
+        <section className="text-center space-y-3 pt-1 px-1">
           
           <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-extrabold text-brand-charcoal tracking-tight leading-snug max-w-2xl mx-auto">
             {settings.welcomeTitle}
@@ -27,47 +27,47 @@ export const HomePage: React.FC = () => {
             {settings.welcomeSubtitle}
           </p>
 
-          {/* Redesigned Clean 2x2 Grid on Mobile & 4-column on Desktop */}
-          <div className="pt-4 sm:pt-6 max-w-3xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 p-2.5 sm:p-3.5 rounded-2xl sm:rounded-3xl bg-[#F6F2E9]">
+          {/* Clean Standalone Feature Cards - No outer background card, enlarged & aligned with the site */}
+          <div className="pt-5 sm:pt-7 w-full">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
               
-              <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/70">
-                <div className="w-8 h-8 rounded-full bg-brand-pink/15 flex items-center justify-center text-brand-pink shrink-0">
-                  <Heart className="w-4 h-4 fill-brand-pink/30" />
+              <div className="flex items-center gap-3 sm:gap-3.5 p-3.5 sm:p-4.5 rounded-2xl bg-white border border-brand-border/70 shadow-xs hover:shadow-md hover:border-brand-pink/30 transition-all duration-200">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-brand-pink/15 flex items-center justify-center text-brand-pink shrink-0">
+                  <Heart className="w-5 h-5 sm:w-6 sm:h-6 fill-brand-pink/30" />
                 </div>
                 <div className="min-w-0 text-left">
-                  <span className="block text-xs font-bold text-brand-charcoal truncate">100% Cerâmica</span>
-                  <span className="block text-[10px] text-brand-muted truncate">Modelado à mão</span>
+                  <span className="block text-xs sm:text-sm font-bold text-brand-charcoal truncate">100% Cerâmica</span>
+                  <span className="block text-[11px] sm:text-xs text-brand-muted truncate">Modelado à mão</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/70">
-                <div className="w-8 h-8 rounded-full bg-brand-green/15 flex items-center justify-center text-brand-green shrink-0">
-                  <ShieldCheck className="w-4 h-4" />
+              <div className="flex items-center gap-3 sm:gap-3.5 p-3.5 sm:p-4.5 rounded-2xl bg-white border border-brand-border/70 shadow-xs hover:shadow-md hover:border-brand-green/30 transition-all duration-200">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-brand-green/15 flex items-center justify-center text-brand-green shrink-0">
+                  <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <div className="min-w-0 text-left">
-                  <span className="block text-xs font-bold text-brand-charcoal truncate">Resina e Verniz</span>
-                  <span className="block text-[10px] text-brand-muted truncate">Alta proteção</span>
+                  <span className="block text-xs sm:text-sm font-bold text-brand-charcoal truncate">Resina e Verniz</span>
+                  <span className="block text-[11px] sm:text-xs text-brand-muted truncate">Alta proteção</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/70">
-                <div className="w-8 h-8 rounded-full bg-brand-pink/15 flex items-center justify-center text-brand-pink shrink-0">
-                  <Truck className="w-4 h-4" />
+              <div className="flex items-center gap-3 sm:gap-3.5 p-3.5 sm:p-4.5 rounded-2xl bg-white border border-brand-border/70 shadow-xs hover:shadow-md hover:border-brand-pink/30 transition-all duration-200">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-brand-pink/15 flex items-center justify-center text-brand-pink shrink-0">
+                  <Truck className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <div className="min-w-0 text-left">
-                  <span className="block text-xs font-bold text-brand-charcoal truncate">Envio Seguro</span>
-                  <span className="block text-[10px] text-brand-muted truncate">Para todo o Brasil</span>
+                  <span className="block text-xs sm:text-sm font-bold text-brand-charcoal truncate">Envio Seguro</span>
+                  <span className="block text-[11px] sm:text-xs text-brand-muted truncate">Para todo o Brasil</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/70">
-                <div className="w-8 h-8 rounded-full bg-brand-green/15 flex items-center justify-center text-brand-green shrink-0">
-                  <CheckCircle2 className="w-4 h-4" />
+              <div className="flex items-center gap-3 sm:gap-3.5 p-3.5 sm:p-4.5 rounded-2xl bg-white border border-brand-border/70 shadow-xs hover:shadow-md hover:border-brand-green/30 transition-all duration-200">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-brand-green/15 flex items-center justify-center text-brand-green shrink-0">
+                  <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <div className="min-w-0 text-left">
-                  <span className="block text-xs font-bold text-brand-charcoal truncate">Mercado Pago</span>
-                  <span className="block text-[10px] text-brand-muted truncate">Pix 5% OFF & Cartão</span>
+                  <span className="block text-xs sm:text-sm font-bold text-brand-charcoal truncate">Mercado Pago</span>
+                  <span className="block text-[11px] sm:text-xs text-brand-muted truncate">Pix 5% OFF & Cartão</span>
                 </div>
               </div>
 

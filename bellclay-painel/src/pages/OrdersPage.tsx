@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, ShoppingBag, MessageCircle, Truck, PackageCheck, Filter, ExternalLink } from 'lucide-react';
+import { Search, ShoppingBag, MessageCircle, Truck, PackageCheck, Filter, ExternalLink, MessageSquare } from 'lucide-react';
 import { Order } from '../types';
 
 interface OrdersPageProps {
@@ -11,13 +11,33 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ orders, onSelectOrder })
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
+  const getOrderObservations = (order: Order) => {
+    const list: string[] = [];
+    if (order.notes?.trim()) {
+      list.push(`Geral: ${order.notes.trim()}`);
+    }
+    if (order.customer?.notes?.trim() && order.customer.notes !== order.notes) {
+      list.push(`Cliente: ${order.customer.notes.trim()}`);
+    }
+    order.items?.forEach((item) => {
+      if (item.customObservation?.trim()) {
+        list.push(`${item.product?.title || 'Peça'}: ${item.customObservation.trim()}`);
+      }
+    });
+    return list;
+  };
+
   const filtered = orders.filter(o => {
     const matchesStatus = statusFilter === 'all' || o.orderStatus === statusFilter;
+    const term = searchTerm.toLowerCase();
     const matchesSearch =
       searchTerm.trim() === '' ||
-      o.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.address.city.toLowerCase().includes(searchTerm.toLowerCase());
+      o.id.toLowerCase().includes(term) ||
+      o.customer.name.toLowerCase().includes(term) ||
+      o.address.city.toLowerCase().includes(term) ||
+      (o.notes && o.notes.toLowerCase().includes(term)) ||
+      (o.customer.notes && o.customer.notes.toLowerCase().includes(term)) ||
+      o.items.some(it => it.customObservation?.toLowerCase().includes(term));
     return matchesStatus && matchesSearch;
   });
 
@@ -103,6 +123,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ orders, onSelectOrder })
               ) : (
                 filtered.map((order) => {
                   const badge = statusBadges[order.orderStatus] || { label: order.orderStatus, color: 'bg-gray-100 text-gray-700' };
+                  const obsList = getOrderObservations(order);
 
                   return (
                     <tr key={order.id} className="hover:bg-[#FAF7F2]/60 transition-colors">
@@ -114,7 +135,22 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ orders, onSelectOrder })
                       </td>
                       <td className="py-3.5 px-4">
                         <span className="font-semibold text-brand-charcoal block">{order.customer.name}</span>
-                        <span className="text-[10px] text-brand-muted">{order.customer.phone}</span>
+                        <span className="text-[10px] text-brand-muted block">{order.customer.phone}</span>
+                        {obsList.length > 0 && (
+                          <div
+                            onClick={() => onSelectOrder(order)}
+                            className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200/90 text-[10px] font-semibold max-w-[220px] truncate cursor-pointer hover:bg-amber-100 transition-colors shadow-2xs"
+                            title={`Observações: \n${obsList.join('\n')}`}
+                          >
+                            <MessageSquare className="w-3 h-3 text-amber-600 shrink-0" />
+                            <span className="truncate">Obs: {obsList[0]}</span>
+                            {obsList.length > 1 && (
+                              <span className="text-[9px] bg-amber-200 text-amber-900 px-1 rounded-full font-bold shrink-0">
+                                +{obsList.length - 1}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="py-3.5 px-4">
                         <span className="font-medium text-brand-charcoal block">{order.address.city} - {order.address.state}</span>

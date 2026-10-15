@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, MessageCircle, Truck, PackageCheck, CheckCircle2, Clock, MapPin, Hash } from 'lucide-react';
+import { X, MessageCircle, Truck, PackageCheck, CheckCircle2, Clock, MapPin, Hash, MessageSquare } from 'lucide-react';
 import { Order } from '../types';
 
 interface OrderDetailModalProps {
@@ -124,6 +124,83 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
             </p>
           </div>
 
+          {/* Customer Observations / Customizations Box */}
+          {(() => {
+            const hasOrderNotes = Boolean(order.notes?.trim());
+            const hasCustomerNotes = Boolean(order.customer?.notes?.trim() && order.customer.notes !== order.notes);
+            const itemsWithObs = order.items.filter((i) => i.customObservation?.trim());
+            const hasAnyObservation = hasOrderNotes || hasCustomerNotes || itemsWithObs.length > 0;
+
+            return (
+              <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-200/90 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                    <MessageSquare className="w-4 h-4 text-amber-600" />
+                    <span>Observação do Usuário / Personalizações</span>
+                  </h3>
+                  {hasAnyObservation && (
+                    <span className="text-[10px] bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full font-bold shadow-2xs">
+                      Instruções Especiais
+                    </span>
+                  )}
+                </div>
+
+                {hasAnyObservation ? (
+                  <div className="space-y-2 text-xs">
+                    {hasOrderNotes && (
+                      <div className="p-3 rounded-xl bg-white border border-amber-200 shadow-2xs">
+                        <span className="font-bold text-amber-950 block text-[11px] uppercase tracking-wide">
+                          Observação Geral do Pedido:
+                        </span>
+                        <p className="text-amber-900 font-semibold whitespace-pre-line mt-1 text-xs sm:text-sm">
+                          "{order.notes}"
+                        </p>
+                      </div>
+                    )}
+
+                    {hasCustomerNotes && (
+                      <div className="p-3 rounded-xl bg-white border border-amber-200 shadow-2xs">
+                        <span className="font-bold text-amber-950 block text-[11px] uppercase tracking-wide">
+                          Nota do Cliente:
+                        </span>
+                        <p className="text-amber-900 font-semibold whitespace-pre-line mt-1 text-xs sm:text-sm">
+                          "{order.customer.notes}"
+                        </p>
+                      </div>
+                    )}
+
+                    {itemsWithObs.length > 0 && (
+                      <div className="space-y-1.5 pt-1">
+                        <span className="font-bold text-amber-950 block text-[11px] uppercase tracking-wide">
+                          Personalizações por Peça ({itemsWithObs.length}):
+                        </span>
+                        {itemsWithObs.map((item, idx) => (
+                          <div key={idx} className="p-2.5 rounded-xl bg-white border border-amber-200 flex items-start gap-2.5 shadow-2xs">
+                            <img
+                              src={item.product.images[0]}
+                              alt=""
+                              className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0 mt-0.5"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <span className="font-bold text-brand-charcoal block text-xs">{item.product.title}:</span>
+                              <span className="text-brand-pink font-bold text-xs sm:text-sm block mt-0.5">
+                                "{item.customObservation}"
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-amber-800/80 italic">
+                    Nenhuma observação ou personalização informada pelo cliente para este pedido.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Items Purchased */}
           <div className="space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-brand-muted">
@@ -131,7 +208,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
             </h3>
             <div className="space-y-2">
               {order.items.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-3 p-2.5 rounded-xl border border-brand-border/60 bg-[#FAF7F2]">
+                <div key={idx} className="flex items-center gap-3 p-3 rounded-xl border border-brand-border/60 bg-[#FAF7F2]">
                   <img
                     src={item.product.images[0]}
                     alt=""
@@ -141,12 +218,12 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                     <h4 className="text-xs font-bold text-brand-charcoal truncate">{item.product.title}</h4>
                     <span className="text-[11px] text-brand-muted">Qtd: {item.quantity} un.</span>
                     {item.customObservation && (
-                      <p className="text-[10px] text-brand-pink italic truncate">
-                        Personalização: {item.customObservation}
-                      </p>
+                      <div className="mt-1 p-1.5 px-2 rounded-lg bg-pink-50 border border-brand-pink/30 text-[11px] text-brand-pink font-semibold">
+                        Personalização: "{item.customObservation}"
+                      </div>
                     )}
                   </div>
-                  <span className="text-xs font-extrabold text-brand-charcoal">
+                  <span className="text-xs font-extrabold text-brand-charcoal shrink-0">
                     R$ {((item.product.promotionalPrice || item.product.price) * item.quantity).toFixed(2).replace('.', ',')}
                   </span>
                 </div>

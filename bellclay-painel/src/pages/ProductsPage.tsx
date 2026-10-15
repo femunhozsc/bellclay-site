@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit3, Trash2, Eye, Box, Scale, Check, AlertCircle } from 'lucide-react';
+import { Plus, Search, Edit3, Trash2, Eye, Box, Scale, Check, AlertCircle, Star } from 'lucide-react';
 import { Product } from '../types';
 
 interface ProductsPageProps {
@@ -129,7 +129,14 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                           />
                           <div>
                             <span className="font-bold text-brand-charcoal block line-clamp-1">{product.title}</span>
-                            <span className="text-[10px] text-brand-muted">{product.slug}</span>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded shadow-2xs">
+                                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-500" />
+                                <span>{(product.rating ?? 5.0).toFixed(1)}</span>
+                                <span className="text-amber-800 font-normal">({product.reviewsCount ?? 0})</span>
+                              </span>
+                              <span className="text-[10px] text-brand-muted truncate max-w-[130px] font-mono">{product.slug}</span>
+                            </div>
                           </div>
                         </div>
                       </td>

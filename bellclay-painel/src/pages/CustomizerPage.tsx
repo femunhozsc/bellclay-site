@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sliders, Palette, Plus, Edit3, Trash2, CheckCircle2, Image, Layers, Megaphone } from 'lucide-react';
+import { Sliders, Palette, Plus, Edit3, Trash2, CheckCircle2, Image, Layers, Megaphone, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
 import { SiteSettings, BannerSlide, CategoryItem } from '../types';
 
 interface CustomizerPageProps {
@@ -27,6 +27,47 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const handleMoveBanner = async (currentIndex: number, direction: 'left' | 'right') => {
+    const targetIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= settings.banners.length) return;
+
+    const newBanners = [...settings.banners];
+    const item = newBanners.splice(currentIndex, 1)[0];
+    newBanners.splice(targetIndex, 0, item);
+
+    setIsSaving(true);
+    try {
+      await onSaveSettings({
+        ...settings,
+        banners: newBanners
+      });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleChangeBannerPosition = async (currentIndex: number, newPosition: number) => {
+    if (newPosition < 0 || newPosition >= settings.banners.length || newPosition === currentIndex) return;
+
+    const newBanners = [...settings.banners];
+    const item = newBanners.splice(currentIndex, 1)[0];
+    newBanners.splice(newPosition, 0, item);
+
+    setIsSaving(true);
+    try {
+      await onSaveSettings({
+        ...settings,
+        banners: newBanners
+      });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleSaveTextChanges = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,7 +189,7 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
             <Image className="w-5 h-5 text-brand-pink" />
             <div>
               <h3 className="font-bold text-sm text-brand-charcoal">Banners do Carrossel Inicial</h3>
-              <p className="text-xs text-brand-muted">Adicione, edite fotos ou alterne a visibilidade dos slides</p>
+              <p className="text-xs text-brand-muted">Adicione, reordene (mude a ordem de exibição) ou edite os slides</p>
             </div>
           </div>
 
@@ -166,14 +207,58 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
             <div key={banner.id} className="rounded-2xl border border-brand-border overflow-hidden bg-[#FAF8F5] flex flex-col justify-between">
               <div className="relative aspect-video bg-gray-100">
                 <img src={banner.imageUrl} alt="" className="w-full h-full object-cover" />
-                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 text-white text-[10px] font-bold">
-                  Slide {idx + 1}
+                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/75 text-white text-[10px] font-bold shadow-xs">
+                  Slide {idx + 1} de {settings.banners.length}
                 </span>
                 {banner.active && (
-                  <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-brand-green text-white text-[10px] font-bold">
+                  <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-brand-green text-white text-[10px] font-bold shadow-xs">
                     Ativo
                   </span>
                 )}
+              </div>
+
+              {/* Order / Position Controls Bar */}
+              <div className="px-3.5 py-2 bg-[#F3EDE2] border-b border-brand-border/60 flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold text-brand-charcoal flex items-center gap-1">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-brand-pink" />
+                  <span>Ordem:</span>
+                </span>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleMoveBanner(idx, 'left')}
+                    disabled={idx === 0 || isSaving}
+                    className="p-1 rounded-md bg-white border border-brand-border hover:bg-brand-pink hover:text-white hover:border-transparent text-brand-charcoal transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-2xs"
+                    title="Mover para trás (exibir antes)"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+
+                  <select
+                    value={idx}
+                    onChange={(e) => handleChangeBannerPosition(idx, Number(e.target.value))}
+                    disabled={isSaving}
+                    className="bg-white border border-brand-border rounded-md px-1.5 py-0.5 text-[11px] font-bold text-brand-charcoal cursor-pointer outline-none shadow-2xs"
+                    title="Mudar posição na fila de slides"
+                  >
+                    {settings.banners.map((_, i) => (
+                      <option key={i} value={i}>
+                        {i + 1}º lugar
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    type="button"
+                    onClick={() => handleMoveBanner(idx, 'right')}
+                    disabled={idx === settings.banners.length - 1 || isSaving}
+                    className="p-1 rounded-md bg-white border border-brand-border hover:bg-brand-pink hover:text-white hover:border-transparent text-brand-charcoal transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-2xs"
+                    title="Mover para frente (exibir depois)"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
 
               <div className="p-4 flex-1 flex flex-col justify-between">

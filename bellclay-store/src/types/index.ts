@@ -70,6 +70,7 @@ export interface Order {
   paymentStatus: 'pending' | 'approved' | 'rejected';
   orderStatus: 'pending' | 'paid' | 'production' | 'shipped' | 'delivered' | 'cancelled';
   trackingCode?: string;
+  notes?: string;
   createdAt: string;
 }
 

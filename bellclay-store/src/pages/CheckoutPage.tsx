@@ -67,6 +67,7 @@ export const CheckoutPage: React.FC = () => {
   const [installments, setInstallments] = useState(1);
 
   // Results & Outputs
+  const [orderNotes, setOrderNotes] = useState('');
   const [pixResult, setPixResult] = useState<PixPaymentResult | null>(null);
   const [boletoResult, setBoletoResult] = useState<any>(null);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
@@ -217,7 +218,7 @@ export const CheckoutPage: React.FC = () => {
       
       const newOrder: Order = {
         id: orderId,
-        customer: { name, email, phone, cpf },
+        customer: { name, email, phone, cpf, notes: orderNotes.trim() || undefined },
         address: {
           cep: cep.replace(/\D/g, ''),
           street,
@@ -236,6 +237,7 @@ export const CheckoutPage: React.FC = () => {
         paymentMethod,
         paymentStatus: paymentMethod === 'credit_card' ? 'approved' : 'pending',
         orderStatus: paymentMethod === 'credit_card' ? 'paid' : 'pending',
+        notes: orderNotes.trim() || undefined,
         createdAt: new Date().toISOString()
       };
 
@@ -972,6 +974,21 @@ export const CheckoutPage: React.FC = () => {
                       </p>
                     </div>
                   )}
+
+                  {/* Observação Geral do Pedido / Recado para a Artesã */}
+                  <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 space-y-1.5">
+                    <label className="block text-xs font-bold text-brand-charcoal flex items-center justify-between">
+                      <span>Alguma observação geral para o pedido? (opcional)</span>
+                      <span className="text-[10px] text-brand-muted font-normal">Ex: embalagem de presente, instruções</span>
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={orderNotes}
+                      onChange={(e) => setOrderNotes(e.target.value)}
+                      placeholder="Deixe aqui algum recado especial para a artesã Bellclay..."
+                      className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
+                    />
+                  </div>
 
                   <div className="pt-4 flex items-center justify-between gap-3">
                     <button

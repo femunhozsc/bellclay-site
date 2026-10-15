@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Upload, Plus, Trash2, Scale, Box, DollarSign } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Upload, Plus, Trash2, Scale, Box, DollarSign, Star } from 'lucide-react';
 import { Product } from '../types';
 import { compressImage } from '../utils/imageCompressor';
 
@@ -29,6 +29,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [costPrice, setCostPrice] = useState(product?.costPrice ? String(product.costPrice) : '8.00');
   const [stock, setStock] = useState(product?.stock ? String(product.stock) : '10');
 
+  // Customer Reviews & Social Proof
+  const [rating, setRating] = useState(product?.rating !== undefined ? String(product.rating) : '5.0');
+  const [reviewsCount, setReviewsCount] = useState(product?.reviewsCount !== undefined ? String(product.reviewsCount) : '18');
+
   // Shipping specifications
   const [weightGrams, setWeightGrams] = useState(product?.weightKg ? String(Math.round(product.weightKg * 1000)) : '50');
   const [heightCm, setHeightCm] = useState(product?.dimensions?.heightCm ? String(product.dimensions.heightCm) : '4');
@@ -43,6 +47,50 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync state whenever product or modal open changes
+  useEffect(() => {
+    if (product) {
+      setTitle(product.title || '');
+      setSlug(product.slug || '');
+      setDescription(product.description || '');
+      setCategory(product.category || categories[0]?.slug || 'chaveiros');
+      setPrice(product.price ? String(product.price) : '29.90');
+      setPromotionalPrice(product.promotionalPrice ? String(product.promotionalPrice) : '');
+      setCostPrice(product.costPrice ? String(product.costPrice) : '8.00');
+      setStock(product.stock !== undefined ? String(product.stock) : '10');
+      setRating(product.rating !== undefined ? String(product.rating) : '5.0');
+      setReviewsCount(product.reviewsCount !== undefined ? String(product.reviewsCount) : '18');
+      setWeightGrams(product.weightKg ? String(Math.round(product.weightKg * 1000)) : '50');
+      setHeightCm(product.dimensions?.heightCm ? String(product.dimensions.heightCm) : '4');
+      setWidthCm(product.dimensions?.widthCm ? String(product.dimensions.widthCm) : '10');
+      setLengthCm(product.dimensions?.lengthCm ? String(product.dimensions.lengthCm) : '15');
+      setImages(product.images || []);
+      setFeatured(product.featured || false);
+      setIsNew(product.isNew || false);
+      setActive(product.active !== false);
+    } else {
+      setTitle('');
+      setSlug('');
+      setDescription('');
+      setCategory(categories[0]?.slug || 'chaveiros');
+      setPrice('29.90');
+      setPromotionalPrice('');
+      setCostPrice('8.00');
+      setStock('10');
+      setRating('5.0');
+      setReviewsCount('18');
+      setWeightGrams('50');
+      setHeightCm('4');
+      setWidthCm('10');
+      setLengthCm('15');
+      setImages([]);
+      setFeatured(false);
+      setIsNew(false);
+      setActive(true);
+    }
+    setError(null);
+  }, [product, isOpen, categories]);
 
   if (!isOpen) return null;
 
@@ -101,6 +149,8 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     const parsedPromo = promotionalPrice ? parseFloat(promotionalPrice.replace(',', '.')) : undefined;
     const parsedCost = parseFloat(costPrice.replace(',', '.')) || 0;
     const parsedWeightKg = (parseFloat(weightGrams) || 50) / 1000;
+    const parsedRating = Math.min(5.0, Math.max(0, parseFloat(rating.replace(',', '.')) || 5.0));
+    const parsedReviewsCount = parseInt(reviewsCount, 10) >= 0 ? parseInt(reviewsCount, 10) : 0;
 
     const savedItem: Product = {
       id: product?.id || `prod-${Date.now()}`,
@@ -112,6 +162,8 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       promotionalPrice: parsedPromo && parsedPromo < parsedPrice ? parsedPromo : undefined,
       costPrice: parsedCost,
       stock: parseInt(stock, 10) || 0,
+      rating: parsedRating,
+      reviewsCount: parsedReviewsCount,
       images,
       weightKg: parsedWeightKg,
       dimensions: {
@@ -326,12 +378,62 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </div>
           </div>
 
+          {/* Section: Reviews & Rating (Prova Social) */}
+          <div className="space-y-4 p-4 rounded-2xl bg-amber-50/70 border border-amber-200">
+            <div className="flex items-center gap-2">
+              <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
+                4. Avaliações dos Clientes (Prova Social)
+              </h3>
+            </div>
+            <p className="text-[11px] text-brand-muted">
+              Configure a nota média da peça (ex: 4.9 ou 5.0) e a quantidade de avaliações exibidas nos cards da loja e na página de detalhes.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                  Nota da Peça (0.0 a 5.0)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="5.0"
+                    placeholder="5.0"
+                    value={rating}
+                    onChange={(e) => setRating(e.target.value)}
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-amber-300 bg-white focus:border-amber-500 outline-hidden font-bold text-brand-charcoal"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-amber-500 flex items-center gap-1 pointer-events-none">
+                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                  Quantidade de Avaliações
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="18"
+                  value={reviewsCount}
+                  onChange={(e) => setReviewsCount(e.target.value)}
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-amber-300 bg-white focus:border-amber-500 outline-hidden font-bold text-brand-charcoal"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Section: Weight & Dimensions for Shipping API */}
           <div className="space-y-4 p-4 rounded-2xl bg-[#FFF6F7] border border-brand-pink/20">
             <div className="flex items-center gap-2">
               <Box className="w-4 h-4 text-brand-pink" />
               <h3 className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
-                4. Informações de Envio & Frete (Melhor Envio / Correios)
+                5. Informações de Envio & Frete (Melhor Envio / Correios)
               </h3>
             </div>
             <p className="text-[11px] text-brand-muted">

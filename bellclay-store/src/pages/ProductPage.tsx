@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Star, Heart, ShoppingBag, Truck, ShieldCheck, Check,
-  ChevronRight, ArrowLeft, MessageCircle, Info, CheckCircle2
+  ChevronRight, ChevronLeft, ArrowLeft, MessageCircle, Info, CheckCircle2
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useCart } from '../context/CartContext';
@@ -31,8 +31,44 @@ export const ProductPage: React.FC = () => {
   const [isCalculatingFreight, setIsCalculatingFreight] = useState(false);
   const [freightError, setFreightError] = useState<string | null>(null);
 
-  // Active specs tab
   const [activeTab, setActiveTab] = useState<'details' | 'specs' | 'care'>('details');
+
+  // Touch Swipe Gesture for Mobile Photo Carousel
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+
+  const handleNextImage = () => {
+    if (!product || product.images.length <= 1) return;
+    setActiveImageIndex((prev) => (prev + 1) % product.images.length);
+  };
+
+  const handlePrevImage = () => {
+    if (!product || product.images.length <= 1) return;
+    setActiveImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.targetTouches[0].clientX);
+    setTouchStartY(e.targetTouches[0].clientY);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null || touchStartY === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const diffX = touchEndX - touchStartX;
+    const diffY = touchEndY - touchStartY;
+
+    if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
+      if (diffX < 0) {
+        handleNextImage();
+      } else {
+        handlePrevImage();
+      }
+    }
+    setTouchStartX(null);
+    setTouchStartY(null);
+  };
 
   // Reset scroll and selection on route change
   useEffect(() => {
@@ -168,16 +204,21 @@ export const ProductPage: React.FC = () => {
           
           {/* Left Column: Image Gallery (Full width 100vw on mobile, rounded on desktop) */}
           <div className="lg:col-span-7 space-y-4">
-            {/* Main Photo: Full Width on Mobile like the Hero Banner */}
-            <div className="relative aspect-square sm:aspect-4/3 lg:aspect-square w-full md:rounded-3xl overflow-hidden bg-[#FAF7F2] shadow-sm">
+            {/* Main Photo: Full Width on Mobile like the Hero Banner with Mobile Swipe Support */}
+            <div
+              className="relative aspect-square sm:aspect-4/3 lg:aspect-square w-full md:rounded-3xl overflow-hidden bg-[#FAF7F2] shadow-sm select-none touch-pan-y"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
               <img
+                key={activeImageIndex}
                 src={product.images[activeImageIndex] || product.images[0]}
                 alt={product.title}
-                className="w-full h-full object-cover transition-all duration-300"
+                className="w-full h-full object-cover transition-all duration-300 pointer-events-none select-none"
               />
 
               {/* Badges */}
-              <div className="absolute top-4 left-4 flex flex-col gap-1.5 z-10">
+              <div className="absolute top-4 left-4 flex flex-col gap-1.5 z-10 pointer-events-none">
                 <span className="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-brand-charcoal text-white shadow-md">
                   Cerâmica Fria
                 </span>
@@ -192,6 +233,46 @@ export const ProductPage: React.FC = () => {
                   </span>
                 )}
               </div>
+
+              {/* Prev / Next Chevrons (if multiple photos) */}
+              {product.images.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePrevImage();
+                    }}
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/85 backdrop-blur-xs text-brand-charcoal hover:bg-white shadow-md flex items-center justify-center transition-all cursor-pointer z-10 active:scale-90"
+                    aria-label="Foto anterior"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-brand-charcoal" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleNextImage();
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/85 backdrop-blur-xs text-brand-charcoal hover:bg-white shadow-md flex items-center justify-center transition-all cursor-pointer z-10 active:scale-90"
+                    aria-label="Próxima foto"
+                  >
+                    <ChevronRight className="w-5 h-5 text-brand-charcoal" />
+                  </button>
+
+                  {/* Mobile Pagination Indicator Dots */}
+                  <div className="absolute bottom-3 left-0 right-0 flex justify-center items-center gap-1.5 z-10 md:hidden pointer-events-none">
+                    {product.images.map((_, idx) => (
+                      <span
+                        key={idx}
+                        className={`h-1.5 rounded-full transition-all duration-300 ${
+                          activeImageIndex === idx ? 'w-5 bg-white shadow-sm' : 'w-1.5 bg-white/60'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Thumbnails Row */}
