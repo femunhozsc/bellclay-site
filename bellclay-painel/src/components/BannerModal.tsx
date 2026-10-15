@@ -118,13 +118,13 @@ export const BannerModal: React.FC<BannerModalProps> = ({
             <label className="block text-xs font-bold text-brand-charcoal mb-1">Link do Botão</label>
             <input
               type="text"
-              placeholder="Ex: #produtos ou #Chaveiros"
+              placeholder="Ex: #evento, #produtos ou #Chaveiros"
               value={buttonLink}
               onChange={(e) => setButtonLink(e.target.value)}
               className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink"
             />
             <p className="text-[11px] text-brand-muted mt-1 leading-normal">
-              Dica: Digite <code className="bg-brand-pink/10 text-brand-pink px-1 py-0.5 rounded font-bold">#nome-da-categoria</code> (ex: <span className="font-semibold text-brand-charcoal">#Chaveiros</span>, <span className="font-semibold text-brand-charcoal">#Bottons</span>, <span className="font-semibold text-brand-charcoal">#Esculturas</span>) para descer a página e já selecionar a categoria automaticamente, ou <code className="bg-brand-pink/10 text-brand-pink px-1 py-0.5 rounded font-bold">#produtos</code> para exibir todas as peças.
+              Dica: Digite <code className="bg-brand-pink/10 text-brand-pink px-1 py-0.5 rounded font-bold">#evento</code> para descer até a seção de Eventos Bellclay, <code className="bg-brand-pink/10 text-brand-pink px-1 py-0.5 rounded font-bold">#nome-da-categoria</code> (ex: <span className="font-semibold text-brand-charcoal">#Chaveiros</span>) para descer e já filtrar a categoria, ou <code className="bg-brand-pink/10 text-brand-pink px-1 py-0.5 rounded font-bold">#produtos</code> para o catálogo.
             </p>
           </div>
 

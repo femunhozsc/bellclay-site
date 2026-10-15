@@ -4,7 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 
-import { resolveCategorySlug, scrollToCatalogSection } from '../utils/categoryResolver';
+import { resolveCategorySlug, scrollToCatalogSection, isEventTag, scrollToEventsSection } from '../utils/categoryResolver';
 
 const normalizeText = (str: string) =>
   (str || '')
@@ -32,6 +32,25 @@ export const HeroCarousel: React.FC = () => {
     if (isAnchorOrCategory) {
       e.preventDefault();
       const rawTarget = decodeURIComponent(link.replace(/^#/, '')).trim();
+
+      // Check if button target is #evento or #eventos
+      if (isEventTag(rawTarget)) {
+        const newHash = '#evento';
+        if (window.location.hash !== newHash) {
+          window.history.pushState(null, '', newHash);
+        }
+
+        if (location.pathname !== '/') {
+          navigate('/' + newHash);
+          setTimeout(scrollToEventsSection, 150);
+        } else {
+          scrollToEventsSection();
+          setTimeout(scrollToEventsSection, 80);
+          setTimeout(scrollToEventsSection, 250);
+        }
+        return;
+      }
+
       const targetSlug = resolveCategorySlug(rawTarget, settings.categories);
 
       setSelectedCategory(targetSlug);

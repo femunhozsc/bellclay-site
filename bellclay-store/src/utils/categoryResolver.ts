@@ -33,10 +33,27 @@ export const resolveCategorySlug = (
   return clean;
 };
 
+export const isEventTag = (tag: string) => {
+  const clean = normalizeCategoryStr(tag.replace(/^#/, ''));
+  return clean === 'evento' || clean === 'eventos';
+};
+
 export const scrollToCatalogSection = () => {
   const el = document.getElementById('produtos');
   if (el) {
     const yOffset = -90; // sticky header compensation
+    const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+    window.scrollTo({
+      top: Math.max(0, y),
+      behavior: 'smooth'
+    });
+  }
+};
+
+export const scrollToEventsSection = () => {
+  const el = document.getElementById('eventos') || document.getElementById('evento');
+  if (el) {
+    const yOffset = -85; // sticky header compensation
     const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
     window.scrollTo({
       top: Math.max(0, y),

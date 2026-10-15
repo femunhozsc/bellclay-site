@@ -48,7 +48,8 @@ export const EventsCarousel: React.FC = () => {
   };
 
   return (
-    <section className="space-y-4 sm:space-y-6 pt-4 sm:pt-6">
+    <section id="eventos" className="space-y-4 sm:space-y-6 pt-4 sm:pt-6 scroll-mt-24 relative">
+      <div id="evento" className="absolute -top-24 pointer-events-none" />
       {/* Section Header */}
       <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-brand-border/60 pb-3 px-1">
         <div>

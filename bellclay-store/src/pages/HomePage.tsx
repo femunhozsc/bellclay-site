@@ -5,7 +5,7 @@ import { ProductCard } from '../components/ProductCard';
 import { EventsCarousel } from '../components/EventsCarousel';
 import { useSettings } from '../context/SettingsContext';
 import { Heart, ShieldCheck, Truck, CheckCircle2, ChevronDown } from 'lucide-react';
-import { resolveCategorySlug, scrollToCatalogSection } from '../utils/categoryResolver';
+import { resolveCategorySlug, scrollToCatalogSection, isEventTag, scrollToEventsSection } from '../utils/categoryResolver';
 
 export const HomePage: React.FC = () => {
   const {
@@ -52,6 +52,17 @@ export const HomePage: React.FC = () => {
 
       const rawTag = decodeURIComponent(hash.slice(1)).trim();
       if (!rawTag) return;
+
+      // Check if target is #evento or #eventos
+      if (isEventTag(rawTag)) {
+        scrollToEventsSection();
+        const t1 = setTimeout(scrollToEventsSection, 80);
+        const t2 = setTimeout(scrollToEventsSection, 250);
+        return () => {
+          clearTimeout(t1);
+          clearTimeout(t2);
+        };
+      }
 
       const targetSlug = resolveCategorySlug(rawTag, settings.categories);
       setSelectedCategory(targetSlug);
@@ -145,7 +156,7 @@ export const HomePage: React.FC = () => {
         <section id="produtos" className="space-y-4 sm:space-y-6 scroll-mt-24 sm:scroll-mt-28">
           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-brand-border/60 pb-3 px-1">
             <div>
-              <h3 className="font-serif text-xl sm:text-2xl md:text-3xl font-extrabold text-brand-charcoal tracking-tight">
+              <h3 className="font-serif text-[22px] sm:text-2xl md:text-3xl font-extrabold text-brand-charcoal tracking-tight">
                 Catálogo de Artesanatos
               </h3>
               <p className="text-xs sm:text-sm text-brand-muted mt-0.5">
