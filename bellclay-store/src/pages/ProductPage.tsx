@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Star, Heart, ShoppingBag, Truck, ShieldCheck, Check,
   ChevronRight, ChevronLeft, ArrowLeft, MessageCircle, Info, CheckCircle2
@@ -33,18 +33,27 @@ export const ProductPage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'details' | 'specs' | 'care'>('details');
 
-  // Touch Swipe Gesture for Mobile Photo Carousel
+  // Touch Swipe Gesture & Image Transition Direction for Photo Carousel
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
 
   const handleNextImage = () => {
     if (!product || product.images.length <= 1) return;
+    setSlideDirection('right');
     setActiveImageIndex((prev) => (prev + 1) % product.images.length);
   };
 
   const handlePrevImage = () => {
     if (!product || product.images.length <= 1) return;
+    setSlideDirection('left');
     setActiveImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length);
+  };
+
+  const handleSelectImage = (idx: number) => {
+    if (idx === activeImageIndex) return;
+    setSlideDirection(idx > activeImageIndex ? 'right' : 'left');
+    setActiveImageIndex(idx);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -176,9 +185,9 @@ export const ProductPage: React.FC = () => {
   return (
     <motion.div
       key={slug}
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
       className="min-h-screen bg-[#FDFBF7] pb-24 md:pb-16"
     >
       {/* Breadcrumbs */}
@@ -204,18 +213,46 @@ export const ProductPage: React.FC = () => {
           
           {/* Left Column: Image Gallery (Full width 100vw on mobile, rounded on desktop) */}
           <div className="lg:col-span-7 space-y-4">
-            {/* Main Photo: Full Width on Mobile like the Hero Banner with Mobile Swipe Support */}
+            {/* Main Photo: Full Width on Mobile like the Hero Banner with Smooth Slide Transition */}
             <div
               className="relative aspect-square sm:aspect-4/3 lg:aspect-square w-full md:rounded-3xl overflow-hidden bg-[#FAF7F2] shadow-sm select-none touch-pan-y"
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
             >
-              <img
-                key={activeImageIndex}
-                src={product.images[activeImageIndex] || product.images[0]}
-                alt={product.title}
-                className="w-full h-full object-cover transition-all duration-300 pointer-events-none select-none"
-              />
+              <AnimatePresence initial={false} custom={slideDirection} mode="popLayout">
+                <motion.img
+                  key={activeImageIndex}
+                  src={product.images[activeImageIndex] || product.images[0]}
+                  alt={product.title}
+                  custom={slideDirection}
+                  initial={{
+                    opacity: 0,
+                    x: slideDirection === 'right' ? 80 : -80,
+                    scale: 0.98
+                  }}
+                  animate={{
+                    opacity: 1,
+                    x: 0,
+                    scale: 1,
+                    transition: {
+                      x: { type: 'spring', stiffness: 260, damping: 26 },
+                      opacity: { duration: 0.35, ease: 'easeOut' },
+                      scale: { duration: 0.35, ease: 'easeOut' }
+                    }
+                  }}
+                  exit={{
+                    opacity: 0,
+                    x: slideDirection === 'right' ? -80 : 80,
+                    scale: 0.98,
+                    transition: {
+                      x: { type: 'spring', stiffness: 260, damping: 26 },
+                      opacity: { duration: 0.25, ease: 'easeIn' },
+                      scale: { duration: 0.25, ease: 'easeIn' }
+                    }
+                  }}
+                  className="w-full h-full object-cover pointer-events-none select-none absolute inset-0"
+                />
+              </AnimatePresence>
 
               {/* Badges */}
               <div className="absolute top-4 left-4 flex flex-col gap-1.5 z-10 pointer-events-none">
@@ -281,7 +318,7 @@ export const ProductPage: React.FC = () => {
                 {product.images.map((img, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setActiveImageIndex(idx)}
+                    onClick={() => handleSelectImage(idx)}
                     className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
                       activeImageIndex === idx
                         ? 'border-brand-pink ring-2 ring-brand-pink/30 scale-105 shadow-sm'

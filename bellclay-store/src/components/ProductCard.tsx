@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Plus, Star, Check } from 'lucide-react';
 import { Product } from '../types';
 import { useCart } from '../context/CartContext';
@@ -24,10 +25,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const currentPrice = product.promotionalPrice || product.price;
 
   return (
-    <Link
-      to={`/produto/${product.slug}`}
-      className="group flex flex-col justify-between cursor-pointer w-full transition-transform duration-200"
+    <motion.div
+      whileHover={{ y: -5 }}
+      whileTap={{ scale: 0.97 }}
+      transition={{ duration: 0.35, ease: [0.25, 1, 0.5, 1] }}
+      className="w-full flex flex-col"
     >
+      <Link
+        to={`/produto/${product.slug}`}
+        className="group flex flex-col justify-between cursor-pointer w-full transition-all duration-300"
+      >
       {/* Product Image: Full column width, no card borders */}
       <div className="relative w-full aspect-square rounded-2xl sm:rounded-3xl overflow-hidden bg-[#FAF7F2] mb-2 sm:mb-3 shadow-2xs">
         <img
@@ -109,6 +116,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </span>
         </div>
       </div>
-    </Link>
+      </Link>
+    </motion.div>
   );
 };
