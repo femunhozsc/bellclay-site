@@ -62,9 +62,11 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('bellclay_settings_updated', handleStorageChange);
+    window.addEventListener('bellclay_events_updated', handleStorageChange);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('bellclay_settings_updated', handleStorageChange);
+      window.removeEventListener('bellclay_events_updated', handleStorageChange);
     };
   }, []);
 

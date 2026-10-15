@@ -303,28 +303,165 @@ export const deletePanelProduct = async (productId: string): Promise<void> => {
 };
 
 // Site Settings CRUD
+// Events CRUD (Dedicated collection to avoid 1MB document limit)
+export const fetchPanelEvents = async (): Promise<BellclayEvent[]> => {
+  if (db) {
+    try {
+      const snap = await getDocs(collection(db, 'events'));
+      if (!snap.empty) {
+        return snap.docs.map(d => ({ id: d.id, ...d.data() } as BellclayEvent));
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar eventos do Firestore:', err);
+    }
+  }
+
+  const saved = localStorage.getItem(STORAGE_KEYS.EVENTS);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch {}
+  }
+  return DEFAULT_PANEL_SETTINGS.events || [];
+};
+
+export const savePanelEvent = async (event: BellclayEvent): Promise<void> => {
+  if (db) {
+    try {
+      const docRef = doc(db, 'events', event.id);
+      await setDoc(docRef, { ...event, updatedAt: serverTimestamp() });
+    } catch (err) {
+      console.warn('Erro ao salvar evento no Firestore:', err);
+    }
+  }
+
+  const current = await fetchPanelEvents();
+  const exists = current.findIndex(e => e.id === event.id);
+  let updated: BellclayEvent[];
+  if (exists >= 0) {
+    updated = [...current];
+    updated[exists] = event;
+  } else {
+    updated = [event, ...current];
+  }
+
+  try {
+    localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+  } catch (err) {
+    console.warn('Cota excedida no LocalStorage ao salvar eventos:', err);
+  }
+
+  // Also sync to settings local cache
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    const parsed = raw ? JSON.parse(raw) : DEFAULT_PANEL_SETTINGS;
+    parsed.events = updated;
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(parsed));
+  } catch {}
+
+  window.dispatchEvent(new Event('bellclay_events_updated'));
+  window.dispatchEvent(new Event('bellclay_settings_updated'));
+};
+
+export const deletePanelEvent = async (eventId: string): Promise<void> => {
+  if (db) {
+    try {
+      await deleteDoc(doc(db, 'events', eventId));
+    } catch (err) {
+      console.warn('Erro ao deletar evento no Firestore:', err);
+    }
+  }
+
+  const current = await fetchPanelEvents();
+  const updated = current.filter(e => e.id !== eventId);
+
+  try {
+    localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(updated));
+  } catch {}
+
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      parsed.events = updated;
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(parsed));
+    }
+  } catch {}
+
+  window.dispatchEvent(new Event('bellclay_events_updated'));
+  window.dispatchEvent(new Event('bellclay_settings_updated'));
+};
+
+export const saveAllPanelEvents = async (events: BellclayEvent[]): Promise<void> => {
+  if (db) {
+    try {
+      await Promise.all(
+        events.map(ev => setDoc(doc(db, 'events', ev.id), { ...ev, updatedAt: serverTimestamp() }))
+      );
+    } catch (err) {
+      console.warn('Erro ao salvar lote de eventos no Firestore:', err);
+    }
+  }
+
+  try {
+    localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
+  } catch {}
+
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      parsed.events = events;
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(parsed));
+    }
+  } catch {}
+
+  window.dispatchEvent(new Event('bellclay_events_updated'));
+  window.dispatchEvent(new Event('bellclay_settings_updated'));
+};
+
+// Site Settings CRUD
 export const fetchPanelSettings = async (): Promise<SiteSettings> => {
+  let settingsObj: SiteSettings = DEFAULT_PANEL_SETTINGS;
+
   if (db) {
     try {
       const snap = await getDoc(doc(db, 'settings', 'general'));
       if (snap.exists()) {
-        return snap.data() as SiteSettings;
+        settingsObj = { ...DEFAULT_PANEL_SETTINGS, ...(snap.data() as SiteSettings) };
       }
     } catch (err) {
       console.warn('Erro ao carregar settings do Firestore:', err);
     }
+  } else {
+    const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    if (saved) {
+      try {
+        settingsObj = { ...DEFAULT_PANEL_SETTINGS, ...JSON.parse(saved) };
+      } catch {}
+    }
   }
 
-  const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch {}
+  // Always enrich with events from dedicated collection
+  try {
+    const events = await fetchPanelEvents();
+    if (events && events.length > 0) {
+      settingsObj.events = events;
+    }
+  } catch (err) {
+    console.warn('Erro ao enriquecer settings com eventos:', err);
   }
-  return DEFAULT_PANEL_SETTINGS;
+
+  return settingsObj;
 };
 
 export const savePanelSettings = async (settings: SiteSettings): Promise<void> => {
+  // If settings contains events, also save them to dedicated events collection
+  if (settings.events && settings.events.length > 0) {
+    await saveAllPanelEvents(settings.events);
+  }
+
   if (db) {
     try {
       await setDoc(doc(db, 'settings', 'general'), {
@@ -336,7 +473,12 @@ export const savePanelSettings = async (settings: SiteSettings): Promise<void> =
     }
   }
 
-  localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+  try {
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+  } catch (err) {
+    console.warn('Cota excedida no LocalStorage ao salvar settings:', err);
+  }
+
   window.dispatchEvent(new Event('bellclay_settings_updated'));
 };
 

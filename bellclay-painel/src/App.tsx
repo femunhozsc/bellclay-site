@@ -19,6 +19,8 @@ import {
   deletePanelProduct,
   fetchPanelSettings,
   savePanelSettings,
+  savePanelEvent,
+  deletePanelEvent,
   fetchPanelOrders,
   updateOrderStatus,
   fetchMetrics
@@ -85,6 +87,7 @@ export const App: React.FC = () => {
       window.addEventListener('bellclay_order_saved', handleUpdate);
       window.addEventListener('bellclay_products_updated', handleUpdate);
       window.addEventListener('bellclay_settings_updated', handleUpdate);
+      window.addEventListener('bellclay_events_updated', handleUpdate);
       window.addEventListener('bellclay_orders_updated', handleUpdate);
       window.addEventListener('storage', handleUpdate);
 
@@ -92,6 +95,7 @@ export const App: React.FC = () => {
         window.removeEventListener('bellclay_order_saved', handleUpdate);
         window.removeEventListener('bellclay_products_updated', handleUpdate);
         window.removeEventListener('bellclay_settings_updated', handleUpdate);
+        window.removeEventListener('bellclay_events_updated', handleUpdate);
         window.removeEventListener('bellclay_orders_updated', handleUpdate);
         window.removeEventListener('storage', handleUpdate);
       };
@@ -166,24 +170,13 @@ export const App: React.FC = () => {
 
   // Handlers for events
   const handleSaveEvent = async (event: BellclayEvent) => {
-    const events = settings.events || [];
-    const existingIndex = events.findIndex(e => e.id === event.id);
-    let updatedEvents: BellclayEvent[];
-    if (existingIndex >= 0) {
-      updatedEvents = [...events];
-      updatedEvents[existingIndex] = event;
-    } else {
-      updatedEvents = [...events, event];
-    }
-    const updated = { ...settings, events: updatedEvents };
-    await handleSaveSettings(updated);
+    await savePanelEvent(event);
+    await loadData();
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    const events = settings.events || [];
-    const updatedEvents = events.filter(e => e.id !== eventId);
-    const updated = { ...settings, events: updatedEvents };
-    await handleSaveSettings(updated);
+    await deletePanelEvent(eventId);
+    await loadData();
   };
 
   // Handlers for orders

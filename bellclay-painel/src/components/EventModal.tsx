@@ -7,7 +7,7 @@ interface EventModalProps {
   event: BellclayEvent | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (event: BellclayEvent) => void;
+  onSave: (event: BellclayEvent) => Promise<void> | void;
 }
 
 const slugify = (text: string) => {
@@ -44,6 +44,8 @@ export const EventModal: React.FC<EventModalProps> = ({
 
   const [newImageUrl, setNewImageUrl] = useState('');
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Auto-generate slug when title changes if slug is empty or matches previous slug
   const handleTitleChange = (val: string) => {
@@ -109,27 +111,41 @@ export const EventModal: React.FC<EventModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!title.trim()) {
+      setSaveError('Por favor informe o nome do evento.');
+      return;
+    }
+
     const finalSlug = slugify(slug || title || `evento-${Date.now()}`);
     const finalCover = coverImage || images[0] || 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1200&q=80';
     const finalImages = images.length > 0 ? images : [finalCover];
 
-    onSave({
-      id: event?.id || `event-${Date.now()}`,
-      slug: finalSlug,
-      title: title.trim(),
-      subtitle: subtitle.trim(),
-      badge: badge.trim(),
-      dateText: dateText.trim(),
-      locationText: locationText.trim(),
-      buttonText: buttonText.trim() || 'Ver Fotos e Detalhes',
-      coverImage: finalCover,
-      images: finalImages,
-      description: description.trim(),
-      active
-    });
-    onClose();
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      await onSave({
+        id: event?.id || `event-${Date.now()}`,
+        slug: finalSlug,
+        title: title.trim(),
+        subtitle: subtitle.trim(),
+        badge: badge.trim(),
+        dateText: dateText.trim(),
+        locationText: locationText.trim(),
+        buttonText: buttonText.trim() || 'Ver Fotos e Detalhes',
+        coverImage: finalCover,
+        images: finalImages,
+        description: description.trim(),
+        active
+      });
+      onClose();
+    } catch (err: any) {
+      console.error('Erro ao salvar evento:', err);
+      setSaveError('Erro ao salvar evento no banco de dados. Tente novamente.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -426,21 +442,33 @@ export const EventModal: React.FC<EventModalProps> = ({
         </form>
 
         {/* Modal Footer */}
-        <div className="p-4 border-t border-brand-border/60 bg-[#FAF8F5] flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-full border border-brand-border text-xs font-bold text-brand-charcoal hover:bg-white cursor-pointer transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="px-6 py-2.5 rounded-full bg-brand-pink hover:bg-pink-600 text-white text-xs font-bold shadow-md cursor-pointer transition-all"
-          >
-            {event ? 'Salvar Alterações' : 'Criar Evento'}
-          </button>
+        <div className="p-4 border-t border-brand-border/60 bg-[#FAF8F5] flex flex-col sm:flex-row items-center justify-between gap-3">
+          {saveError ? (
+            <span className="text-xs text-red-600 font-semibold">{saveError}</span>
+          ) : (
+            <span className="text-[11px] text-brand-muted">
+              {isProcessingFiles ? 'Processando fotos em alta definição...' : 'Todas as fotos são otimizadas automaticamente em HD.'}
+            </span>
+          )}
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSaving}
+              className="px-5 py-2.5 rounded-full border border-brand-border text-xs font-bold text-brand-charcoal hover:bg-white cursor-pointer transition-colors disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSaving || isProcessingFiles}
+              className="px-6 py-2.5 rounded-full bg-brand-pink hover:bg-pink-600 text-white text-xs font-bold shadow-md cursor-pointer transition-all disabled:opacity-50 flex items-center gap-2"
+            >
+              {isSaving ? 'Salvando Evento...' : (event ? 'Salvar Alterações' : 'Criar Evento')}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { getFirestore, Firestore, collection, doc, getDocs, getDoc, setDoc, upda
 import { getAuth, Auth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { getStorage, FirebaseStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { DEFAULT_PRODUCTS, DEFAULT_SETTINGS } from '../data/defaultData';
-import { Product, SiteSettings, Order } from '../types';
+import { Product, SiteSettings, Order, BellclayEvent } from '../types';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBzTUrdoJnl7A1zkHNzoAB7P39uM8LNvIA",
@@ -41,30 +41,67 @@ const STORAGE_KEYS = {
   PRODUCTS: 'bellclay_products',
   ORDERS: 'bellclay_orders',
   METRICS: 'bellclay_metrics',
+  EVENTS: 'bellclay_events',
+};
+
+export const getEvents = async (): Promise<BellclayEvent[]> => {
+  if (db) {
+    try {
+      const colRef = collection(db, 'events');
+      const snap = await getDocs(colRef);
+      if (!snap.empty) {
+        return snap.docs.map(d => ({ id: d.id, ...d.data() } as BellclayEvent));
+      }
+    } catch (err) {
+      console.warn('Erro ao buscar eventos do Firestore:', err);
+    }
+  }
+
+  const saved = localStorage.getItem(STORAGE_KEYS.EVENTS);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch {}
+  }
+  return DEFAULT_SETTINGS.events || [];
 };
 
 export const getSiteSettings = async (): Promise<SiteSettings> => {
+  let settingsObj: SiteSettings = DEFAULT_SETTINGS;
+
   if (db) {
     try {
       const docRef = doc(db, 'settings', 'general');
       const snap = await getDoc(docRef);
       if (snap.exists()) {
-        return snap.data() as SiteSettings;
+        settingsObj = { ...DEFAULT_SETTINGS, ...(snap.data() as SiteSettings) };
       }
     } catch (err) {
       console.warn('Erro ao buscar settings do Firestore, usando fallback:', err);
     }
-  }
-
-  const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch {
-      // fallback
+  } else {
+    const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    if (saved) {
+      try {
+        settingsObj = { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+      } catch {
+        // fallback
+      }
     }
   }
-  return DEFAULT_SETTINGS;
+
+  // Enrich with events from dedicated events collection
+  try {
+    const events = await getEvents();
+    if (events && events.length > 0) {
+      settingsObj.events = events;
+    }
+  } catch (err) {
+    console.warn('Erro ao enriquecer settings com eventos na loja:', err);
+  }
+
+  return settingsObj;
 };
 
 export const getProducts = async (): Promise<Product[]> => {
