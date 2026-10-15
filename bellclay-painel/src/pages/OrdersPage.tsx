@@ -1,0 +1,161 @@
+import React, { useState } from 'react';
+import { Search, ShoppingBag, MessageCircle, Truck, PackageCheck, Filter, ExternalLink } from 'lucide-react';
+import { Order } from '../types';
+
+interface OrdersPageProps {
+  orders: Order[];
+  onSelectOrder: (order: Order) => void;
+}
+
+export const OrdersPage: React.FC<OrdersPageProps> = ({ orders, onSelectOrder }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  const filtered = orders.filter(o => {
+    const matchesStatus = statusFilter === 'all' || o.orderStatus === statusFilter;
+    const matchesSearch =
+      searchTerm.trim() === '' ||
+      o.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.address.city.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
+
+  const statusBadges: Record<Order['orderStatus'], { label: string; color: string }> = {
+    pending: { label: 'Pendente', color: 'bg-amber-100 text-amber-800' },
+    paid: { label: 'Pago', color: 'bg-blue-100 text-blue-800' },
+    production: { label: 'Em Produção', color: 'bg-purple-100 text-purple-800' },
+    shipped: { label: 'Enviado', color: 'bg-indigo-100 text-indigo-800' },
+    delivered: { label: 'Entregue', color: 'bg-green-100 text-green-800' },
+    cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-800' },
+  };
+
+  return (
+    <div className="p-8 space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-brand-charcoal">Gestão de Pedidos & Vendas</h2>
+          <p className="text-xs text-brand-muted">
+            Monitore pagamentos do Mercado Pago, etapas de produção manual e códigos de rastreio.
+          </p>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="bg-white p-4 rounded-3xl border border-brand-border/70 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted" />
+          <input
+            type="text"
+            placeholder="Buscar por ID, cliente ou cidade..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full text-xs pl-10 pr-4 py-2 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink"
+          />
+        </div>
+
+        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1">
+          {[
+            { id: 'all', label: 'Todos' },
+            { id: 'pending', label: 'Pendentes' },
+            { id: 'paid', label: 'Pagos' },
+            { id: 'production', label: 'Em Produção' },
+            { id: 'shipped', label: 'Enviados' },
+            { id: 'delivered', label: 'Entregues' }
+          ].map((st) => (
+            <button
+              key={st.id}
+              onClick={() => setStatusFilter(st.id)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                statusFilter === st.id
+                  ? 'bg-brand-charcoal text-white'
+                  : 'bg-[#FAF7F2] text-brand-muted hover:text-brand-charcoal'
+              }`}
+            >
+              {st.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Orders Table */}
+      <div className="bg-white rounded-3xl border border-brand-border/70 shadow-xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[#FAF8F5] border-b border-brand-border/60 text-brand-muted font-semibold">
+              <tr>
+                <th className="py-3.5 px-6">ID / Data</th>
+                <th className="py-3.5 px-4">Cliente</th>
+                <th className="py-3.5 px-4">Destino / Frete</th>
+                <th className="py-3.5 px-4">Pagamento</th>
+                <th className="py-3.5 px-4">Total</th>
+                <th className="py-3.5 px-4">Status</th>
+                <th className="py-3.5 px-6 text-right">Ação</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-brand-border/40">
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-brand-muted">
+                    Nenhum pedido encontrado.
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((order) => {
+                  const badge = statusBadges[order.orderStatus] || { label: order.orderStatus, color: 'bg-gray-100 text-gray-700' };
+
+                  return (
+                    <tr key={order.id} className="hover:bg-[#FAF7F2]/60 transition-colors">
+                      <td className="py-3.5 px-6">
+                        <span className="font-bold text-brand-charcoal block">#{order.id}</span>
+                        <span className="text-[10px] text-brand-muted">
+                          {new Date(order.createdAt).toLocaleDateString('pt-BR')}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="font-semibold text-brand-charcoal block">{order.customer.name}</span>
+                        <span className="text-[10px] text-brand-muted">{order.customer.phone}</span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="font-medium text-brand-charcoal block">{order.address.city} - {order.address.state}</span>
+                        <span className="text-[10px] text-brand-pink font-semibold">{order.shipping.name}</span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="uppercase font-bold text-[11px] text-brand-charcoal block">{order.paymentMethod}</span>
+                        <span className="text-[10px] text-brand-muted">Mercado Pago</span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="font-extrabold text-brand-charcoal block">
+                          R$ {order.total.toFixed(2).replace('.', ',')}
+                        </span>
+                        <span className="text-[10px] text-brand-muted">{order.items.length} itens</span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${badge.color}`}>
+                          {badge.label}
+                        </span>
+                        {order.trackingCode && (
+                          <span className="block text-[9px] text-brand-muted font-mono mt-0.5">
+                            {order.trackingCode}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-6 text-right">
+                        <button
+                          onClick={() => onSelectOrder(order)}
+                          className="px-3.5 py-1.5 rounded-full bg-brand-pink-light text-brand-pink hover:bg-brand-pink hover:text-white font-bold transition-all cursor-pointer shadow-xs"
+                        >
+                          Detalhes
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};

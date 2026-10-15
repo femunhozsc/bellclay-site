@@ -1,0 +1,12 @@
+{
+  "name": "bellclay-artesanatos-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:store": "npm --prefix bellclay-store run dev",
+    "dev:painel": "npm --prefix bellclay-painel run dev",
+    "build:store": "npm --prefix bellclay-store run build",
+    "build:painel": "npm --prefix bellclay-painel run build",
+    "build:all": "npm run build:store && npm run build:painel"
+  }
+}

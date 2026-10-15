@@ -1,0 +1,22 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-code-skills",
+  "description": "A collection of Claude Code skills for frontend development. Includes TailwindCSS UI/UX rules, design system analysis, design audit, component generator, and color palette tools.",
+  "owner": {
+    "name": "Mark Benz"
+  },
+  "plugins": [
+    {
+      "name": "claude-code-skills",
+      "description": "Frontend development skills for TailwindCSS including UI/UX rules, design audit, component generation, and color palette tools.",
+      "version": "1.2.0",
+      "author": {
+        "name": "Mark Benz"
+      },
+      "source": "./plugins/claude-code-skills",
+      "category": "frontend",
+      "keywords": ["tailwindcss", "frontend", "ui", "ux", "design", "components", "color-palette"],
+      "license": "MIT"
+    }
+  ]
+}
