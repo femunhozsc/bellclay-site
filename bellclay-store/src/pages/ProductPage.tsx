@@ -194,16 +194,16 @@ export const ProductPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Thumbnails Row (Padding applied on mobile for clean touch) */}
+            {/* Thumbnails Row */}
             {product.images.length > 1 && (
-              <div className="flex gap-3 overflow-x-auto pb-1 px-4 md:px-0">
+              <div className="flex gap-3 overflow-x-auto pt-2 pb-3 px-4 md:px-1 items-center scrollbar-none">
                 {product.images.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveImageIndex(idx)}
                     className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
                       activeImageIndex === idx
-                        ? 'border-brand-pink ring-2 ring-brand-pink/30 scale-105'
+                        ? 'border-brand-pink ring-2 ring-brand-pink/30 scale-105 shadow-sm'
                         : 'border-brand-border/60 hover:border-brand-pink/50 opacity-70 hover:opacity-100'
                     }`}
                   >
