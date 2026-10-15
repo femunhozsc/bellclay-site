@@ -14,6 +14,9 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   state: "PR",
   mercadoPagoPublicKey: "",
   melhorEnvioToken: "",
+  promoBannerUrl: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=2100&q=80",
+  promoBannerLink: "#produtos",
+  promoBannerActive: true,
   banners: [],
   categories: [
     {

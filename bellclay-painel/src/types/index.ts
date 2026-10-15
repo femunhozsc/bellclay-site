@@ -122,6 +122,9 @@ export interface SiteSettings {
   banners: BannerSlide[];
   categories: CategoryItem[];
   events?: BellclayEvent[];
+  promoBannerUrl?: string;
+  promoBannerLink?: string;
+  promoBannerActive?: boolean;
   instagram: string;
   whatsapp: string;
   city: string;

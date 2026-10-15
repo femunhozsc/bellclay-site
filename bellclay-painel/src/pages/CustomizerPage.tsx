@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, Palette, Plus, Edit3, Trash2, CheckCircle2, Image, Layers, Megaphone, ChevronLeft, ChevronRight, ArrowUpDown, Sparkles, Calendar, MapPin, ExternalLink } from 'lucide-react';
+import { Sliders, Palette, Plus, Edit3, Trash2, CheckCircle2, Image, Layers, Megaphone, ChevronLeft, ChevronRight, ArrowUpDown, Sparkles, Calendar, MapPin, ExternalLink, Upload } from 'lucide-react';
 import { SiteSettings, BannerSlide, CategoryItem, BellclayEvent } from '../types';
+import { uploadToCloudinary } from '../services/cloudinaryService';
 
 interface CustomizerPageProps {
   settings: SiteSettings;
@@ -29,11 +30,29 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
   const [announcementActive, setAnnouncementActive] = useState(settings.announcementActive);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(String(settings.freeShippingThreshold || 149));
 
+  // 21:9 Promotional Banner State
+  const [promoBannerUrl, setPromoBannerUrl] = useState(settings.promoBannerUrl || '');
+  const [promoBannerLink, setPromoBannerLink] = useState(settings.promoBannerLink || '');
+  const [promoBannerActive, setPromoBannerActive] = useState(settings.promoBannerActive !== false);
+  const [isUploadingPromo, setIsUploadingPromo] = useState(false);
+
   useEffect(() => {
     if (settings.freeShippingThreshold) {
       setFreeShippingThreshold(String(settings.freeShippingThreshold));
     }
   }, [settings.freeShippingThreshold]);
+
+  useEffect(() => {
+    if (settings.promoBannerUrl !== undefined) {
+      setPromoBannerUrl(settings.promoBannerUrl);
+    }
+    if (settings.promoBannerLink !== undefined) {
+      setPromoBannerLink(settings.promoBannerLink);
+    }
+    if (settings.promoBannerActive !== undefined) {
+      setPromoBannerActive(settings.promoBannerActive !== false);
+    }
+  }, [settings.promoBannerUrl, settings.promoBannerLink, settings.promoBannerActive]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -122,6 +141,50 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
     }
   };
 
+  const handlePromoBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingPromo(true);
+    try {
+      const cloudUrl = await uploadToCloudinary(file, 'bellclay/banners');
+      setPromoBannerUrl(cloudUrl);
+    } catch (err) {
+      console.error('Erro ao fazer upload da imagem 21:9 para o Cloudinary:', err);
+      alert('Não foi possível enviar a imagem. Verifique sua conexão ou tente novamente.');
+    } finally {
+      setIsUploadingPromo(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleSavePromoBanner = async () => {
+    setIsSaving(true);
+    try {
+      const updated: SiteSettings = {
+        ...settings,
+        welcomeTitle,
+        welcomeSubtitle,
+        announcementText,
+        announcementActive,
+        promoBannerUrl,
+        promoBannerLink,
+        promoBannerActive,
+        freeShippingThreshold:
+          !isNaN(parseFloat(freeShippingThreshold)) && parseFloat(freeShippingThreshold) > 0
+            ? parseFloat(freeShippingThreshold)
+            : (settings.freeShippingThreshold || 149)
+      };
+      await onSaveSettings(updated);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      console.error('Erro ao salvar banner 21:9:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSaveTextChanges = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -132,6 +195,9 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
         welcomeSubtitle,
         announcementText,
         announcementActive,
+        promoBannerUrl,
+        promoBannerLink,
+        promoBannerActive,
         freeShippingThreshold:
           !isNaN(parseFloat(freeShippingThreshold)) && parseFloat(freeShippingThreshold) > 0
             ? parseFloat(freeShippingThreshold)
@@ -237,6 +303,137 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
           </button>
         </div>
       </form>
+
+      {/* Section: Banner Panorâmico 21:9 (Faixa Destaque) */}
+      <div className="bg-white p-6 rounded-3xl border border-brand-border/70 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-brand-border/60 gap-3">
+          <div className="flex items-center gap-2">
+            <Image className="w-5 h-5 text-brand-pink" />
+            <div>
+              <h3 className="font-bold text-sm text-brand-charcoal">Banner Panorâmico 21:9 (Faixa Destaque)</h3>
+              <p className="text-xs text-brand-muted">
+                Imagem de ponta a ponta (proporção 21:9) exibida no lugar dos antigos adjetivos, logo abaixo da mensagem de boas-vindas.
+              </p>
+            </div>
+          </div>
+
+          <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer self-start sm:self-auto">
+            <input
+              type="checkbox"
+              checked={promoBannerActive}
+              onChange={(e) => setPromoBannerActive(e.target.checked)}
+              className="rounded text-brand-pink focus:ring-brand-pink w-4 h-4 cursor-pointer"
+            />
+            <span>Exibir banner 21:9 no site</span>
+          </label>
+        </div>
+
+        {/* Live 21:9 Preview */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-brand-charcoal">Prévia do Banner (Proporção 21:9)</span>
+            {promoBannerUrl && (
+              <span className="text-[10px] text-brand-muted font-mono">Aspect Ratio 21:9 (Ultrawide)</span>
+            )}
+          </div>
+
+          <div className="w-full aspect-[21/9] rounded-2xl overflow-hidden border border-brand-border bg-[#FAF8F5] relative flex items-center justify-center shadow-inner">
+            {promoBannerUrl ? (
+              <img
+                src={promoBannerUrl}
+                alt="Prévia Banner 21:9"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="text-center p-6 space-y-2 text-brand-muted">
+                <Image className="w-8 h-8 mx-auto opacity-40 text-brand-pink" />
+                <p className="text-xs font-medium">Nenhuma imagem carregada no momento</p>
+                <p className="text-[10px]">Faça upload de uma foto do computador ou cole uma URL abaixo</p>
+              </div>
+            )}
+
+            {isUploadingPromo && (
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center text-white gap-2">
+                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs font-bold">Enviando para o Cloudinary...</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Upload and URL Controls */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+          <div>
+            <label className="block text-xs font-bold text-brand-charcoal mb-1">
+              Enviar Nova Imagem (Cloudinary)
+            </label>
+            <label className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-dashed border-brand-pink/50 bg-brand-pink-subtle/30 hover:bg-brand-pink-subtle text-brand-pink text-xs font-bold transition-all cursor-pointer">
+              <Upload className="w-4 h-4" />
+              <span>{isUploadingPromo ? 'Enviando...' : 'Escolher Imagem do Computador'}</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePromoBannerUpload}
+                disabled={isUploadingPromo}
+                className="hidden"
+              />
+            </label>
+            <p className="text-[11px] text-brand-muted mt-1">
+              Recomendado: 2100x900px ou formato 21:9 panorâmico. Upload direto em alta qualidade sem compressão.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-brand-charcoal mb-1">
+              Ou colar Link / URL da Imagem
+            </label>
+            <input
+              type="text"
+              placeholder="https://res.cloudinary.com/... ou https://..."
+              value={promoBannerUrl}
+              onChange={(e) => setPromoBannerUrl(e.target.value)}
+              className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-brand-charcoal mb-1">
+            Link de Redirecionamento ao Clicar (Opcional)
+          </label>
+          <input
+            type="text"
+            placeholder="Ex: #produtos, #evento, ou link externo https://..."
+            value={promoBannerLink}
+            onChange={(e) => setPromoBannerLink(e.target.value)}
+            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink"
+          />
+          <p className="text-[11px] text-brand-muted mt-1">
+            Se preenchido, o visitante será redirecionado para esta seção ou link ao clicar no banner.
+          </p>
+        </div>
+
+        <div className="pt-2 flex items-center justify-between border-t border-brand-border/60">
+          {promoBannerUrl ? (
+            <button
+              type="button"
+              onClick={() => setPromoBannerUrl('')}
+              className="text-xs text-red-500 hover:text-red-700 font-semibold cursor-pointer"
+            >
+              Remover Imagem
+            </button>
+          ) : <div />}
+
+          <button
+            type="button"
+            onClick={handleSavePromoBanner}
+            disabled={isSaving || isUploadingPromo}
+            className="px-6 py-2.5 rounded-full bg-brand-charcoal hover:bg-black text-white text-xs font-bold shadow-md transition-all cursor-pointer"
+          >
+            {isSaving ? 'Salvando...' : 'Salvar Banner 21:9'}
+          </button>
+        </div>
+      </div>
 
       {/* Section 2: Carousel & Banners */}
       <div className="bg-white p-6 rounded-3xl border border-brand-border/70 shadow-xs space-y-4">

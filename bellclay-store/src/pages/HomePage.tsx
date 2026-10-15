@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { HeroCarousel } from '../components/HeroCarousel';
 import { CategoryPills } from '../components/CategoryPills';
 import { ProductCard } from '../components/ProductCard';
 import { EventsCarousel } from '../components/EventsCarousel';
 import { useSettings } from '../context/SettingsContext';
-import { Heart, ShieldCheck, Truck, CheckCircle2, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
+import { DEFAULT_SETTINGS } from '../data/defaultData';
 import { resolveCategorySlug, scrollToCatalogSection, isEventTag, scrollToEventsSection } from '../utils/categoryResolver';
 
 export const HomePage: React.FC = () => {
@@ -85,72 +87,115 @@ export const HomePage: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHashNavigation);
   }, [settings.categories, setSelectedCategory, setSearchQuery]);
 
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handlePromoBannerClick = (e: React.MouseEvent<HTMLAnchorElement>, rawLink?: string) => {
+    const link = (rawLink || '#produtos').trim();
+    if (!link) return;
+
+    const isAnchorOrCategory =
+      link.startsWith('#') ||
+      (!link.startsWith('http://') && !link.startsWith('https://') && !link.startsWith('/'));
+
+    if (isAnchorOrCategory) {
+      e.preventDefault();
+      const rawTarget = decodeURIComponent(link.replace(/^#/, '')).trim();
+
+      if (isEventTag(rawTarget)) {
+        const newHash = '#evento';
+        if (window.location.hash !== newHash) {
+          window.history.pushState(null, '', newHash);
+        }
+        if (location.pathname !== '/') {
+          navigate('/' + newHash);
+          setTimeout(scrollToEventsSection, 150);
+        } else {
+          scrollToEventsSection();
+        }
+        return;
+      }
+
+      const targetSlug = resolveCategorySlug(rawTarget, settings.categories);
+      setSelectedCategory(targetSlug);
+      setSearchQuery('');
+
+      const newHash = targetSlug === 'all' ? '#produtos' : `#${targetSlug}`;
+      if (window.location.hash !== newHash) {
+        window.history.pushState(null, '', newHash);
+      }
+
+      if (location.pathname !== '/') {
+        navigate('/' + newHash);
+        setTimeout(scrollToCatalogSection, 150);
+      } else {
+        scrollToCatalogSection();
+      }
+      return;
+    }
+
+    if (link.startsWith('http://') || link.startsWith('https://')) {
+      window.open(link, '_blank', 'noopener,noreferrer');
+      e.preventDefault();
+      return;
+    }
+
+    navigate(link);
+    e.preventDefault();
+  };
+
+  const promoImage =
+    settings.promoBannerActive !== false
+      ? (settings.promoBannerUrl || DEFAULT_SETTINGS.promoBannerUrl)
+      : null;
+
   return (
     <div className="flex-1 w-full flex flex-col">
       {/* Full-width Edge-to-Edge Hero Carousel right beneath topbar */}
       <HeroCarousel />
 
-      {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-10 w-full space-y-8 sm:space-y-12">
-        
-        {/* Welcome Section - Balanced typography & elegant proportion */}
-        <section className="text-center space-y-3 pt-1 px-1">
-          
-          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-extrabold text-brand-charcoal tracking-tight leading-snug max-w-2xl mx-auto">
-            {settings.welcomeTitle}
-          </h2>
+      {/* Welcome Section - Balanced typography & elegant proportion */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-3 text-center space-y-3 w-full">
+        <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-extrabold text-brand-charcoal tracking-tight leading-snug max-w-2xl mx-auto">
+          {settings.welcomeTitle}
+        </h2>
 
-          <p className="text-brand-muted text-xs sm:text-sm md:text-base font-normal leading-relaxed max-w-lg mx-auto">
-            {settings.welcomeSubtitle}
-          </p>
+        <p className="text-brand-muted text-xs sm:text-sm md:text-base font-normal leading-relaxed max-w-lg mx-auto">
+          {settings.welcomeSubtitle}
+        </p>
+      </section>
 
-          {/* Clean Standalone Feature Cards - No outer background card, enlarged & aligned with the site */}
-          <div className="pt-5 sm:pt-7 w-full">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
-              
-              <div className="flex items-center gap-3 sm:gap-3.5 p-3.5 sm:p-4.5 rounded-2xl bg-white border border-brand-border/70 shadow-xs hover:shadow-md hover:border-brand-pink/30 transition-all duration-200">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-brand-pink/15 flex items-center justify-center text-brand-pink shrink-0">
-                  <Heart className="w-5 h-5 sm:w-6 sm:h-6 fill-brand-pink/30" />
-                </div>
-                <div className="min-w-0 text-left">
-                  <span className="block text-xs sm:text-sm font-bold text-brand-charcoal truncate">100% Cerâmica</span>
-                  <span className="block text-[11px] sm:text-xs text-brand-muted truncate">Modelado à mão</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 sm:gap-3.5 p-3.5 sm:p-4.5 rounded-2xl bg-white border border-brand-border/70 shadow-xs hover:shadow-md hover:border-brand-green/30 transition-all duration-200">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-brand-green/15 flex items-center justify-center text-brand-green shrink-0">
-                  <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
-                </div>
-                <div className="min-w-0 text-left">
-                  <span className="block text-xs sm:text-sm font-bold text-brand-charcoal truncate">Resina e Verniz</span>
-                  <span className="block text-[11px] sm:text-xs text-brand-muted truncate">Alta proteção</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 sm:gap-3.5 p-3.5 sm:p-4.5 rounded-2xl bg-white border border-brand-border/70 shadow-xs hover:shadow-md hover:border-brand-pink/30 transition-all duration-200">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-brand-pink/15 flex items-center justify-center text-brand-pink shrink-0">
-                  <Truck className="w-5 h-5 sm:w-6 sm:h-6" />
-                </div>
-                <div className="min-w-0 text-left">
-                  <span className="block text-xs sm:text-sm font-bold text-brand-charcoal truncate">Envio Seguro</span>
-                  <span className="block text-[11px] sm:text-xs text-brand-muted truncate">Para todo o Brasil</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 sm:gap-3.5 p-3.5 sm:p-4.5 rounded-2xl bg-white border border-brand-border/70 shadow-xs hover:shadow-md hover:border-brand-green/30 transition-all duration-200">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-brand-green/15 flex items-center justify-center text-brand-green shrink-0">
-                  <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" />
-                </div>
-                <div className="min-w-0 text-left">
-                  <span className="block text-xs sm:text-sm font-bold text-brand-charcoal truncate">Mercado Pago</span>
-                  <span className="block text-[11px] sm:text-xs text-brand-muted truncate">Pix 5% OFF & Cartão</span>
-                </div>
-              </div>
-
+      {/* Full-width Edge-to-Edge 21:9 Promotional Banner */}
+      {promoImage && (
+        <section className="w-full overflow-hidden select-none my-4 sm:my-8 bg-[#FAF8F5]">
+          {settings.promoBannerLink ? (
+            <a
+              href={settings.promoBannerLink}
+              onClick={(e) => handlePromoBannerClick(e, settings.promoBannerLink)}
+              className="block w-full group relative overflow-hidden cursor-pointer"
+            >
+              <img
+                src={promoImage}
+                alt="Banner Bellclay"
+                className="w-full aspect-[21/9] object-cover transition-transform duration-700 ease-out group-hover:scale-101"
+                loading="lazy"
+              />
+            </a>
+          ) : (
+            <div className="w-full relative overflow-hidden">
+              <img
+                src={promoImage}
+                alt="Banner Bellclay"
+                className="w-full aspect-[21/9] object-cover"
+                loading="lazy"
+              />
             </div>
-          </div>
+          )}
         </section>
+      )}
+
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-8 sm:pb-14 w-full space-y-8 sm:space-y-12">
 
         {/* Categories & Catalog Section */}
         <section id="produtos" className="space-y-4 sm:space-y-6 scroll-mt-24 sm:scroll-mt-28">
