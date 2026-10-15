@@ -3,13 +3,15 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Star, Heart, ShoppingBag, Truck, ShieldCheck, Check,
-  ChevronRight, ChevronLeft, ArrowLeft, MessageCircle, Info, CheckCircle2
+  ChevronRight, ChevronLeft, ArrowLeft, MessageCircle, Info, CheckCircle2,
+  Maximize2
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useCart } from '../context/CartContext';
 import { calculateShipping } from '../services/shippingService';
 import { ShippingOption } from '../types';
 import { ProductCard } from '../components/ProductCard';
+import { ProductImageLightbox } from '../components/ProductImageLightbox';
 
 export const ProductPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -21,6 +23,7 @@ export const ProductPage: React.FC = () => {
   const product = products.find((p) => p.slug === slug || p.id === slug);
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [customObservation, setCustomObservation] = useState('');
   const [isAdded, setIsAdded] = useState(false);
@@ -215,9 +218,11 @@ export const ProductPage: React.FC = () => {
           <div className="lg:col-span-7 space-y-4">
             {/* Main Photo: Full Width on Mobile like the Hero Banner with Smooth Slide Transition */}
             <div
-              className="relative aspect-square sm:aspect-4/3 lg:aspect-square w-full md:rounded-3xl overflow-hidden bg-[#FAF7F2] shadow-sm select-none touch-pan-y"
+              onClick={() => setIsLightboxOpen(true)}
+              className="group relative aspect-square sm:aspect-4/3 lg:aspect-square w-full md:rounded-3xl overflow-hidden bg-[#FAF7F2] shadow-sm select-none touch-pan-y cursor-zoom-in"
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
+              title="Clique para ver a foto em tela cheia e dar zoom"
             >
               <AnimatePresence initial={false} custom={slideDirection} mode="popLayout">
                 <motion.img
@@ -310,6 +315,20 @@ export const ProductPage: React.FC = () => {
                   </div>
                 </>
               )}
+
+              {/* Fullscreen Zoom Pill Button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsLightboxOpen(true);
+                }}
+                className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 shadow-md transition-all active:scale-95 z-10 cursor-pointer opacity-90 group-hover:opacity-100"
+                title="Ampliar foto em tela cheia"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Tela cheia / Zoom</span>
+              </button>
             </div>
 
             {/* Thumbnails Row */}
@@ -713,6 +732,15 @@ export const ProductPage: React.FC = () => {
           Comprar Agora
         </button>
       </div>
+
+      {/* Fullscreen Photo Lightbox with Zoom & Pan */}
+      <ProductImageLightbox
+        isOpen={isLightboxOpen}
+        onClose={() => setIsLightboxOpen(false)}
+        images={product.images}
+        initialIndex={activeImageIndex}
+        productTitle={product.title}
+      />
 
     </motion.div>
   );

@@ -20,15 +20,25 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<SiteSettings>(() => {
+    try {
+      const saved = localStorage.getItem('bellclay_site_settings');
+      if (saved) {
+        return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+      }
+    } catch (e) {
+      // ignore
+    }
+    return DEFAULT_SETTINGS;
+  });
   const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const refreshData = async () => {
-    setIsLoading(true);
+  const refreshData = async (showLoading = false) => {
+    if (showLoading) setIsLoading(true);
     try {
       const [fetchedSettings, fetchedProducts] = await Promise.all([
         getSiteSettings(),

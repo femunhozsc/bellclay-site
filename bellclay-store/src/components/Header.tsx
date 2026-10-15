@@ -10,7 +10,7 @@ export const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { totalItems, subtotal, setIsOpen: setIsCartOpen } = useCart();
-  const { settings, searchQuery, setSearchQuery, products } = useSettings();
+  const { settings, searchQuery, setSearchQuery, products, isLoading } = useSettings();
   const { customerProfile } = useAuth();
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -74,9 +74,9 @@ export const Header: React.FC = () => {
 
   return (
     <>
-      {/* Announcement Bar - Scrolls away with the page (NOT sticky) */}
-      {settings.announcementActive && settings.announcementText && (
-        <div className="w-full bg-gradient-to-r from-brand-pink via-[#ff8394] to-brand-green py-2 px-3 text-white text-[11px] sm:text-xs font-semibold text-center tracking-wide relative z-30">
+      {/* Announcement Bar - Only displayed when loaded and active, avoiding any initial flash */}
+      {!isLoading && settings.announcementActive && Boolean(settings.announcementText?.trim()) && (
+        <div className="w-full bg-gradient-to-r from-brand-pink via-[#ff8394] to-brand-green py-2 px-3 text-white text-[11px] sm:text-xs font-semibold text-center tracking-wide relative z-30 transition-all duration-300">
           <div className="max-w-7xl mx-auto flex items-center justify-center">
             <span>{settings.announcementText}</span>
           </div>

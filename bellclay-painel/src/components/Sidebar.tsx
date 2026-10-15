@@ -71,7 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
       {/* User Footer & External Link */}
       <div className="p-4 border-t border-brand-border/60 space-y-3">
         <a
-          href="http://localhost:3000"
+          href="https://bellclayart.vercel.app/"
           target="_blank"
           rel="noopener noreferrer"
           className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#FAF7F2] text-brand-charcoal text-xs font-semibold hover:bg-brand-pink-light hover:text-brand-pink transition-all"

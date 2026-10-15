@@ -3,8 +3,8 @@ import { Product, SiteSettings } from '../types';
 export const DEFAULT_SETTINGS: SiteSettings = {
   welcomeTitle: "Peças Únicas Feitas com Amor em Cerâmica Fria",
   welcomeSubtitle: "Arte modelada à mão em Campo Mourão - PR. Chaveiros, bottons, esculturas e acessórios colecionáveis para deixar seu dia mais colorido e fofo.",
-  announcementText: "Frete Grátis para todo o Paraná em compras acima de R$ 149 • Envio de Campo Mourão - PR",
-  announcementActive: true,
+  announcementText: "",
+  announcementActive: false,
   announcementLink: "#produtos",
   freeShippingThreshold: 149,
   originCep: "87302060",

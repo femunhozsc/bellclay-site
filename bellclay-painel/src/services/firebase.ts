@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore, collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { getAuth, Auth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { getStorage, FirebaseStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Product, SiteSettings, Order, MetricsSummary } from '../types';
+import { Product, SiteSettings, Order, MetricsSummary, BellclayEvent } from '../types';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBzTUrdoJnl7A1zkHNzoAB7P39uM8LNvIA",
@@ -39,6 +39,7 @@ const STORAGE_KEYS = {
   PRODUCTS: 'bellclay_products',
   ORDERS: 'bellclay_orders',
   METRICS: 'bellclay_metrics',
+  EVENTS: 'bellclay_events',
 };
 
 // Initial default settings matching store
