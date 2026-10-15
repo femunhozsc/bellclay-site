@@ -73,19 +73,20 @@ export const Header: React.FC = () => {
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#FDFBF7]/95 backdrop-blur-md border-b border-brand-border/60 transition-all duration-300">
-      {/* Announcement Bar */}
+    <>
+      {/* Announcement Bar - Scrolls away with the page (NOT sticky) */}
       {settings.announcementActive && settings.announcementText && (
-        <div className="bg-gradient-to-r from-brand-pink via-[#ff8394] to-brand-green py-2 px-3 text-white text-[11px] sm:text-xs font-semibold text-center tracking-wide">
+        <div className="w-full bg-gradient-to-r from-brand-pink via-[#ff8394] to-brand-green py-2 px-3 text-white text-[11px] sm:text-xs font-semibold text-center tracking-wide relative z-30">
           <div className="max-w-7xl mx-auto flex items-center justify-center">
             <span>{settings.announcementText}</span>
           </div>
         </div>
       )}
 
-      {/* Main Navbar - Taller with vertical breathing space */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between py-3.5 sm:py-4.5 gap-2 sm:gap-4 min-h-[80px] sm:min-h-[92px]">
+      {/* Main Topbar - Always visible on scroll (Sticky Top-0) */}
+      <header className="sticky top-0 z-40 w-full bg-[#FDFBF7]/95 backdrop-blur-md border-b border-brand-border/60 transition-all duration-300 shadow-2xs">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-3.5 sm:py-4.5 gap-2 sm:gap-4 min-h-[80px] sm:min-h-[92px]">
           
           {/* Left: LOGO ONLY with comfortable margin and plenty of vertical room */}
           <div className="flex items-center shrink-0 pl-1.5 sm:pl-3">
@@ -317,5 +318,6 @@ export const Header: React.FC = () => {
         </AnimatePresence>
       </div>
     </header>
+    </>
   );
 };

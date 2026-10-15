@@ -71,7 +71,7 @@ export const ProductPage: React.FC = () => {
         </p>
         <Link
           to="/"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-brand-pink text-white font-bold text-sm shadow-pink-soft hover:shadow-soft-hover transition-all"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white font-bold text-sm shadow-soft transition-all"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Voltar para o Início</span>
@@ -332,7 +332,7 @@ export const ProductPage: React.FC = () => {
 
                   <button
                     onClick={handleAddToCart}
-                    className="flex-1 flex items-center justify-center gap-2 py-3.5 px-5 rounded-full bg-white border-2 border-brand-pink text-brand-pink hover:bg-brand-pink hover:text-white font-bold text-xs sm:text-sm shadow-xs transition-all duration-200 cursor-pointer"
+                    className="flex-1 flex items-center justify-center gap-2 py-3.5 px-5 rounded-full bg-white border-2 border-brand-pink text-brand-pink hover:bg-gradient-to-r hover:from-brand-pink hover:to-brand-green hover:text-white hover:border-transparent font-bold text-xs sm:text-sm shadow-xs transition-all duration-200 cursor-pointer active:scale-95"
                   >
                     {isAdded ? (
                       <>

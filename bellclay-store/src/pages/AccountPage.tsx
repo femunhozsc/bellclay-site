@@ -234,7 +234,7 @@ export const AccountPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 px-4 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-bold text-xs sm:text-sm shadow-pink-soft transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full py-3 px-4 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white font-bold text-xs sm:text-sm shadow-soft transition-all cursor-pointer disabled:opacity-50 active:scale-98"
                 >
                   {isLoading ? 'Entrando...' : 'Entrar'}
                 </button>
@@ -323,7 +323,7 @@ export const AccountPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 px-4 rounded-full bg-brand-green hover:bg-brand-green-hover text-white font-bold text-xs sm:text-sm shadow-green-soft transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full py-3 px-4 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white font-bold text-xs sm:text-sm shadow-soft transition-all cursor-pointer disabled:opacity-50 active:scale-98"
                 >
                   {isLoading ? 'Cadastrando...' : 'Criar Minha Conta'}
                 </button>
@@ -428,7 +428,7 @@ export const AccountPage: React.FC = () => {
                     </p>
                     <Link
                       to="/"
-                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-brand-pink text-white text-xs font-bold shadow-pink-soft hover:shadow-soft-hover transition-all"
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white text-xs font-bold shadow-soft transition-all"
                     >
                       <span>Ver Catálogo</span>
                       <ArrowRight className="w-4 h-4" />
@@ -554,7 +554,7 @@ export const AccountPage: React.FC = () => {
                   <div className="pt-2">
                     <button
                       type="submit"
-                      className="px-6 py-2.5 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-bold text-xs shadow-pink-soft cursor-pointer flex items-center gap-1.5"
+                      className="px-6 py-2.5 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white font-bold text-xs shadow-soft cursor-pointer flex items-center gap-1.5 active:scale-95 transition-all"
                     >
                       {isSaved ? <CheckCircle2 className="w-4 h-4" /> : null}
                       <span>{isSaved ? 'Dados Salvos!' : 'Salvar Alterações'}</span>

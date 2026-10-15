@@ -107,7 +107,7 @@ export const HeroCarousel: React.FC = () => {
               >
                 <a
                   href={current.buttonLink || "#produtos"}
-                  className="inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-4.5 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-extrabold text-sm sm:text-base shadow-2xl transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer"
+                  className="inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-4.5 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white font-extrabold text-sm sm:text-base shadow-xl transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer"
                 >
                   <span>{current.buttonText || "Ver Coleção"}</span>
                   <ArrowRight className="w-5 h-5 stroke-[2.5]" />

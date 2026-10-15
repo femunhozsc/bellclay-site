@@ -118,7 +118,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                     </p>
                     <button
                       onClick={() => setIsOpen(false)}
-                      className="px-6 py-2.5 rounded-full bg-brand-pink text-white text-xs font-bold shadow-pink-soft hover:shadow-soft-hover transition-all cursor-pointer"
+                      className="px-6 py-2.5 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white text-xs font-bold shadow-soft transition-all cursor-pointer"
                     >
                       Ver Catálogo
                     </button>

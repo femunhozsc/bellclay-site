@@ -42,7 +42,7 @@ export const CategoryPills: React.FC = () => {
                 onClick={() => setSelectedCategory(cat.slug)}
                 className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full text-xs sm:text-base font-bold transition-all duration-200 cursor-pointer shadow-xs active:scale-95 ${
                   isSelected
-                    ? 'bg-brand-pink text-white shadow-pink-soft'
+                    ? 'bg-gradient-to-r from-brand-pink to-brand-green text-white shadow-soft'
                     : 'bg-white hover:bg-brand-pink-subtle text-brand-charcoal border border-brand-border/80 hover:border-brand-pink/30'
                 }`}
               >

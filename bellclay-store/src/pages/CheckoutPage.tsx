@@ -310,7 +310,7 @@ export const CheckoutPage: React.FC = () => {
         </p>
         <Link
           to="/"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-brand-pink text-white font-bold text-xs shadow-pink-soft hover:shadow-soft-hover transition-all"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white font-bold text-xs shadow-soft transition-all"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Voltar ao Catálogo</span>
@@ -454,7 +454,7 @@ export const CheckoutPage: React.FC = () => {
                           onClick={() => {
                             if (validateStep1()) setCurrentStep(2);
                           }}
-                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-bold text-xs sm:text-sm shadow-pink-soft cursor-pointer transition-all"
+                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white font-bold text-xs sm:text-sm shadow-soft cursor-pointer transition-all active:scale-95"
                         >
                           <span>Confirmar & Ir para Endereço</span>
                           <ArrowRight className="w-4 h-4" />
@@ -556,7 +556,7 @@ export const CheckoutPage: React.FC = () => {
                               setCurrentStep(2);
                             }
                           }}
-                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-bold text-xs sm:text-sm shadow-pink-soft cursor-pointer transition-all"
+                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white font-bold text-xs sm:text-sm shadow-soft cursor-pointer transition-all active:scale-95"
                         >
                           <span>Salvar & Ir para Endereço</span>
                           <ArrowRight className="w-4 h-4" />
@@ -697,7 +697,7 @@ export const CheckoutPage: React.FC = () => {
                           setCurrentStep(3);
                         }
                       }}
-                      className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-bold text-xs sm:text-sm shadow-pink-soft cursor-pointer transition-all"
+                      className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white font-bold text-xs sm:text-sm shadow-soft cursor-pointer transition-all active:scale-95"
                     >
                       <span>Escolher Opção de Frete</span>
                       <ArrowRight className="w-4 h-4" />
@@ -795,7 +795,7 @@ export const CheckoutPage: React.FC = () => {
                       onClick={() => {
                         if (validateStep3()) setCurrentStep(4);
                       }}
-                      className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-bold text-xs sm:text-sm shadow-pink-soft cursor-pointer transition-all"
+                      className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white font-bold text-xs sm:text-sm shadow-soft cursor-pointer transition-all active:scale-95"
                     >
                       <span>Revisão e Pagamento</span>
                       <ArrowRight className="w-4 h-4" />
@@ -1149,7 +1149,7 @@ export const CheckoutPage: React.FC = () => {
                     />
                     <button
                       onClick={copyPixCode}
-                      className="px-4 py-2 rounded-xl bg-brand-pink hover:bg-brand-pink-hover text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
                     >
                       {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{isCopied ? 'Copiado!' : 'Copiar'}</span>
