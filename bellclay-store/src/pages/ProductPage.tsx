@@ -287,13 +287,13 @@ export const ProductPage: React.FC = () => {
               {/* Customization / Observation Field */}
               <div className="space-y-1.5 pt-2">
                 <label className="block text-xs sm:text-sm font-bold text-brand-charcoal">
-                  Deseja personalizar sua peça? (Opcional):
+                  Alguma observação sobre a peça?
                 </label>
                 <input
                   type="text"
                   value={customObservation}
                   onChange={(e) => setCustomObservation(e.target.value)}
-                  placeholder="Ex: cor específica, inicial gravada, detalhes..."
+                  placeholder="Ex: alteração de cor, nome para gravar, etc."
                   className="w-full text-xs sm:text-sm px-4 py-3 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
                 />
                 <p className="text-[11px] text-brand-muted">
@@ -359,7 +359,7 @@ export const ProductPage: React.FC = () => {
                   className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-brand-muted hover:text-brand-green hover:bg-brand-green-subtle/50 transition-colors"
                 >
                   <MessageCircle className="w-4 h-4 text-brand-green" />
-                  <span>Dúvidas sobre esta peça? Fale comigo no WhatsApp (44 99107-4932)</span>
+                  <span>Dúvidas sobre esta peça? Fale conosco no WhatsApp</span>
                 </a>
               </div>
 

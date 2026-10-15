@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import {
   ShieldCheck, ArrowLeft, ArrowRight, Check, CheckCircle2,
   Truck, User, MapPin, CreditCard, QrCode, FileText,
-  Copy, ExternalLink, MessageCircle, AlertCircle, ShoppingBag
+  Copy, ExternalLink, MessageCircle, AlertCircle, ShoppingBag, Edit3
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -44,6 +44,10 @@ export const CheckoutPage: React.FC = () => {
   const [email, setEmail] = useState(customerProfile.email || '');
   const [phone, setPhone] = useState(customerProfile.phone || '');
   const [cpf, setCpf] = useState(customerProfile.cpf || '');
+  const [isEditingContact, setIsEditingContact] = useState(false);
+
+  // If customer has saved data, default to abbreviated view
+  const hasSavedContact = Boolean(customerProfile.name && customerProfile.email && customerProfile.phone);
 
   // Step 2: Address Form
   const [cep, setCep] = useState('');
@@ -114,7 +118,7 @@ export const CheckoutPage: React.FC = () => {
   const grandTotal = Math.max(0, subtotal - pixDiscount + shippingCost);
   const installmentOptions = calculateInstallments(grandTotal);
 
-  // Step 1 Validation
+  // Step 1 Validation & Save
   const validateStep1 = () => {
     setErrorMessage(null);
     if (!name.trim()) {
@@ -130,18 +134,18 @@ export const CheckoutPage: React.FC = () => {
       return false;
     }
     if (cpf.replace(/\D/g, '').length < 11) {
-      setErrorMessage('Por favor informe seu CPF para emissão e envio do pedido.');
+      setErrorMessage('Por favor informe seu CPF para envio do pedido.');
       return false;
     }
 
-    // Save profile to context
-    setCustomerProfile({
+    // Save profile to context and local storage automatically
+    setCustomerProfile((prev) => ({
+      ...prev,
       name,
       email,
       phone,
-      cpf,
-      isGuest: true
-    });
+      cpf
+    }));
 
     return true;
   };
@@ -317,17 +321,17 @@ export const CheckoutPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] flex flex-col">
-      {/* Dedicated Checkout Header */}
+      {/* Clean, Proportionate Checkout Header */}
       <header className="bg-white border-b border-brand-border/60 sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center transition-transform hover:scale-105 duration-200 pl-1 sm:pl-2">
-            <img src="/bellclay_logo.png" alt="Bellclay" className="h-13 sm:h-16 w-auto object-contain" />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-18 flex items-center justify-between">
+          <Link to="/" className="flex items-center transition-transform hover:scale-105 duration-200">
+            <img src="/bellclay_logo.png" alt="Bellclay" className="h-8 sm:h-9 w-auto object-contain" />
           </Link>
 
           <div className="flex items-center gap-2 text-xs font-semibold text-brand-charcoal/80 bg-[#FAF8F5] px-3 py-1.5 rounded-full border border-brand-border/60">
             <ShieldCheck className="w-4 h-4 text-brand-green" />
-            <span className="hidden sm:inline">Ambiente 100% Seguro</span>
-            <span className="text-[10px] text-brand-muted hidden md:inline">• SSL 256-Bit</span>
+            <span>Checkout Seguro</span>
+            <span className="text-[10px] text-brand-muted hidden sm:inline">• SSL 256-Bit</span>
           </div>
         </div>
       </header>
@@ -337,7 +341,7 @@ export const CheckoutPage: React.FC = () => {
         
         {/* Step Indicator (Only for steps 1 to 4) */}
         {currentStep < 5 && (
-          <div className="mb-8 max-w-3xl mx-auto">
+          <div className="mb-8 max-w-2xl mx-auto">
             <div className="grid grid-cols-4 gap-2 text-center">
               {[
                 { num: 1, label: 'Contato', icon: User },
@@ -351,7 +355,7 @@ export const CheckoutPage: React.FC = () => {
                 return (
                   <div key={s.num} className="flex flex-col items-center">
                     <div
-                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                      className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${
                         isPassed
                           ? 'bg-brand-green text-white shadow-xs'
                           : isCurrent
@@ -363,7 +367,7 @@ export const CheckoutPage: React.FC = () => {
                     </div>
                     <span
                       className={`text-[10px] sm:text-xs font-semibold mt-1.5 ${
-                        isCurrent ? 'text-brand-charcoal' : 'text-brand-muted'
+                        isCurrent ? 'text-brand-charcoal font-bold' : 'text-brand-muted'
                       }`}
                     >
                       {s.label}
@@ -387,119 +391,180 @@ export const CheckoutPage: React.FC = () => {
 
         {/* Global Error Banner */}
         {errorMessage && (
-          <div className="mb-6 max-w-3xl mx-auto p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+          <div className="mb-6 max-w-2xl mx-auto p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
-        {/* Layout: Form on Left, Order Summary on Right (Desktop) */}
+        {/* Layout: Clean borderless form on Left, Order Summary on Right (Desktop) */}
         {currentStep < 5 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
             
-            {/* Left Steps Column */}
-            <div className="lg:col-span-7 bg-white rounded-3xl border border-brand-border/60 shadow-xs p-5 sm:p-8">
+            {/* Left Steps Column - NO card border box */}
+            <div className="lg:col-span-7 space-y-6">
               
               {/* STEP 1: Contato */}
               {currentStep === 1 && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="font-serif text-xl sm:text-2xl font-bold text-brand-charcoal">
+                    <h2 className="font-serif text-2xl font-bold text-brand-charcoal">
                       1. Identificação e Contato
                     </h2>
-                    <p className="text-xs text-brand-muted mt-1">
-                      Usamos esses dados para enviar atualizações do pedido e emitir o envio.
+                    <p className="text-xs sm:text-sm text-brand-muted mt-0.5">
+                      Para envio de confirmação e declaração postal.
                     </p>
                   </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                        Nome Completo *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Ex: Mariana Silva"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-[#FAF7F2]"
-                      />
-                    </div>
+                  {/* If user has saved contact and is not in editing mode, show abbreviated view */}
+                  {hasSavedContact && !isEditingContact ? (
+                    <div className="space-y-4">
+                      <div className="p-4 rounded-2xl bg-[#F6F2E9] flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-full bg-brand-pink/20 text-brand-pink font-bold flex items-center justify-center shrink-0">
+                            {name[0]?.toUpperCase() || 'C'}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-sm font-bold text-brand-charcoal block truncate">
+                              {name}
+                            </span>
+                            <span className="text-xs text-brand-muted block truncate">
+                              {email} • {phone}
+                            </span>
+                            {cpf && (
+                              <span className="text-[11px] text-brand-muted block truncate">
+                                CPF: {cpf}
+                              </span>
+                            )}
+                          </div>
+                        </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                          E-mail *
-                        </label>
-                        <input
-                          type="email"
-                          placeholder="seuemail@exemplo.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-[#FAF7F2]"
-                        />
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingContact(true)}
+                          className="inline-flex items-center gap-1 text-xs font-bold text-brand-pink hover:underline shrink-0 p-1 cursor-pointer"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>Alterar</span>
+                        </button>
                       </div>
 
+                      <div className="pt-2 flex justify-end">
+                        <button
+                          onClick={() => {
+                            if (validateStep1()) setCurrentStep(2);
+                          }}
+                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-bold text-xs sm:text-sm shadow-pink-soft cursor-pointer transition-all"
+                        >
+                          <span>Confirmar & Ir para Endereço</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Full Editable Inputs */
+                    <div className="space-y-4">
+                      {hasSavedContact && (
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingContact(false)}
+                            className="text-xs font-semibold text-brand-muted hover:text-brand-charcoal"
+                          >
+                            Cancelar edição
+                          </button>
+                        </div>
+                      )}
+
                       <div>
                         <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                          WhatsApp / Telefone *
+                          Nome Completo *
                         </label>
                         <input
                           type="text"
-                          placeholder="(00) 00000-0000"
-                          value={phone}
-                          onChange={(e) => {
-                            const v = e.target.value.replace(/\D/g, '').slice(0, 11);
-                            const formatted = v.length > 6
-                              ? `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`
-                              : v.length > 2
-                              ? `(${v.slice(0, 2)}) ${v.slice(2)}`
-                              : v;
-                            setPhone(formatted);
-                          }}
-                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-[#FAF7F2]"
+                          placeholder="Ex: Mariana Silva"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          className="w-full text-xs sm:text-sm px-3.5 py-3 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
                         />
                       </div>
-                    </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                        CPF (para envio e declaração de conteúdo) *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="000.000.000-00"
-                        value={cpf}
-                        onChange={(e) => {
-                          const v = e.target.value.replace(/\D/g, '').slice(0, 11);
-                          const formatted = v.length > 9
-                            ? `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6, 9)}-${v.slice(9)}`
-                            : v.length > 6
-                            ? `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6)}`
-                            : v.length > 3
-                            ? `${v.slice(0, 3)}.${v.slice(3)}`
-                            : v;
-                          setCpf(formatted);
-                        }}
-                        className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-[#FAF7F2]"
-                      />
-                      <span className="text-[10px] text-brand-muted mt-1 block">
-                        Exigido pelas transportadoras e Correios para envio seguro.
-                      </span>
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                            E-mail *
+                          </label>
+                          <input
+                            type="email"
+                            placeholder="seuemail@exemplo.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full text-xs sm:text-sm px-3.5 py-3 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
+                          />
+                        </div>
 
-                  <div className="pt-4 flex justify-end">
-                    <button
-                      onClick={() => {
-                        if (validateStep1()) setCurrentStep(2);
-                      }}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-bold text-xs shadow-pink-soft cursor-pointer transition-all"
-                    >
-                      <span>Ir para Endereço de Entrega</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
+                        <div>
+                          <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                            WhatsApp / Telefone *
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="(00) 00000-0000"
+                            value={phone}
+                            onChange={(e) => {
+                              const v = e.target.value.replace(/\D/g, '').slice(0, 11);
+                              const formatted = v.length > 6
+                                ? `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`
+                                : v.length > 2
+                                ? `(${v.slice(0, 2)}) ${v.slice(2)}`
+                                : v;
+                              setPhone(formatted);
+                            }}
+                            className="w-full text-xs sm:text-sm px-3.5 py-3 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                          CPF (exigido para envio postal) *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="000.000.000-00"
+                          value={cpf}
+                          onChange={(e) => {
+                            const v = e.target.value.replace(/\D/g, '').slice(0, 11);
+                            const formatted = v.length > 9
+                              ? `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6, 9)}-${v.slice(9)}`
+                              : v.length > 6
+                              ? `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6)}`
+                              : v.length > 3
+                              ? `${v.slice(0, 3)}.${v.slice(3)}`
+                              : v;
+                            setCpf(formatted);
+                          }}
+                          className="w-full text-xs sm:text-sm px-3.5 py-3 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
+                        />
+                      </div>
+
+                      <div className="pt-3 flex justify-end">
+                        <button
+                          onClick={() => {
+                            if (validateStep1()) {
+                              setIsEditingContact(false);
+                              setCurrentStep(2);
+                            }
+                          }}
+                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-bold text-xs sm:text-sm shadow-pink-soft cursor-pointer transition-all"
+                        >
+                          <span>Salvar & Ir para Endereço</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               )}
 
@@ -507,10 +572,10 @@ export const CheckoutPage: React.FC = () => {
               {currentStep === 2 && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="font-serif text-xl sm:text-2xl font-bold text-brand-charcoal">
+                    <h2 className="font-serif text-2xl font-bold text-brand-charcoal">
                       2. Endereço de Entrega
                     </h2>
-                    <p className="text-xs text-brand-muted mt-1">
+                    <p className="text-xs sm:text-sm text-brand-muted mt-0.5">
                       Informe seu CEP para preencher o endereço automaticamente.
                     </p>
                   </div>
@@ -518,7 +583,7 @@ export const CheckoutPage: React.FC = () => {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                        CEP * {isLoadingAddress && <span className="text-brand-pink font-normal">(Buscando endereço...)</span>}
+                        CEP * {isLoadingAddress && <span className="text-brand-pink font-normal">(Buscando...)</span>}
                       </label>
                       <input
                         type="text"
@@ -526,7 +591,7 @@ export const CheckoutPage: React.FC = () => {
                         maxLength={9}
                         value={cep}
                         onChange={(e) => handleCepChange(e.target.value)}
-                        className="w-full sm:w-1/2 text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-[#FAF7F2]"
+                        className="w-full sm:w-1/2 text-xs sm:text-sm px-3.5 py-3 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
                       />
                     </div>
 
@@ -540,7 +605,7 @@ export const CheckoutPage: React.FC = () => {
                           placeholder="Nome da sua rua"
                           value={street}
                           onChange={(e) => setStreet(e.target.value)}
-                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-[#FAF7F2]"
+                          className="w-full text-xs sm:text-sm px-3.5 py-3 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
                         />
                       </div>
 
@@ -553,7 +618,7 @@ export const CheckoutPage: React.FC = () => {
                           placeholder="Ex: 123"
                           value={number}
                           onChange={(e) => setNumber(e.target.value)}
-                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-[#FAF7F2]"
+                          className="w-full text-xs sm:text-sm px-3.5 py-3 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
                         />
                       </div>
                     </div>
@@ -568,7 +633,7 @@ export const CheckoutPage: React.FC = () => {
                           placeholder="Apto, Bloco, Casa fundos..."
                           value={complement}
                           onChange={(e) => setComplement(e.target.value)}
-                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-[#FAF7F2]"
+                          className="w-full text-xs sm:text-sm px-3.5 py-3 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
                         />
                       </div>
 
@@ -581,7 +646,7 @@ export const CheckoutPage: React.FC = () => {
                           placeholder="Bairro"
                           value={neighborhood}
                           onChange={(e) => setNeighborhood(e.target.value)}
-                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-[#FAF7F2]"
+                          className="w-full text-xs sm:text-sm px-3.5 py-3 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
                         />
                       </div>
                     </div>
@@ -596,7 +661,7 @@ export const CheckoutPage: React.FC = () => {
                           placeholder="Cidade"
                           value={city}
                           onChange={(e) => setCity(e.target.value)}
-                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-[#FAF7F2]"
+                          className="w-full text-xs sm:text-sm px-3.5 py-3 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
                         />
                       </div>
 
@@ -610,7 +675,7 @@ export const CheckoutPage: React.FC = () => {
                           maxLength={2}
                           value={state}
                           onChange={(e) => setState(e.target.value.toUpperCase())}
-                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-[#FAF7F2]"
+                          className="w-full text-xs sm:text-sm px-3.5 py-3 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
                         />
                       </div>
                     </div>
@@ -632,7 +697,7 @@ export const CheckoutPage: React.FC = () => {
                           setCurrentStep(3);
                         }
                       }}
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-bold text-xs shadow-pink-soft cursor-pointer transition-all"
+                      className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-bold text-xs sm:text-sm shadow-pink-soft cursor-pointer transition-all"
                     >
                       <span>Escolher Opção de Frete</span>
                       <ArrowRight className="w-4 h-4" />
@@ -645,19 +710,19 @@ export const CheckoutPage: React.FC = () => {
               {currentStep === 3 && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="font-serif text-xl sm:text-2xl font-bold text-brand-charcoal">
+                    <h2 className="font-serif text-2xl font-bold text-brand-charcoal">
                       3. Escolha a Opção de Envio
                     </h2>
-                    <p className="text-xs text-brand-muted mt-1">
-                      Destino: <strong>{city} - {state}</strong> (CEP {cep}) • Origem: <strong>Campo Mourão - PR</strong>
+                    <p className="text-xs sm:text-sm text-brand-muted mt-0.5">
+                      Destino: <strong>{city} - {state}</strong> • Origem: <strong>Campo Mourão - PR</strong>
                     </p>
                   </div>
 
-                  <div className="space-y-2.5">
+                  <div className="space-y-3">
                     {shippingOptions.length === 0 ? (
                       <div className="p-6 text-center bg-[#FAF8F5] rounded-2xl border border-brand-border space-y-2">
                         <Truck className="w-8 h-8 text-brand-pink mx-auto" />
-                        <p className="text-xs font-bold text-brand-charcoal">Calculando as melhores opções de frete...</p>
+                        <p className="text-xs font-bold text-brand-charcoal">Calculando as opções de frete...</p>
                         <button
                           onClick={() => calculateFreight(cep.replace(/\D/g, ''))}
                           className="text-xs text-brand-pink font-semibold underline"
@@ -697,7 +762,7 @@ export const CheckoutPage: React.FC = () => {
                                   )}
                                 </div>
                                 <span className="text-[11px] text-brand-muted block mt-0.5">
-                                  {opt.company} • Entrega estimada em {opt.deliveryDays} {opt.deliveryDays === 1 ? 'dia útil' : 'dias úteis'}
+                                  {opt.company} • Entrega em cerca de {opt.deliveryDays} {opt.deliveryDays === 1 ? 'dia útil' : 'dias úteis'}
                                 </span>
                               </div>
                             </div>
@@ -730,7 +795,7 @@ export const CheckoutPage: React.FC = () => {
                       onClick={() => {
                         if (validateStep3()) setCurrentStep(4);
                       }}
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-bold text-xs shadow-pink-soft cursor-pointer transition-all"
+                      className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-bold text-xs sm:text-sm shadow-pink-soft cursor-pointer transition-all"
                     >
                       <span>Revisão e Pagamento</span>
                       <ArrowRight className="w-4 h-4" />
@@ -743,11 +808,11 @@ export const CheckoutPage: React.FC = () => {
               {currentStep === 4 && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="font-serif text-xl sm:text-2xl font-bold text-brand-charcoal">
+                    <h2 className="font-serif text-2xl font-bold text-brand-charcoal">
                       4. Forma de Pagamento
                     </h2>
-                    <p className="text-xs text-brand-muted mt-1">
-                      Escolha como prefere pagar via Mercado Pago. Transação protegida.
+                    <p className="text-xs sm:text-sm text-brand-muted mt-0.5">
+                      Transação 100% protegida via Mercado Pago.
                     </p>
                   </div>
 
@@ -756,7 +821,7 @@ export const CheckoutPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('pix')}
-                      className={`flex flex-col items-center justify-center p-3 sm:p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                      className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
                         paymentMethod === 'pix'
                           ? 'border-brand-green bg-brand-green-subtle/50 text-brand-green shadow-xs'
                           : 'border-brand-border/60 hover:border-gray-300 bg-white text-brand-muted'
@@ -770,7 +835,7 @@ export const CheckoutPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('credit_card')}
-                      className={`flex flex-col items-center justify-center p-3 sm:p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                      className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
                         paymentMethod === 'credit_card'
                           ? 'border-brand-pink bg-brand-pink-subtle/50 text-brand-pink shadow-xs'
                           : 'border-brand-border/60 hover:border-gray-300 bg-white text-brand-muted'
@@ -784,7 +849,7 @@ export const CheckoutPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('boleto')}
-                      className={`flex flex-col items-center justify-center p-3 sm:p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                      className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
                         paymentMethod === 'boleto'
                           ? 'border-brand-pink bg-brand-pink-subtle/50 text-brand-pink shadow-xs'
                           : 'border-brand-border/60 hover:border-gray-300 bg-white text-brand-muted'
@@ -792,7 +857,7 @@ export const CheckoutPage: React.FC = () => {
                     >
                       <FileText className="w-6 h-6 mb-1.5" />
                       <span className="text-xs font-bold text-brand-charcoal">Boleto</span>
-                      <span className="text-[10px] text-brand-muted">Compensação 1-3d</span>
+                      <span className="text-[10px] text-brand-muted">1-3 dias</span>
                     </button>
                   </div>
 
@@ -804,7 +869,7 @@ export const CheckoutPage: React.FC = () => {
                         <span>Aprovação Imediata + Desconto de 5%</span>
                       </div>
                       <p className="text-xs text-brand-charcoal/80 leading-relaxed">
-                        Ao finalizar, você receberá o QR Code e o código Pix Copia e Cola para pagar no app do seu banco com validade de 30 minutos.
+                        Ao clicar em Concluir Pedido, você receberá o QR Code e o código Pix Copia e Cola para pagar no app do seu banco com validade de 30 minutos.
                       </p>
                     </div>
                   )}
@@ -826,7 +891,7 @@ export const CheckoutPage: React.FC = () => {
                               const v = e.target.value.replace(/\D/g, '').slice(0, 16);
                               setCardNumber(v.replace(/(\d{4})(?=\d)/g, '$1 '));
                             }}
-                            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-hidden bg-white"
+                            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase text-brand-muted bg-gray-100 px-2 py-0.5 rounded">
                             {detectCardBrand(cardNumber)}
@@ -843,7 +908,7 @@ export const CheckoutPage: React.FC = () => {
                           placeholder="Como está gravado no cartão"
                           value={cardName}
                           onChange={(e) => setCardName(e.target.value.toUpperCase())}
-                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-hidden bg-white"
+                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
                         />
                       </div>
 
@@ -861,13 +926,13 @@ export const CheckoutPage: React.FC = () => {
                               const v = e.target.value.replace(/\D/g, '').slice(0, 4);
                               setCardExpiry(v.length > 2 ? `${v.slice(0, 2)}/${v.slice(2)}` : v);
                             }}
-                            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-hidden bg-white"
+                            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
                           />
                         </div>
 
                         <div>
                           <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                            CVV (Código de segurança) *
+                            CVV *
                           </label>
                           <input
                             type="text"
@@ -875,7 +940,7 @@ export const CheckoutPage: React.FC = () => {
                             maxLength={4}
                             value={cardCvv}
                             onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-hidden bg-white"
+                            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
                           />
                         </div>
                       </div>
@@ -887,7 +952,7 @@ export const CheckoutPage: React.FC = () => {
                         <select
                           value={installments}
                           onChange={(e) => setInstallments(Number(e.target.value))}
-                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-hidden bg-white"
+                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
                         >
                           {installmentOptions.map((opt) => (
                             <option key={opt.installments} value={opt.installments}>
@@ -903,7 +968,7 @@ export const CheckoutPage: React.FC = () => {
                   {paymentMethod === 'boleto' && (
                     <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 space-y-2">
                       <p className="text-xs text-brand-charcoal/80 leading-relaxed">
-                        Ao finalizar, você poderá imprimir ou copiar a linha digitável do boleto com vencimento em até 3 dias úteis. A produção da cerâmica inicia logo após a compensação bancária.
+                        Ao finalizar, você receberá a linha digitável do boleto para pagamento em qualquer banco ou lotérica com vencimento em até 3 dias úteis.
                       </p>
                     </div>
                   )}
@@ -937,10 +1002,10 @@ export const CheckoutPage: React.FC = () => {
 
             </div>
 
-            {/* Right Order Summary Column */}
-            <div className="lg:col-span-5 bg-white rounded-3xl border border-brand-border/60 shadow-xs p-5 sm:p-6 space-y-4">
+            {/* Right Order Summary Column - Soft warm background, zero card border */}
+            <div className="lg:col-span-5 bg-[#F8F5EE] p-5 sm:p-7 rounded-2xl sm:rounded-3xl space-y-4">
               <h3 className="font-serif text-lg font-bold text-brand-charcoal border-b border-brand-border/60 pb-3">
-                Resumo do Pedido ({items.length} {items.length === 1 ? 'item' : 'itens'})
+                Resumo da Compra ({items.length} {items.length === 1 ? 'item' : 'itens'})
               </h3>
 
               {/* Items List */}
@@ -952,7 +1017,7 @@ export const CheckoutPage: React.FC = () => {
                       <img
                         src={item.product.images[0]}
                         alt={item.product.title}
-                        className="w-12 h-12 rounded-xl object-cover bg-gray-100 shrink-0"
+                        className="w-12 h-12 rounded-xl object-cover bg-white shrink-0"
                       />
                       <div className="flex-1 min-w-0">
                         <span className="text-xs font-bold text-brand-charcoal truncate block">
@@ -1023,7 +1088,7 @@ export const CheckoutPage: React.FC = () => {
               <div className="pt-3 border-t border-brand-border/40 text-[11px] text-brand-muted space-y-1">
                 <p className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-brand-green" />
-                  <span>Peças modeladas à mão e envernizadas em Campo Mourão</span>
+                  <span>Peças modeladas à mão em cerâmica fria</span>
                 </p>
                 <p className="flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-brand-green" />
@@ -1035,8 +1100,8 @@ export const CheckoutPage: React.FC = () => {
           </div>
         ) : (
           /* STEP 5: Sucesso / Pedido Confirmado */
-          <div className="max-w-2xl mx-auto bg-white rounded-3xl border border-brand-border/60 shadow-lg p-6 sm:p-10 space-y-6 text-center">
-            <div className="w-16 h-16 rounded-full bg-brand-green/10 text-brand-green flex items-center justify-center mx-auto">
+          <div className="max-w-xl mx-auto py-8 space-y-6 text-center">
+            <div className="w-16 h-16 rounded-full bg-brand-green/15 text-brand-green flex items-center justify-center mx-auto">
               <Check className="w-8 h-8 stroke-[3]" />
             </div>
 
@@ -1057,7 +1122,7 @@ export const CheckoutPage: React.FC = () => {
 
             {/* Pix Output Display */}
             {paymentMethod === 'pix' && pixResult && (
-              <div className="p-5 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 space-y-4 max-w-md mx-auto text-left">
+              <div className="p-5 rounded-2xl bg-[#F6F2E9] space-y-4 max-w-md mx-auto text-left">
                 <div className="flex items-center justify-between text-xs font-bold text-brand-charcoal">
                   <span>Pague via Pix em até {formatPixMinutes()}</span>
                   <span className="text-brand-green">R$ {grandTotal.toFixed(2).replace('.', ',')}</span>
@@ -1080,11 +1145,11 @@ export const CheckoutPage: React.FC = () => {
                       type="text"
                       readOnly
                       value={pixResult.pixCopiaECola}
-                      className="flex-1 text-[11px] font-mono p-2 rounded-xl border border-brand-border bg-white select-all"
+                      className="flex-1 text-[11px] font-mono p-2.5 rounded-xl border border-brand-border bg-white select-all"
                     />
                     <button
                       onClick={copyPixCode}
-                      className="px-3.5 py-2 rounded-xl bg-brand-pink hover:bg-brand-pink-hover text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                      className="px-4 py-2 rounded-xl bg-brand-pink hover:bg-brand-pink-hover text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
                     >
                       {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{isCopied ? 'Copiado!' : 'Copiar'}</span>
@@ -1096,7 +1161,7 @@ export const CheckoutPage: React.FC = () => {
 
             {/* Boleto Output */}
             {paymentMethod === 'boleto' && boletoResult && (
-              <div className="p-5 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 space-y-3 max-w-md mx-auto text-left">
+              <div className="p-5 rounded-2xl bg-[#F6F2E9] space-y-3 max-w-md mx-auto text-left">
                 <span className="text-xs font-bold text-brand-charcoal block">
                   Linha Digitável do Boleto:
                 </span>
@@ -1115,7 +1180,7 @@ export const CheckoutPage: React.FC = () => {
               </div>
             )}
 
-            {/* WhatsApp Confirmation CTA - User requested predefined message */}
+            {/* WhatsApp Confirmation CTA - WITHOUT phone number in button */}
             <div className="pt-2 max-w-md mx-auto space-y-3">
               <a
                 href={`https://wa.me/5544991074932?text=${encodeURIComponent(
@@ -1126,7 +1191,7 @@ export const CheckoutPage: React.FC = () => {
                 className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-brand-green hover:bg-brand-green-hover text-white font-bold text-xs sm:text-sm shadow-green-soft transition-all"
               >
                 <MessageCircle className="w-5 h-5" />
-                <span>Confirmar Pedido no WhatsApp (44 99107-4932)</span>
+                <span>Confirmar Pedido no WhatsApp</span>
               </a>
 
               <Link

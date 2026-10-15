@@ -1,36 +1,94 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  User, Package, MapPin, Phone, Mail, CheckCircle2,
-  ChevronRight, MessageCircle, ExternalLink, ShieldCheck, Clock
+  User, Package, Mail, Lock, Phone, FileText, CheckCircle2,
+  ChevronRight, MessageCircle, AlertCircle, LogOut, ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Order } from '../types';
 
 export const AccountPage: React.FC = () => {
-  const { customerProfile, setCustomerProfile } = useAuth();
+  const {
+    customerProfile,
+    setCustomerProfile,
+    loginWithGoogle,
+    loginWithEmail,
+    registerWithEmail,
+    logout
+  } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<'orders' | 'profile'>('profile');
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [activeTab, setActiveTab] = useState<'orders' | 'profile'>('orders');
+
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // Register form state
+  const [regName, setRegName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regCpf, setRegCpf] = useState('');
+
+  // Edit profile state
   const [name, setName] = useState(customerProfile.name || '');
   const [email, setEmail] = useState(customerProfile.email || '');
   const [phone, setPhone] = useState(customerProfile.phone || '');
   const [cpf, setCpf] = useState(customerProfile.cpf || '');
   const [isSaved, setIsSaved] = useState(false);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
+
+  const isLoggedIn = Boolean(customerProfile.email && !customerProfile.isGuest);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     try {
       const savedOrders = localStorage.getItem('bellclay_orders');
       if (savedOrders) {
-        const parsed = JSON.parse(savedOrders);
-        setOrders(parsed);
-        if (parsed.length > 0) {
-          setActiveTab('orders');
-        }
+        setOrders(JSON.parse(savedOrders));
       }
     } catch {}
   }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setIsLoading(true);
+    const res = await loginWithEmail(loginEmail, loginPassword);
+    setIsLoading(false);
+    if (!res.success && res.error) {
+      setAuthError(res.error);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    if (!regName.trim() || !regEmail.trim() || !regPassword.trim()) {
+      setAuthError('Por favor preencha todos os campos obrigatórios.');
+      return;
+    }
+    setIsLoading(true);
+    const res = await registerWithEmail(regName, regEmail, regPassword, regPhone, regCpf);
+    setIsLoading(false);
+    if (!res.success && res.error) {
+      setAuthError(res.error);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setAuthError(null);
+    setIsLoading(true);
+    const res = await loginWithGoogle();
+    setIsLoading(false);
+    if (!res.success && res.error) {
+      setAuthError(res.error);
+    }
+  };
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,236 +136,431 @@ export const AccountPage: React.FC = () => {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         
-        {/* Sleek Minimalist Page Header (Zero heavy card boxes) */}
-        <div className="border-b border-brand-border/60 pb-6 pt-2">
-          <span className="text-xs font-bold uppercase tracking-widest text-brand-pink">
-            Ateliê Bellclay Artesanatos
-          </span>
-          <h1 className="font-serif text-3xl sm:text-5xl font-extrabold text-brand-charcoal tracking-tight mt-1">
-            {customerProfile.name ? `Olá, ${customerProfile.name.split(' ')[0]}` : 'Minha Conta'}
-          </h1>
-          <p className="text-sm sm:text-base text-brand-muted mt-1 max-w-xl">
-            Acompanhe a produção das suas peças artesanais e gerencie seus dados para envios com rapidez e segurança.
-          </p>
-
-          {/* Clean Segmented Tab Switcher */}
-          <div className="flex gap-2 sm:gap-4 mt-6">
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                activeTab === 'profile'
-                  ? 'bg-brand-charcoal text-white shadow-sm'
-                  : 'bg-white hover:bg-[#F6F1E8] text-brand-muted border border-brand-border/80'
-              }`}
-            >
-              <User className="w-4 h-4" />
-              <span>Meus Dados de Contato</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('orders')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                activeTab === 'orders'
-                  ? 'bg-brand-charcoal text-white shadow-sm'
-                  : 'bg-white hover:bg-[#F6F1E8] text-brand-muted border border-brand-border/80'
-              }`}
-            >
-              <Package className="w-4 h-4" />
-              <span>Meus Pedidos ({orders.length})</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Tab 1: Profile Details */}
-        {activeTab === 'profile' && (
-          <div className="max-w-2xl py-2 space-y-6">
-            <div className="space-y-1">
-              <h2 className="font-serif text-xl sm:text-2xl font-bold text-brand-charcoal">
-                Informações para Entrega & Notificações
-              </h2>
+        {/* LOGGED OUT: Professional Login & Registration Screen */}
+        {!isLoggedIn ? (
+          <div className="max-w-md mx-auto py-6 space-y-6">
+            
+            {/* Header */}
+            <div className="text-center space-y-1.5">
+              <h1 className="font-serif text-2xl sm:text-3xl font-extrabold text-brand-charcoal">
+                {authMode === 'login' ? 'Entrar na Minha Conta' : 'Criar Conta Bellclay'}
+              </h1>
               <p className="text-xs sm:text-sm text-brand-muted">
-                Preencha uma vez para não precisar redigitar no checkout das suas próximas compras.
+                {authMode === 'login'
+                  ? 'Acesse para acompanhar seus pedidos e agilizar compras'
+                  : 'Cadastre-se para salvar seus dados de envio e acompanhar encomendas'}
               </p>
             </div>
 
-            <form onSubmit={handleSaveProfile} className="space-y-4">
-              <div>
-                <label className="block text-xs sm:text-sm font-bold text-brand-charcoal mb-1.5">
-                  Nome Completo
-                </label>
-                <input
-                  type="text"
-                  placeholder="Seu nome"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full text-sm px-4 py-3 rounded-xl border border-brand-border/80 focus:border-brand-pink outline-none bg-white shadow-2xs"
-                />
+            {/* Error Message */}
+            {authError && (
+              <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{authError}</span>
               </div>
+            )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Social Google Login Button */}
+            <button
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-brand-border bg-white hover:bg-gray-50 text-brand-charcoal text-xs sm:text-sm font-bold shadow-2xs transition-all cursor-pointer"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                />
+              </svg>
+              <span>Continuar com o Google</span>
+            </button>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-brand-border/70" />
+              <span className="text-[11px] font-semibold text-brand-muted uppercase">ou com seu e-mail</span>
+              <div className="flex-1 h-px bg-brand-border/70" />
+            </div>
+
+            {/* Form */}
+            {authMode === 'login' ? (
+              <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-xs sm:text-sm font-bold text-brand-charcoal mb-1.5">
+                  <label className="block text-xs font-bold text-brand-charcoal mb-1">
                     E-mail
                   </label>
-                  <input
-                    type="email"
-                    placeholder="seuemail@exemplo.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full text-sm px-4 py-3 rounded-xl border border-brand-border/80 focus:border-brand-pink outline-none bg-white shadow-2xs"
-                  />
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-brand-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="seuemail@exemplo.com"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-bold text-brand-charcoal mb-1.5">
-                    WhatsApp / Telefone
+                  <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                    Senha
                   </label>
-                  <input
-                    type="text"
-                    placeholder="(00) 00000-0000"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full text-sm px-4 py-3 rounded-xl border border-brand-border/80 focus:border-brand-pink outline-none bg-white shadow-2xs"
-                  />
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-brand-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="password"
+                      required
+                      placeholder="Sua senha secreta"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs sm:text-sm font-bold text-brand-charcoal mb-1.5">
-                  CPF (necessário para declaração de conteúdo dos Correios/transportadora)
-                </label>
-                <input
-                  type="text"
-                  placeholder="000.000.000-00"
-                  value={cpf}
-                  onChange={(e) => setCpf(e.target.value)}
-                  className="w-full text-sm px-4 py-3 rounded-xl border border-brand-border/80 focus:border-brand-pink outline-none bg-white shadow-2xs"
-                />
-              </div>
-
-              <div className="pt-3">
                 <button
                   type="submit"
-                  className="px-8 py-3.5 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-extrabold text-sm shadow-pink-soft transition-all cursor-pointer flex items-center justify-center gap-2"
+                  disabled={isLoading}
+                  className="w-full py-3 px-4 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-bold text-xs sm:text-sm shadow-pink-soft transition-all cursor-pointer disabled:opacity-50"
                 >
-                  {isSaved ? <CheckCircle2 className="w-4 h-4 stroke-[2.5]" /> : null}
-                  <span>{isSaved ? 'Dados Salvos com Sucesso!' : 'Salvar Meus Dados'}</span>
+                  {isLoading ? 'Entrando...' : 'Entrar'}
                 </button>
-              </div>
-            </form>
-          </div>
-        )}
+              </form>
+            ) : (
+              <form onSubmit={handleRegister} className="space-y-3.5">
+                <div>
+                  <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                    Nome Completo *
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-brand-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Seu nome"
+                      value={regName}
+                      onChange={(e) => setRegName(e.target.value)}
+                      className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
+                    />
+                  </div>
+                </div>
 
-        {/* Tab 2: Orders History */}
-        {activeTab === 'orders' && (
-          <div className="space-y-6">
-            <div className="space-y-1">
-              <h2 className="font-serif text-xl sm:text-2xl font-bold text-brand-charcoal">
-                Histórico de Encomendas
-              </h2>
-              <p className="text-xs sm:text-sm text-brand-muted">
-                Acompanhe o status e rastreamento de cada peça artesanal criada para você.
-              </p>
+                <div>
+                  <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                    E-mail *
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-brand-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="seuemail@exemplo.com"
+                      value={regEmail}
+                      onChange={(e) => setRegEmail(e.target.value)}
+                      className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                      WhatsApp
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="(00) 00000-0000"
+                      value={regPhone}
+                      onChange={(e) => setRegPhone(e.target.value)}
+                      className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                      CPF
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="000.000.000-00"
+                      value={regCpf}
+                      onChange={(e) => setRegCpf(e.target.value)}
+                      className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                    Senha de Acesso *
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-brand-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="password"
+                      required
+                      placeholder="Mínimo 6 dígitos"
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-3 px-4 rounded-full bg-brand-green hover:bg-brand-green-hover text-white font-bold text-xs sm:text-sm shadow-green-soft transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isLoading ? 'Cadastrando...' : 'Criar Minha Conta'}
+                </button>
+              </form>
+            )}
+
+            {/* Toggle between Login and Register */}
+            <div className="text-center pt-2">
+              {authMode === 'login' ? (
+                <p className="text-xs text-brand-muted">
+                  Ainda não tem conta?{' '}
+                  <button
+                    onClick={() => {
+                      setAuthMode('register');
+                      setAuthError(null);
+                    }}
+                    className="font-bold text-brand-pink hover:underline cursor-pointer"
+                  >
+                    Cadastre-se gratuitamente
+                  </button>
+                </p>
+              ) : (
+                <p className="text-xs text-brand-muted">
+                  Já possui uma conta?{' '}
+                  <button
+                    onClick={() => {
+                      setAuthMode('login');
+                      setAuthError(null);
+                    }}
+                    className="font-bold text-brand-pink hover:underline cursor-pointer"
+                  >
+                    Fazer Login
+                  </button>
+                </p>
+              )}
             </div>
 
-            {orders.length === 0 ? (
-              <div className="py-16 text-center space-y-3">
-                <Package className="w-12 h-12 text-brand-muted/60 mx-auto" />
-                <h3 className="font-serif text-lg sm:text-xl font-bold text-brand-charcoal">
-                  Nenhuma encomenda encontrada
-                </h3>
-                <p className="text-xs sm:text-sm text-brand-muted max-w-sm mx-auto">
-                  Assim que você concluir um pedido no site, ele aparecerá aqui com atualizações de modelagem e envio!
+          </div>
+        ) : (
+          /* LOGGED IN VIEW */
+          <div className="space-y-8">
+            {/* Header info */}
+            <div className="border-b border-brand-border/60 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="font-serif text-2xl sm:text-3xl font-extrabold text-brand-charcoal">
+                  Olá, {customerProfile.name.split(' ')[0]}
+                </h1>
+                <p className="text-xs sm:text-sm text-brand-muted mt-0.5">
+                  {customerProfile.email}
                 </p>
-                <Link
-                  to="/"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-brand-pink text-white text-xs sm:text-sm font-bold shadow-pink-soft hover:shadow-soft-hover transition-all"
-                >
-                  <span>Explorar Catálogo</span>
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
               </div>
-            ) : (
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={logout}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-brand-border text-xs font-bold text-brand-charcoal hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sair da Conta</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-2 sm:gap-3">
+              <button
+                onClick={() => setActiveTab('orders')}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                  activeTab === 'orders'
+                    ? 'bg-brand-charcoal text-white shadow-sm'
+                    : 'bg-white hover:bg-[#F6F1E8] text-brand-muted border border-brand-border/80'
+                }`}
+              >
+                <Package className="w-4 h-4" />
+                <span>Minhas Encomendas ({orders.length})</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                  activeTab === 'profile'
+                    ? 'bg-brand-charcoal text-white shadow-sm'
+                    : 'bg-white hover:bg-[#F6F1E8] text-brand-muted border border-brand-border/80'
+                }`}
+              >
+                <User className="w-4 h-4" />
+                <span>Dados de Envio & Contato</span>
+              </button>
+            </div>
+
+            {/* Tab: Orders */}
+            {activeTab === 'orders' && (
               <div className="space-y-4">
-                {orders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="p-5 sm:p-6 rounded-2xl bg-white border border-brand-border/70 space-y-4 shadow-2xs"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-border/40 pb-3">
-                      <div>
-                        <span className="text-sm font-extrabold text-brand-charcoal">
-                          Pedido #{order.id}
-                        </span>
-                        <span className="text-xs text-brand-muted block mt-0.5">
-                          {new Date(order.createdAt).toLocaleDateString('pt-BR', {
-                            day: '2-digit',
-                            month: 'long',
-                            year: 'numeric'
-                          })}
-                        </span>
-                      </div>
-                      <div>{getStatusBadge(order.orderStatus)}</div>
-                    </div>
-
-                    {/* Order Items */}
-                    <div className="space-y-2.5">
-                      {order.items.map((item) => (
-                        <div key={item.product.id} className="flex items-center gap-3">
-                          <img
-                            src={item.product.images[0]}
-                            alt={item.product.title}
-                            className="w-12 h-12 rounded-xl object-cover bg-gray-100"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <span className="text-xs sm:text-sm font-bold text-brand-charcoal block truncate">
-                              {item.product.title}
-                            </span>
-                            <span className="text-xs text-brand-muted">
-                              {item.quantity} unidade(s) • R$ {((item.product.promotionalPrice || item.product.price) * item.quantity).toFixed(2).replace('.', ',')}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Delivery & Tracking & Total */}
-                    <div className="pt-3 border-t border-brand-border/40 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
-                      <div>
-                        <span className="text-brand-muted block">
-                          Envio: <strong className="text-brand-charcoal">{order.shipping?.name}</strong>
-                        </span>
-                        {order.trackingCode && (
-                          <span className="font-mono font-bold text-brand-green block mt-0.5">
-                            Código de Rastreio: {order.trackingCode}
+                {orders.length === 0 ? (
+                  <div className="py-14 text-center space-y-3">
+                    <Package className="w-12 h-12 text-brand-muted/60 mx-auto" />
+                    <h3 className="font-serif text-lg font-bold text-brand-charcoal">
+                      Nenhuma encomenda recente
+                    </h3>
+                    <p className="text-xs text-brand-muted max-w-sm mx-auto">
+                      Suas peças artesanais encomendadas aparecerão aqui com status de secagem e rastreio.
+                    </p>
+                    <Link
+                      to="/"
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-brand-pink text-white text-xs font-bold shadow-pink-soft hover:shadow-soft-hover transition-all"
+                    >
+                      <span>Ver Catálogo</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                ) : (
+                  orders.map((order) => (
+                    <div
+                      key={order.id}
+                      className="p-5 rounded-2xl bg-white border border-brand-border/70 space-y-3 shadow-2xs"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-border/40 pb-3">
+                        <div>
+                          <span className="text-xs sm:text-sm font-extrabold text-brand-charcoal">
+                            Pedido #{order.id}
                           </span>
-                        )}
+                          <span className="text-[11px] text-brand-muted block mt-0.5">
+                            {new Date(order.createdAt).toLocaleDateString('pt-BR', {
+                              day: '2-digit',
+                              month: 'long',
+                              year: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                        <div>{getStatusBadge(order.orderStatus)}</div>
                       </div>
 
-                      <div className="text-right">
-                        <span className="text-xs text-brand-muted block">Valor Total</span>
-                        <span className="text-base sm:text-lg font-black text-brand-charcoal">
-                          R$ {order.total.toFixed(2).replace('.', ',')}
-                        </span>
+                      <div className="space-y-2">
+                        {order.items.map((item) => (
+                          <div key={item.product.id} className="flex items-center gap-3">
+                            <img
+                              src={item.product.images[0]}
+                              alt={item.product.title}
+                              className="w-10 h-10 rounded-lg object-cover bg-gray-100"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-xs font-bold text-brand-charcoal block truncate">
+                                {item.product.title}
+                              </span>
+                              <span className="text-[11px] text-brand-muted">
+                                {item.quantity}x • R$ {((item.product.promotionalPrice || item.product.price) * item.quantity).toFixed(2).replace('.', ',')}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="pt-2 border-t border-brand-border/40 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div>
+                          <span className="text-brand-muted">Envio: {order.shipping?.name}</span>
+                          {order.trackingCode && (
+                            <span className="font-mono font-bold text-brand-green block">
+                              Rastreio: {order.trackingCode}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-extrabold text-brand-charcoal">
+                            Total: R$ {order.total.toFixed(2).replace('.', ',')}
+                          </span>
+                        </div>
                       </div>
                     </div>
+                  ))
+                )}
+              </div>
+            )}
 
-                    {/* Direct WhatsApp Follow-up */}
-                    <div className="pt-2 flex justify-end">
-                      <a
-                        href={`https://wa.me/5544991074932?text=${encodeURIComponent(
-                          `Olá Bellclay! Gostaria de acompanhar a produção do meu pedido #${order.id} feito no site!`
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-green hover:underline"
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                        <span>Falar com o ateliê sobre este pedido no WhatsApp</span>
-                      </a>
+            {/* Tab: Profile */}
+            {activeTab === 'profile' && (
+              <div className="max-w-xl space-y-4">
+                <form onSubmit={handleSaveProfile} className="space-y-3.5">
+                  <div>
+                    <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                      Nome Completo
+                    </label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                      E-mail
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                        WhatsApp
+                      </label>
+                      <input
+                        type="text"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                        CPF
+                      </label>
+                      <input
+                        type="text"
+                        value={cpf}
+                        onChange={(e) => setCpf(e.target.value)}
+                        className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
+                      />
                     </div>
                   </div>
-                ))}
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      className="px-6 py-2.5 rounded-full bg-brand-pink hover:bg-brand-pink-hover text-white font-bold text-xs shadow-pink-soft cursor-pointer flex items-center gap-1.5"
+                    >
+                      {isSaved ? <CheckCircle2 className="w-4 h-4" /> : null}
+                      <span>{isSaved ? 'Dados Salvos!' : 'Salvar Alterações'}</span>
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
           </div>

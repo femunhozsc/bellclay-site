@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Search, User, MessageCircle, X } from 'lucide-react';
+import { ShoppingBag, Search, User, MessageCircle, X, ChevronRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -10,21 +10,67 @@ export const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { totalItems, subtotal, setIsOpen: setIsCartOpen } = useCart();
-  const { settings, searchQuery, setSearchQuery } = useSettings();
+  const { settings, searchQuery, setSearchQuery, products } = useSettings();
   const { customerProfile } = useAuth();
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const whatsappNumber = "5544991074932";
   const whatsappMessage = encodeURIComponent(
     "Olá Bellclay! Estive no site e adorei os artesanatos em cerâmica fria. Gostaria de tirar uma dúvida sobre uma peça!"
   );
 
+  // Normalize string for live matching
+  const normalize = (str: string) =>
+    (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+  const queryNormalized = normalize(searchQuery);
+
+  // Instant live matched items (up to 5 for instant dropdown preview)
+  const matchedPreviewProducts = queryNormalized
+    ? products.filter((p) => {
+        return (
+          normalize(p.title).includes(queryNormalized) ||
+          normalize(p.description || '').includes(queryNormalized) ||
+          normalize(p.category || '').includes(queryNormalized) ||
+          p.tags?.some((t) => normalize(t).includes(queryNormalized))
+        );
+      }).slice(0, 5)
+    : [];
+
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
-    if (query.trim().length > 0 && location.pathname !== '/') {
+  };
+
+  const handleSelectProduct = (slug: string) => {
+    setSearchQuery('');
+    setIsMobileSearchOpen(false);
+    navigate(`/produto/${slug}`);
+  };
+
+  const handleViewAllResults = () => {
+    setIsMobileSearchOpen(false);
+    if (location.pathname !== '/') {
       navigate('/');
     }
+    setTimeout(() => {
+      const elem = document.getElementById('produtos');
+      if (elem) {
+        elem.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 150);
   };
+
+  // Close preview dropdown if clicked outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        // keep query but close if needed
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#FDFBF7]/95 backdrop-blur-md border-b border-brand-border/60 transition-all duration-300">
@@ -37,12 +83,12 @@ export const Header: React.FC = () => {
         </div>
       )}
 
-      {/* Main Navbar */}
+      {/* Main Navbar - Taller with vertical breathing space */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-18 sm:h-22 gap-2 sm:gap-4">
+        <div className="flex items-center justify-between py-3.5 sm:py-4.5 gap-2 sm:gap-4 min-h-[80px] sm:min-h-[92px]">
           
-          {/* Left: LOGO ONLY with comfortable margin and slightly larger scale */}
-          <div className="flex items-center shrink-0 pl-1 sm:pl-3">
+          {/* Left: LOGO ONLY with comfortable margin and plenty of vertical room */}
+          <div className="flex items-center shrink-0 pl-1.5 sm:pl-3">
             <Link 
               to="/" 
               className="flex items-center transition-transform hover:scale-105 active:scale-95 duration-200"
@@ -51,13 +97,13 @@ export const Header: React.FC = () => {
               <img
                 src="/bellclay_logo.png"
                 alt="Bellclay Artesanatos"
-                className="h-14 sm:h-20 w-auto object-contain"
+                className="h-12 sm:h-16 w-auto max-h-[60px] object-contain"
               />
             </Link>
           </div>
 
-          {/* Center: Search Bar (Desktop) */}
-          <div className="hidden md:flex flex-1 max-w-lg mx-4 lg:mx-6">
+          {/* Center: Search Bar with Live Instant Results Popover (Desktop) */}
+          <div ref={searchContainerRef} className="hidden md:flex flex-1 max-w-lg mx-4 lg:mx-6 relative">
             <div className="relative w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted" />
               <input
@@ -66,25 +112,76 @@ export const Header: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 style={{ outline: 'none' }}
-                className="w-full bg-[#F5EFE6]/80 hover:bg-[#F5EFE6] focus:bg-white text-brand-charcoal text-xs sm:text-sm rounded-full pl-11 pr-10 py-2.5 border border-brand-border/80 focus:border-brand-pink focus:ring-0 outline-none transition-all duration-200 shadow-2xs"
+                className="w-full bg-[#F5EFE6]/80 hover:bg-[#F5EFE6] focus:bg-white text-brand-charcoal text-xs sm:text-sm rounded-full pl-11 pr-10 py-3 border border-brand-border/80 focus:border-brand-pink outline-none transition-all duration-200 shadow-2xs"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-charcoal cursor-pointer"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-charcoal cursor-pointer p-1"
                   aria-label="Limpar busca"
                 >
                   <X className="w-4 h-4" />
                 </button>
               )}
             </div>
+
+            {/* Instant Live Search Results Popover */}
+            {queryNormalized && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-brand-border/80 shadow-2xl overflow-hidden z-50 p-2 space-y-1">
+                <div className="px-3 py-1.5 text-[11px] font-bold text-brand-muted border-b border-brand-border/50 flex justify-between">
+                  <span>Resultados instantâneos ({matchedPreviewProducts.length})</span>
+                  {matchedPreviewProducts.length > 0 && (
+                    <button
+                      onClick={handleViewAllResults}
+                      className="text-brand-pink hover:underline cursor-pointer"
+                    >
+                      Ver todos no catálogo
+                    </button>
+                  )}
+                </div>
+
+                {matchedPreviewProducts.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-brand-muted">
+                    Nenhuma peça encontrada com "{searchQuery}".
+                  </div>
+                ) : (
+                  matchedPreviewProducts.map((p) => {
+                    const price = p.promotionalPrice || p.price;
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => handleSelectProduct(p.slug)}
+                        className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#FAF8F5] cursor-pointer transition-colors"
+                      >
+                        <img
+                          src={p.images[0]}
+                          alt={p.title}
+                          className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-xs font-bold text-brand-charcoal block truncate">
+                            {p.title}
+                          </span>
+                          <span className="text-[10px] text-brand-muted">
+                            {p.category}
+                          </span>
+                        </div>
+                        <span className="text-xs font-extrabold text-brand-pink shrink-0">
+                          R$ {price.toFixed(2).replace('.', ',')}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right Action Icons */}
           <div className="flex items-center gap-1.5 sm:gap-3 pr-1">
             {/* Mobile Search Toggle */}
             <button
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
               className="md:hidden p-2.5 rounded-full text-brand-charcoal hover:bg-brand-pink-subtle/50 transition-colors cursor-pointer"
               aria-label="Buscar"
             >
@@ -96,7 +193,7 @@ export const Header: React.FC = () => {
               href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs font-bold px-3 sm:px-4 py-2 sm:py-2.5 rounded-full bg-brand-green-subtle text-brand-green hover:bg-brand-green hover:text-white transition-all duration-200 cursor-pointer shadow-xs"
+              className="flex items-center gap-1.5 text-xs font-bold px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full bg-brand-green-subtle text-brand-green hover:bg-brand-green hover:text-white transition-all duration-200 cursor-pointer shadow-xs"
               title="Fale conosco no WhatsApp"
             >
               <MessageCircle className="w-4 h-4 shrink-0" />
@@ -135,37 +232,86 @@ export const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Search Bar Dropdown (Lowered with no blue border or cutoff) */}
+        {/* Mobile Search Bar Dropdown (Lowered with no blue border or cutoff + instant results) */}
         <AnimatePresence>
-          {isSearchOpen && (
+          {isMobileSearchOpen && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="md:hidden pt-1 pb-4 px-1 overflow-hidden"
+              className="md:hidden pt-2 pb-4 px-1"
             >
               <div className="relative w-full">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted" />
                 <input
                   type="text"
-                  placeholder="Buscar peças em cerâmica fria..."
+                  placeholder="Buscar chaveiros, bottons, esculturas..."
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   style={{ outline: 'none' }}
-                  className="w-full bg-[#F5EFE6] focus:bg-white text-brand-charcoal text-xs sm:text-sm rounded-full pl-11 pr-10 py-2.5 border border-brand-border/80 focus:border-brand-pink focus:ring-0 outline-none transition-all shadow-xs"
+                  className="w-full bg-[#F5EFE6] focus:bg-white text-brand-charcoal text-xs sm:text-sm rounded-full pl-11 pr-10 py-3 border border-brand-border/80 focus:border-brand-pink outline-none transition-all shadow-xs"
                   autoFocus
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-charcoal cursor-pointer"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-charcoal cursor-pointer p-1"
                     aria-label="Limpar"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 )}
               </div>
+
+              {/* Instant Results on Mobile right under the input */}
+              {queryNormalized && (
+                <div className="mt-2 bg-white rounded-2xl border border-brand-border/80 shadow-lg p-2 space-y-1">
+                  <div className="px-3 py-1 text-[11px] font-bold text-brand-muted flex justify-between">
+                    <span>Resultados ({matchedPreviewProducts.length})</span>
+                    {matchedPreviewProducts.length > 0 && (
+                      <button
+                        onClick={handleViewAllResults}
+                        className="text-brand-pink font-semibold underline"
+                      >
+                        Ver no catálogo
+                      </button>
+                    )}
+                  </div>
+
+                  {matchedPreviewProducts.length === 0 ? (
+                    <div className="p-3 text-center text-xs text-brand-muted">
+                      Nenhuma peça encontrada.
+                    </div>
+                  ) : (
+                    matchedPreviewProducts.map((p) => {
+                      const price = p.promotionalPrice || p.price;
+                      return (
+                        <div
+                          key={p.id}
+                          onClick={() => handleSelectProduct(p.slug)}
+                          className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#FAF8F5] cursor-pointer"
+                        >
+                          <img
+                            src={p.images[0]}
+                            alt={p.title}
+                            className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <span className="text-xs font-bold text-brand-charcoal block truncate">
+                              {p.title}
+                            </span>
+                            <span className="text-[10px] text-brand-muted">{p.category}</span>
+                          </div>
+                          <span className="text-xs font-extrabold text-brand-pink shrink-0">
+                            R$ {price.toFixed(2).replace('.', ',')}
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
