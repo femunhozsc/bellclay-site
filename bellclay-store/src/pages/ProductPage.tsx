@@ -350,27 +350,6 @@ export const ProductPage: React.FC = () => {
                 ))}
               </div>
             )}
-
-            {/* Trust Highlights - Clean Ribbon without card boxes */}
-            <div className="px-4 md:px-0 pt-2">
-              <div className="grid grid-cols-3 gap-3 py-3 px-4 rounded-2xl bg-[#F6F1E8]/70">
-                <div className="flex flex-col items-center text-center">
-                  <Heart className="w-5 h-5 text-brand-pink mb-1 fill-brand-pink/20" />
-                  <span className="text-xs font-bold text-brand-charcoal">Feito à Mão</span>
-                  <span className="text-[10px] text-brand-muted">Peça única</span>
-                </div>
-                <div className="flex flex-col items-center text-center">
-                  <ShieldCheck className="w-5 h-5 text-brand-green mb-1" />
-                  <span className="text-xs font-bold text-brand-charcoal">Resina Vitrificada</span>
-                  <span className="text-[10px] text-brand-muted">Alta durabilidade</span>
-                </div>
-                <div className="flex flex-col items-center text-center">
-                  <Truck className="w-5 h-5 text-brand-pink mb-1" />
-                  <span className="text-xs font-bold text-brand-charcoal">Envio Seguro</span>
-                  <span className="text-[10px] text-brand-muted">Embalagem protegida</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Right Column: Product Info & Actions (Padded on mobile) */}
@@ -423,36 +402,22 @@ export const ProductPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Trust Badges - Feito à Mão, Resina Vitrificada & Envio Seguro */}
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 py-1">
-                <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-1.5 sm:gap-2.5 p-2.5 sm:p-3 rounded-2xl bg-[#FAF8F5] border border-brand-border/70 hover:border-brand-pink/40 transition-colors">
-                  <div className="w-8 h-8 rounded-xl bg-brand-pink/15 flex items-center justify-center text-brand-pink shrink-0">
-                    <Heart className="w-4 h-4 fill-brand-pink/30" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="block text-[11px] sm:text-xs font-bold text-brand-charcoal leading-tight">Feito à Mão</span>
-                    <span className="block text-[9px] sm:text-[10px] text-brand-muted mt-0.5 leading-tight">100% manual</span>
-                  </div>
+              {/* Trust Highlights - Clean Ribbon */}
+              <div className="grid grid-cols-3 gap-3 py-3 px-4 rounded-2xl bg-[#F6F1E8]/70">
+                <div className="flex flex-col items-center text-center">
+                  <Heart className="w-5 h-5 text-brand-pink mb-1 fill-brand-pink/20" />
+                  <span className="text-xs font-bold text-brand-charcoal">Feito à Mão</span>
+                  <span className="text-[10px] text-brand-muted">Peça única</span>
                 </div>
-
-                <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-1.5 sm:gap-2.5 p-2.5 sm:p-3 rounded-2xl bg-[#FAF8F5] border border-brand-border/70 hover:border-brand-green/40 transition-colors">
-                  <div className="w-8 h-8 rounded-xl bg-brand-green/15 flex items-center justify-center text-brand-green shrink-0">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="block text-[11px] sm:text-xs font-bold text-brand-charcoal leading-tight">Resina Vitrificada</span>
-                    <span className="block text-[9px] sm:text-[10px] text-brand-muted mt-0.5 leading-tight">Alta proteção</span>
-                  </div>
+                <div className="flex flex-col items-center text-center">
+                  <ShieldCheck className="w-5 h-5 text-brand-green mb-1" />
+                  <span className="text-xs font-bold text-brand-charcoal">Resina Vitrificada</span>
+                  <span className="text-[10px] text-brand-muted">Alta durabilidade</span>
                 </div>
-
-                <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-1.5 sm:gap-2.5 p-2.5 sm:p-3 rounded-2xl bg-[#FAF8F5] border border-brand-border/70 hover:border-brand-pink/40 transition-colors">
-                  <div className="w-8 h-8 rounded-xl bg-brand-pink/15 flex items-center justify-center text-brand-pink shrink-0">
-                    <Truck className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="block text-[11px] sm:text-xs font-bold text-brand-charcoal leading-tight">Envio Seguro</span>
-                    <span className="block text-[9px] sm:text-[10px] text-brand-muted mt-0.5 leading-tight">Todo o Brasil</span>
-                  </div>
+                <div className="flex flex-col items-center text-center">
+                  <Truck className="w-5 h-5 text-brand-pink mb-1" />
+                  <span className="text-xs font-bold text-brand-charcoal">Envio Seguro</span>
+                  <span className="text-[10px] text-brand-muted">Embalagem protegida</span>
                 </div>
               </div>
 
