@@ -79,16 +79,7 @@
 }
 
 /* Continuous Rotating Half Pink / Half Pastel Green Gradient for Banner Buttons */
-@keyframes gradientRotate {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
 .animate-gradient-dance {
-  animation: gradientRotate 7.5s linear infinite;
-  animation-delay: -var(--anim-offset, 0s);
+  transform: rotate(var(--banner-btn-angle, 0deg));
+  will-change: transform;
 }

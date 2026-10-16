@@ -86,6 +86,21 @@ export const HeroCarousel: React.FC = () => {
   };
 
   useEffect(() => {
+    let animId: number;
+    const durationMs = 7500;
+
+    const tick = () => {
+      const now = performance.now();
+      const angle = ((now % durationMs) / durationMs) * 360;
+      document.documentElement.style.setProperty('--banner-btn-angle', `${angle.toFixed(2)}deg`);
+      animId = requestAnimationFrame(tick);
+    };
+
+    animId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animId);
+  }, []);
+
+  useEffect(() => {
     if (activeBanners.length <= 1 || isPaused) return;
 
     const timer = setInterval(() => {
@@ -221,13 +236,12 @@ export const HeroCarousel: React.FC = () => {
                   className="relative group inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-4.5 rounded-full overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer touch-auto"
                 >
                   {/* Internal rotating half-pink half-pastel-green gradient */}
-                  {/* Rosa na esquerda, Verde Pastel (#9BC778) na direita, sincronizado com o relógio da página para nunca reiniciar */}
+                  {/* Rosa na esquerda, Verde Pastel (#9BC778) na direita, sincronizado continuamente em 60fps sem interrupção */}
                   <div
                     className="absolute -inset-x-24 -inset-y-24 animate-gradient-dance pointer-events-none"
                     style={{
                       background: 'conic-gradient(from 180deg at 50% 50%, #FD7687 0deg, #FD7687 130deg, #9BC778 190deg, #9BC778 310deg, #FD7687 360deg)',
-                      filter: 'blur(16px)',
-                      ['--anim-offset' as any]: `${((Date.now() - pageStartTime) / 1000) % 7.5}s`
+                      filter: 'blur(16px)'
                     }}
                   />
 
