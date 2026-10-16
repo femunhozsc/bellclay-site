@@ -261,6 +261,12 @@ export const HeroCarousel: React.FC = () => {
         </motion.div>
       </AnimatePresence>
 
+      {/* Leve fade branco / porcelana na base do banner para transição suave com a seção de Peças Únicas */}
+      <div
+        className="absolute inset-x-0 bottom-0 h-16 sm:h-24 md:h-28 bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7]/50 to-transparent pointer-events-none z-10"
+        aria-hidden="true"
+      />
+
       {/* Pagination Dots at Bottom Center */}
       {activeBanners.length > 1 && (
         <div className="absolute bottom-4 sm:bottom-6 inset-x-0 z-20 flex items-center justify-center gap-2">
@@ -268,10 +274,10 @@ export const HeroCarousel: React.FC = () => {
             <button
               key={idx}
               onClick={() => handleSelectSlide(idx)}
-              className={`transition-all duration-300 rounded-full cursor-pointer ${
+              className={`transition-all duration-300 rounded-full cursor-pointer shadow-sm ${
                 currentIndex === idx
-                  ? 'w-7 h-2 bg-white shadow-md'
-                  : 'w-2 h-2 bg-white/40 hover:bg-white/70'
+                  ? 'w-7 h-2 bg-brand-pink shadow-md'
+                  : 'w-2 h-2 bg-brand-charcoal/30 hover:bg-brand-charcoal/60'
               }`}
               aria-label={`Ir para slide ${idx + 1}`}
             />
