@@ -220,7 +220,7 @@ export const HeroCarousel: React.FC = () => {
                 {current.subtitle}
               </motion.p>
 
-              {/* Big "Ver Coleção" CTA Button */}
+              {/* Big "Ver Coleção" CTA Button with dancing rotating pink and green gradient */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -231,10 +231,25 @@ export const HeroCarousel: React.FC = () => {
                   href={current.buttonLink || "#produtos"}
                   onClick={(e) => handleBannerButtonClick(e, current.buttonLink)}
                   onPointerDown={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-4.5 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white font-extrabold text-sm sm:text-base shadow-xl transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer touch-auto"
+                  className="relative group inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-4.5 rounded-full overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer touch-auto"
                 >
-                  <span>{current.buttonText || "Ver Coleção"}</span>
-                  <ArrowRight className="w-5 h-5 stroke-[2.5]" />
+                  {/* Internal rotating dancing color gradient (button stays fixed, colors dance inside) */}
+                  <div
+                    className="absolute inset-[-100%] animate-gradient-dance pointer-events-none"
+                    style={{
+                      background: 'conic-gradient(from 0deg at 50% 50%, #FD7687 0deg, #83BC5C 90deg, #FD7687 180deg, #83BC5C 270deg, #FD7687 360deg)',
+                      filter: 'blur(10px)'
+                    }}
+                  />
+
+                  {/* Subtle glass reflection highlight */}
+                  <div className="absolute inset-0 bg-white/10 pointer-events-none rounded-full" />
+
+                  {/* Foreground Content */}
+                  <span className="relative z-10 text-white font-extrabold text-sm sm:text-base drop-shadow-sm tracking-wide">
+                    {current.buttonText || "Ver Coleção"}
+                  </span>
+                  <ArrowRight className="relative z-10 w-5 h-5 stroke-[2.5] text-white drop-shadow-sm transition-transform duration-200 group-hover:translate-x-1" />
                 </a>
               </motion.div>
 
