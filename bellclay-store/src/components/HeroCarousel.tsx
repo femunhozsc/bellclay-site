@@ -113,7 +113,7 @@ export const HeroCarousel: React.FC = () => {
 
   if (activeBanners.length === 0) {
     return (
-      <div className="relative w-full h-[480px] sm:h-[580px] md:h-[640px] bg-[#F7F4EE] flex items-center justify-center">
+      <div className="relative w-full aspect-[2/3] max-h-[82vh] sm:max-h-none sm:aspect-auto sm:h-[580px] md:h-[640px] bg-[#F7F4EE] flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-brand-pink border-t-transparent animate-spin opacity-30" />
       </div>
     );
@@ -177,7 +177,7 @@ export const HeroCarousel: React.FC = () => {
 
   return (
     <div
-      className="relative w-full h-[480px] sm:h-[580px] md:h-[640px] overflow-hidden select-none bg-white touch-pan-y"
+      className="relative w-full aspect-[2/3] max-h-[82vh] sm:max-h-none sm:aspect-auto sm:h-[580px] md:h-[640px] overflow-hidden select-none bg-white touch-pan-y"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
