@@ -219,7 +219,13 @@ export const EventPage: React.FC = () => {
         </div>
 
         {/* Full Rich Description & Details Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
+        <motion.div
+          initial={{ opacity: 0, y: 22 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.12 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4"
+        >
           
           {/* Main Description */}
           <div className="lg:col-span-2 space-y-6">
@@ -278,7 +284,7 @@ export const EventPage: React.FC = () => {
             </div>
           </div>
 
-        </div>
+        </motion.div>
 
       </div>
     </div>

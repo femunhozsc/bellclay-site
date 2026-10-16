@@ -7,9 +7,10 @@ import { useCart } from '../context/CartContext';
 
 interface ProductCardProps {
   product: Product;
+  index?: number;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) => {
   const { addItem } = useCart();
   const [isAdded, setIsAdded] = useState(false);
 
@@ -24,11 +25,27 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const hasDiscount = Boolean(product.promotionalPrice && product.promotionalPrice < product.price);
   const currentPrice = product.promotionalPrice || product.price;
 
+  // Stagger natural por coluna (máximo de 0.18s para fluidez imediata)
+  const staggerDelay = Math.min((index % 4) * 0.05, 0.18);
+
   return (
     <motion.div
-      whileHover={{ y: -5 }}
-      whileTap={{ scale: 0.97 }}
-      transition={{ duration: 0.35, ease: [0.25, 1, 0.5, 1] }}
+      initial={{ opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.08 }}
+      transition={{
+        duration: 0.48,
+        delay: staggerDelay,
+        ease: [0.22, 1, 0.36, 1]
+      }}
+      whileHover={{
+        y: -5,
+        transition: { duration: 0.25, ease: [0.25, 1, 0.5, 1], delay: 0 }
+      }}
+      whileTap={{
+        scale: 0.97,
+        transition: { duration: 0.15, delay: 0 }
+      }}
       className="w-full flex flex-col"
     >
       <Link

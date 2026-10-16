@@ -602,7 +602,13 @@ export const ProductPage: React.FC = () => {
         </div>
 
         {/* Product Specifications & Care Tabs */}
-        <div className="mt-12 sm:mt-16 pt-8 border-t border-brand-border/60 px-4 md:px-0">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-12 sm:mt-16 pt-8 border-t border-brand-border/60 px-4 md:px-0"
+        >
           {/* Tab Headers */}
           <div className="flex gap-4 sm:gap-6 border-b border-brand-border/60 pb-3">
             <button
@@ -705,20 +711,26 @@ export const ProductPage: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Related Products Section */}
         {relatedProducts.length > 0 && (
-          <section className="mt-14 sm:mt-18 space-y-6 px-4 md:px-0">
+          <motion.section
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.12 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-14 sm:mt-18 space-y-6 px-4 md:px-0"
+          >
             <h2 className="font-serif text-2xl sm:text-3xl font-bold text-brand-charcoal">
               Você Também Pode Amar
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6 lg:gap-8">
-              {relatedProducts.map((p) => (
-                <ProductCard key={p.id} product={p} />
+              {relatedProducts.map((p, idx) => (
+                <ProductCard key={p.id} product={p} index={idx} />
               ))}
             </div>
-          </section>
+          </motion.section>
         )}
       </main>
 

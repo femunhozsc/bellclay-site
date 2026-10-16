@@ -48,10 +48,23 @@ export const EventsCarousel: React.FC = () => {
   };
 
   return (
-    <section id="eventos" className="space-y-4 sm:space-y-6 pt-4 sm:pt-6 scroll-mt-24 relative">
+    <motion.section
+      id="eventos"
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+      className="space-y-4 sm:space-y-6 pt-4 sm:pt-6 scroll-mt-24 relative"
+    >
       <div id="evento" className="absolute -top-24 pointer-events-none" />
       {/* Section Header */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-brand-border/60 pb-3 px-1">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-brand-border/60 pb-3 px-1"
+      >
         <div>
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-brand-pink fill-brand-pink/20" />
@@ -66,10 +79,14 @@ export const EventsCarousel: React.FC = () => {
         <span className="text-xs sm:text-sm font-semibold text-brand-muted self-start sm:self-auto">
           {activeEvents.length} {activeEvents.length === 1 ? 'evento em destaque' : 'eventos em destaque'}
         </span>
-      </div>
+      </motion.div>
 
       {/* High-Impact Banner-style Event Carousel with Rounded Edges */}
-      <div
+      <motion.div
+        initial={{ opacity: 0, scale: 0.99, y: 16 }}
+        whileInView={{ opacity: 1, scale: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.12 }}
+        transition={{ duration: 0.65, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
         className="relative w-full h-[460px] sm:h-[520px] md:h-[560px] rounded-3xl overflow-hidden select-none bg-black shadow-xl touch-pan-y"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
@@ -207,7 +224,7 @@ export const EventsCarousel: React.FC = () => {
             ))}
           </div>
         )}
-      </div>
-    </section>
+      </motion.div>
+    </motion.section>
   );
 };

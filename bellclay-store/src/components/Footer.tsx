@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Heart, MapPin, Truck, ShieldCheck } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { WhatsAppIcon, InstagramIcon, TikTokIcon } from './SocialIcons';
@@ -7,8 +8,14 @@ export const Footer: React.FC = () => {
   const { settings } = useSettings();
 
   return (
-    <footer className="bg-[#FAF7F2] border-t border-brand-border/60 text-brand-charcoal pt-14 pb-8 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+    <footer className="bg-[#FAF7F2] border-t border-brand-border/60 text-brand-charcoal pt-14 pb-8 transition-colors overflow-hidden">
+      <motion.div
+        initial={{ opacity: 0, y: 22 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.12 }}
+        transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12"
+      >
         
         {/* Main Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -111,7 +118,7 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-      </div>
+      </motion.div>
     </footer>
   );
 };

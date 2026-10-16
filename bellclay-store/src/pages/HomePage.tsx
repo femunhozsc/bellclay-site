@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { HeroCarousel } from '../components/HeroCarousel';
 import { CategoryPills } from '../components/CategoryPills';
 import { ProductCard } from '../components/ProductCard';
@@ -155,7 +156,13 @@ export const HomePage: React.FC = () => {
       <HeroCarousel />
 
       {/* Welcome Section - Balanced typography & elegant proportion */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-3 text-center space-y-3 w-full">
+      <motion.section
+        initial={{ opacity: 0, y: 22 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.25 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-3 text-center space-y-3 w-full"
+      >
         <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-extrabold text-brand-charcoal tracking-tight leading-snug max-w-2xl mx-auto">
           {settings.welcomeTitle}
         </h2>
@@ -163,11 +170,17 @@ export const HomePage: React.FC = () => {
         <p className="text-brand-muted text-xs sm:text-sm md:text-base font-normal leading-relaxed max-w-lg mx-auto">
           {settings.welcomeSubtitle}
         </p>
-      </section>
+      </motion.section>
 
       {/* Full-width Edge-to-Edge 21:9 Promotional Banner */}
       {promoImage && (
-        <section className="w-full overflow-hidden select-none my-4 sm:my-8 bg-[#FAF8F5]">
+        <motion.section
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full overflow-hidden select-none my-4 sm:my-8 bg-[#FAF8F5]"
+        >
           {settings.promoBannerLink ? (
             <a
               href={settings.promoBannerLink}
@@ -191,7 +204,7 @@ export const HomePage: React.FC = () => {
               />
             </div>
           )}
-        </section>
+        </motion.section>
       )}
 
       {/* Main Content Area */}
@@ -199,7 +212,13 @@ export const HomePage: React.FC = () => {
 
         {/* Categories & Catalog Section */}
         <section id="produtos" className="space-y-4 sm:space-y-6 scroll-mt-24 sm:scroll-mt-28">
-          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-brand-border/60 pb-3 px-1">
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+            className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-brand-border/60 pb-3 px-1"
+          >
             <div>
               <h3 className="font-serif text-[22px] sm:text-2xl md:text-3xl font-extrabold text-brand-charcoal tracking-tight">
                 Catálogo de Artesanatos
@@ -213,10 +232,17 @@ export const HomePage: React.FC = () => {
             <span className="text-xs sm:text-sm font-semibold text-brand-muted self-start sm:self-auto">
               {filteredProducts.length} {filteredProducts.length === 1 ? 'peça' : 'peças'}
             </span>
-          </div>
+          </motion.div>
 
           {/* Category Filter Pills */}
-          <CategoryPills />
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.5, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <CategoryPills />
+          </motion.div>
 
           {/* Optimized Products Grid for Mobile & Desktop - High Performance & Frameless */}
           {isLoading ? (
@@ -239,14 +265,20 @@ export const HomePage: React.FC = () => {
           ) : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6 lg:gap-8 pt-2">
-                {displayedProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                {displayedProducts.map((product, idx) => (
+                  <ProductCard key={product.id} product={product} index={idx} />
                 ))}
               </div>
 
               {/* "Ver mais" Button (6 on mobile, 8 on computer initial limit) */}
               {hasMoreProducts && !showAllProducts && (
-                <div className="pt-8 sm:pt-10 flex flex-col items-center justify-center">
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  className="pt-8 sm:pt-10 flex flex-col items-center justify-center"
+                >
                   <button
                     type="button"
                     onClick={() => setShowAllProducts(true)}
@@ -261,7 +293,7 @@ export const HomePage: React.FC = () => {
                   <span className="text-[11px] text-brand-muted mt-2">
                     Exibindo {displayedProducts.length} de {filteredProducts.length} peças
                   </span>
-                </div>
+                </motion.div>
               )}
             </>
           )}
