@@ -775,22 +775,14 @@ export const AccountPage: React.FC = () => {
 
                   {/* Section 2: Endereço de Envio (Auto-Preenchido com Checkout) */}
                   <div className="bg-white border-y sm:border sm:border-brand-border/70 sm:rounded-2xl p-4 sm:p-6 -mx-4 sm:mx-0 space-y-4 shadow-2xs">
-                    <div className="border-b border-brand-border/60 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                      <div>
-                        <h3 className="font-serif text-lg font-bold text-brand-charcoal flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-brand-green" />
-                          <span>Endereço de Envio</span>
-                        </h3>
-                        <p className="text-xs text-brand-muted mt-0.5">
-                          Endereço padrão que será preenchido automaticamente na etapa de entrega do checkout.
-                        </p>
-                      </div>
-                      {cep && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-green bg-brand-green/10 px-2.5 py-0.5 rounded-full self-start sm:self-auto">
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span>Endereço Salvo</span>
-                        </span>
-                      )}
+                    <div className="border-b border-brand-border/60 pb-3">
+                      <h3 className="font-serif text-lg font-bold text-brand-charcoal flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-brand-green" />
+                        <span>Endereço de Envio</span>
+                      </h3>
+                      <p className="text-xs text-brand-muted mt-0.5">
+                        Endereço padrão que será preenchido automaticamente na etapa de entrega do checkout.
+                      </p>
                     </div>
 
                     <div className="space-y-3.5">

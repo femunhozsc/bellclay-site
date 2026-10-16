@@ -11,10 +11,35 @@ export const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { totalItems, subtotal, setIsOpen: setIsCartOpen } = useCart();
-  const { settings, searchQuery, setSearchQuery, products, isLoading } = useSettings();
+  const { 
+    settings, 
+    searchQuery, 
+    setSearchQuery, 
+    setSelectedCategory, 
+    refreshData, 
+    products, 
+    isLoading 
+  } = useSettings();
   const { customerProfile } = useAuth();
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setSearchQuery('');
+    setSelectedCategory('all');
+    setIsMobileSearchOpen(false);
+
+    if (location.pathname === '/' && !location.hash) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      navigate('/');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Refresh settings and products from database
+    refreshData();
+  };
 
   const whatsappNumber = (settings.whatsapp || "5544991074932").replace(/\D/g, '') || "5544991074932";
   const whatsappMessage = encodeURIComponent(
@@ -93,7 +118,8 @@ export const Header: React.FC = () => {
           <div className="flex items-center shrink-0 pl-1.5 sm:pl-3">
             <Link 
               to="/" 
-              className="flex items-center transition-transform hover:scale-105 active:scale-95 duration-200"
+              onClick={handleLogoClick}
+              className="flex items-center transition-transform hover:scale-105 active:scale-95 duration-200 cursor-pointer"
               aria-label="Bellclay Artesanatos"
             >
               <img
