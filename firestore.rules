@@ -1,0 +1,81 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------------------------
+    // 1. PRODUTOS (Catálogo da Loja)
+    // -------------------------------------------------------------------------
+    // - Leitura: Pública (qualquer visitante da loja ou do painel pode ver os produtos)
+    // - Criação e Exclusão: Exclusiva para usuários autenticados (Admin no painel)
+    // - Atualização:
+    //     a) Admin autenticado pode editar qualquer campo (preço, fotos, título, etc.)
+    //     b) Clientes e checkout podem atualizar o estoque ('stock' e 'updatedAt') ao fechar pedido
+    match /products/{productId} {
+      allow read: if true;
+      allow create, delete: if request.auth != null;
+      allow update: if request.auth != null || 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock', 'updatedAt']);
+    }
+
+    // -------------------------------------------------------------------------
+    // 2. CONFIGURAÇÕES DO SITE (Banners, Categorias, Avisos, Frete, InfinitePay)
+    // -------------------------------------------------------------------------
+    // - Leitura: Pública (a loja precisa ler os banners, categorias e avisos para renderizar)
+    // - Escrita: Apenas admin autenticado no painel de controle
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. EVENTOS BELLCLAY (Feiras culturais, oficinas, encontros)
+    // -------------------------------------------------------------------------
+    // - Leitura: Pública (carrossel da home e página do evento)
+    // - Escrita: Apenas admin autenticado no painel
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. PEDIDOS (Orders & Checkout)
+    // -------------------------------------------------------------------------
+    // - Leitura: Permitida para que o painel liste os pedidos e o cliente acompanhe
+    //   o status da encomenda na tela de perfil e retorno da InfinitePay
+    // - Criação: Permitida para clientes fecharem pedidos no checkout (guests ou logados)
+    // - Atualização: O painel altera status e código de rastreio, e a loja/webhooks
+    //   confirmam pagamentos aprovados da InfinitePay
+    // - Exclusão: Apenas admin autenticado pode deletar pedidos
+    match /orders/{orderId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if request.auth != null;
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. CLIENTES & PERFIS (Dados de envio e contato salvos)
+    // -------------------------------------------------------------------------
+    // - Leitura e Escrita: Permitida para salvar endereço, telefone e CPF no checkout
+    //   e na tela de 'Minha Conta'
+    match /customers/{customerId} {
+      allow read, write: if true;
+    }
+
+    // -------------------------------------------------------------------------
+    // 6. EVENTOS ANALÍTICOS (Métricas e Tráfego)
+    // -------------------------------------------------------------------------
+    // - Criação: Pública (para registrar visitas de páginas e cliques em produtos)
+    // - Leitura e Gerenciamento: Apenas admin autenticado no painel
+    match /analytics_events/{eventId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+
+    // Bloqueio preventivo padrão para qualquer coleção não mapeada
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
