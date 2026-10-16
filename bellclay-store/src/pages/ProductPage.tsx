@@ -666,23 +666,23 @@ export const ProductPage: React.FC = () => {
             )}
 
             {activeTab === 'specs' && (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-4 rounded-2xl bg-white border border-brand-border/70 shadow-2xs">
-                    <span className="text-xs text-brand-muted block">Altura aprox.</span>
-                    <strong className="text-base font-bold text-brand-charcoal">{product.dimensions?.heightCm || 4} cm</strong>
+              <div className="space-y-4">
+                <div className="divide-y divide-brand-border/60 border-y border-brand-border/60">
+                  <div className="py-2.5 flex items-center justify-between">
+                    <span className="text-xs sm:text-sm text-brand-muted">Altura aproximada</span>
+                    <strong className="text-sm sm:text-base font-semibold text-brand-charcoal">{product.dimensions?.heightCm || 4} cm</strong>
                   </div>
-                  <div className="p-4 rounded-2xl bg-white border border-brand-border/70 shadow-2xs">
-                    <span className="text-xs text-brand-muted block">Largura aprox.</span>
-                    <strong className="text-base font-bold text-brand-charcoal">{product.dimensions?.widthCm || 4} cm</strong>
+                  <div className="py-2.5 flex items-center justify-between">
+                    <span className="text-xs sm:text-sm text-brand-muted">Largura aproximada</span>
+                    <strong className="text-sm sm:text-base font-semibold text-brand-charcoal">{product.dimensions?.widthCm || 4} cm</strong>
                   </div>
-                  <div className="p-4 rounded-2xl bg-white border border-brand-border/70 shadow-2xs">
-                    <span className="text-xs text-brand-muted block">Comprimento aprox.</span>
-                    <strong className="text-base font-bold text-brand-charcoal">{product.dimensions?.lengthCm || 4} cm</strong>
+                  <div className="py-2.5 flex items-center justify-between">
+                    <span className="text-xs sm:text-sm text-brand-muted">Comprimento aproximado</span>
+                    <strong className="text-sm sm:text-base font-semibold text-brand-charcoal">{product.dimensions?.lengthCm || 4} cm</strong>
                   </div>
-                  <div className="p-4 rounded-2xl bg-white border border-brand-border/70 shadow-2xs">
-                    <span className="text-xs text-brand-muted block">Peso aprox.</span>
-                    <strong className="text-base font-bold text-brand-charcoal">{Math.round((product.weightKg || 0.05) * 1000)} g</strong>
+                  <div className="py-2.5 flex items-center justify-between">
+                    <span className="text-xs sm:text-sm text-brand-muted">Peso da peça</span>
+                    <strong className="text-sm sm:text-base font-semibold text-brand-charcoal">{Math.round((product.weightKg || 0.05) * 1000)} g</strong>
                   </div>
                 </div>
                 <p className="text-xs text-brand-muted italic">

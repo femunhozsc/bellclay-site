@@ -63,9 +63,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
             >
               {/* Header */}
               <div className="p-4 sm:p-5 border-b border-brand-border/60 flex items-center justify-between bg-[#FDFBF7]">
-                <div className="flex items-center gap-2">
-                  <ShoppingBag className="w-5 h-5 text-brand-pink" />
-                  <h2 className="font-serif text-base sm:text-lg font-bold text-brand-charcoal">
+                <div className="flex items-center gap-2.5">
+                  <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-brand-pink" />
+                  <h2 className="font-serif text-lg sm:text-xl font-extrabold text-brand-charcoal">
                     Seu Carrinho ({items.length})
                   </h2>
                 </div>
@@ -80,12 +80,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
 
               {/* Free Shipping Meter */}
               <div className="p-3.5 sm:p-4 bg-gradient-to-r from-brand-pink-light to-brand-green-light border-b border-brand-border/40">
-                <div className="flex items-center justify-between text-xs font-semibold text-brand-charcoal mb-1.5">
+                <div className="flex items-center justify-between text-xs sm:text-sm font-semibold text-brand-charcoal mb-1.5">
                   <div className="flex items-center gap-1.5">
                     {(() => {
                       const hasFreeOption = shippingOptions.some((opt) => opt.price === 0);
                       const hasCep = Boolean(destinationCep && destinationCep.replace(/\D/g, '').length === 8);
 
+                      // If freight was calculated and a free option is genuinely available
                       if (hasCep && shippingOptions.length > 0 && hasFreeOption) {
                         return (
                           <span className="text-brand-green font-bold flex items-center gap-1">
@@ -94,17 +95,26 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                         );
                       }
 
-                      if (freeShippingRemaining > 0) {
+                      // If order reached the minimum value threshold
+                      if (freeShippingRemaining <= 0) {
+                        if (hasCep && shippingOptions.length > 0 && !hasFreeOption) {
+                          return (
+                            <span className="text-xs text-brand-charcoal font-medium">
+                              Valor atingido! Verifique as opções de frete disponíveis abaixo.
+                            </span>
+                          );
+                        }
                         return (
-                          <span className="text-xs text-brand-charcoal font-medium">
-                            Faltam <strong className="text-brand-pink font-bold">R$ {freeShippingRemaining.toFixed(2).replace('.', ',')}</strong> para Frete Grátis!
+                          <span className="text-xs sm:text-sm text-brand-charcoal font-medium">
+                            Meta atingida! <strong className="text-brand-pink font-bold">Informe seu CEP</strong> para validar o frete grátis.
                           </span>
                         );
                       }
 
+                      // Still needs more items to reach threshold
                       return (
-                        <span className="text-brand-green font-bold flex items-center gap-1">
-                          <CheckCircle2 className="w-4 h-4 shrink-0" /> Frete Grátis garantido para seu pedido!
+                        <span className="text-xs sm:text-sm text-brand-charcoal font-medium">
+                          Faltam <strong className="text-brand-pink font-bold">R$ {freeShippingRemaining.toFixed(2).replace('.', ',')}</strong> para Frete Grátis!
                         </span>
                       );
                     })()}
@@ -121,7 +131,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
               </div>
 
               {/* Items List */}
-              <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5">
                 {items.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">
                     <div className="w-20 h-20 rounded-full bg-brand-pink-light flex items-center justify-center text-brand-pink">
@@ -130,7 +140,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                     <p className="font-serif text-lg font-bold text-brand-charcoal">
                       Seu carrinho está vazio
                     </p>
-                    <p className="text-xs text-brand-muted max-w-xs">
+                    <p className="text-sm text-brand-muted max-w-xs">
                       Descubra nossas fofuras em cerâmica fria modeladas à mão e adicione seus itens favoritos!
                     </p>
                     <button
@@ -149,7 +159,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                         className="flex gap-3.5 p-3 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 hover:border-brand-pink/30 transition-all"
                       >
                         {/* Image */}
-                        <div className="w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0 shadow-xs">
+                        <div className="w-18 h-18 rounded-xl overflow-hidden bg-white shrink-0 shadow-xs">
                           <img
                             src={item.product.images[0]}
                             alt={item.product.title}
@@ -161,7 +171,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                         <div className="flex-1 flex flex-col justify-between min-w-0">
                           <div>
                             <div className="flex justify-between items-start">
-                              <h4 className="text-xs font-bold text-brand-charcoal truncate pr-2">
+                              <h4 className="text-sm font-bold text-brand-charcoal truncate pr-2">
                                 {item.product.title}
                               </h4>
                               <button
@@ -169,18 +179,18 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                                 className="text-brand-muted hover:text-red-500 transition-colors p-1"
                                 title="Remover"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                             {item.customObservation && (
-                              <p className="text-[10px] text-brand-muted italic truncate">
+                              <p className="text-xs text-brand-muted italic truncate">
                                 Obs: {item.customObservation}
                               </p>
                             )}
                           </div>
 
                           <div className="flex items-center justify-between pt-1">
-                            <span className="text-xs font-extrabold text-brand-charcoal">
+                            <span className="text-sm sm:text-base font-extrabold text-brand-charcoal">
                               R$ {(price * item.quantity).toFixed(2).replace('.', ',')}
                             </span>
 
@@ -193,7 +203,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                               >
                                 -
                               </button>
-                              <span className="text-xs font-bold text-brand-charcoal px-2.5 min-w-[20px] text-center">
+                              <span className="text-xs sm:text-sm font-bold text-brand-charcoal px-2.5 min-w-[20px] text-center">
                                 {item.quantity}
                               </span>
                               <button
@@ -214,16 +224,16 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
 
               {/* Freight Calculator & Summary */}
               {items.length > 0 && (
-                <div className="p-5 border-t border-brand-border/60 bg-[#FDFBF7] space-y-4">
-                  {/* CEP Input */}
-                  <div className="p-3 bg-white rounded-2xl border border-brand-border/80 shadow-xs">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-bold text-brand-charcoal flex items-center gap-1.5">
-                        <Truck className="w-3.5 h-3.5 text-brand-pink" />
-                        Calcular Frete:
+                <div className="p-4 sm:p-5 border-t border-brand-border/60 bg-[#FDFBF7] space-y-4">
+                  {/* Clean CEP Input & Options */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs sm:text-sm font-bold text-brand-charcoal flex items-center gap-1.5">
+                        <Truck className="w-4 h-4 text-brand-pink" />
+                        Calcular Frete
                       </span>
                       {selectedShipping && (
-                        <span className="text-[11px] font-bold text-brand-green">
+                        <span className="text-xs font-bold text-brand-green">
                           {selectedShipping.name}
                         </span>
                       )}
@@ -239,31 +249,31 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                           setInputCep(v.length > 5 ? `${v.slice(0, 5)}-${v.slice(5)}` : v);
                           setDestinationCep(v);
                         }}
-                        className="flex-1 text-xs px-3 py-1.5 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-[#FAF7F2]"
+                        className="flex-1 text-xs sm:text-sm px-3.5 py-2 rounded-xl border border-brand-border focus:border-brand-pink focus:ring-1 focus:ring-brand-pink outline-hidden bg-white shadow-2xs"
                       />
                       <button
                         type="submit"
                         disabled={isCalculatingShipping}
-                        className="px-3 py-1.5 rounded-xl bg-brand-charcoal hover:bg-black text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+                        className="px-4 py-2 rounded-xl bg-brand-charcoal hover:bg-black text-white text-xs sm:text-sm font-bold transition-colors cursor-pointer disabled:opacity-50"
                       >
-                        {isCalculatingShipping ? '...' : 'OK'}
+                        {isCalculatingShipping ? '...' : 'Calcular'}
                       </button>
                     </form>
 
                     {shippingError && (
-                      <p className="text-[10px] text-red-500 mt-1">{shippingError}</p>
+                      <p className="text-xs text-red-500">{shippingError}</p>
                     )}
 
                     {shippingOptions.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-brand-border/60 space-y-1">
+                      <div className="pt-2 space-y-1.5">
                         {shippingOptions.map((opt) => (
                           <label
                             key={opt.id}
-                            className={`flex items-center justify-between text-xs p-1.5 rounded-lg cursor-pointer transition-colors ${
-                              selectedShipping?.id === opt.id ? 'bg-brand-pink-light/60 font-semibold' : 'hover:bg-gray-50'
+                            className={`flex items-center justify-between text-xs sm:text-sm p-2 rounded-xl cursor-pointer transition-colors ${
+                              selectedShipping?.id === opt.id ? 'bg-brand-pink-light/70 font-semibold' : 'hover:bg-gray-100/70'
                             }`}
                           >
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2.5">
                               <input
                                 type="radio"
                                 name="shipping_radio"
@@ -271,9 +281,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                                 onChange={() => setSelectedShipping(opt)}
                                 className="text-brand-pink focus:ring-brand-pink"
                               />
-                              <span className="text-[11px] text-brand-charcoal">{opt.name}</span>
+                              <span className="text-xs sm:text-sm text-brand-charcoal">{opt.name}</span>
                             </div>
-                            <span className="text-[11px] font-bold">
+                            <span className="text-xs sm:text-sm font-bold">
                               {opt.price === 0 ? <span className="text-brand-green">Grátis</span> : `R$ ${opt.price.toFixed(2).replace('.', ',')}`}
                             </span>
                           </label>
@@ -283,28 +293,28 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                   </div>
 
                   {/* Price Breakdown */}
-                  <div className="space-y-1.5 text-xs">
+                  <div className="space-y-1.5 text-xs sm:text-sm pt-2 border-t border-brand-border/60">
                     <div className="flex justify-between text-brand-muted">
-                      <span>Subtotal:</span>
-                      <span>R$ {subtotal.toFixed(2).replace('.', ',')}</span>
+                      <span>Subtotal</span>
+                      <span className="font-semibold text-brand-charcoal">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
                     </div>
                     <div className="flex justify-between text-brand-muted">
-                      <span>Frete:</span>
+                      <span>Frete</span>
                       <span>
                         {selectedShipping ? (
                           selectedShipping.price === 0 ? (
                             <span className="text-brand-green font-bold">Grátis</span>
                           ) : (
-                            `R$ ${selectedShipping.price.toFixed(2).replace('.', ',')}`
+                            <span className="font-semibold text-brand-charcoal">R$ {selectedShipping.price.toFixed(2).replace('.', ',')}</span>
                           )
                         ) : (
-                          <span className="italic text-[11px]">Calcular acima</span>
+                          <span className="text-xs text-brand-muted">Informe o CEP</span>
                         )}
                       </span>
                     </div>
-                    <div className="flex justify-between text-sm font-extrabold text-brand-charcoal pt-2 border-t border-brand-border/60">
-                      <span>Total:</span>
-                      <span className="text-base text-brand-pink">
+                    <div className="flex justify-between text-base sm:text-lg font-extrabold text-brand-charcoal pt-2 border-t border-brand-border/60">
+                      <span>Total</span>
+                      <span className="text-brand-pink font-extrabold text-lg sm:text-xl">
                         R$ {grandTotal.toFixed(2).replace('.', ',')}
                       </span>
                     </div>
@@ -322,7 +332,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                         navigate('/checkout');
                       }
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-brand-green hover:bg-brand-green-hover text-white font-bold text-sm shadow-green-soft hover:shadow-soft-hover transition-all duration-200 cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-brand-green hover:bg-brand-green-hover text-white font-bold text-sm sm:text-base shadow-green-soft hover:shadow-soft-hover transition-all duration-200 cursor-pointer"
                   >
                     <span>Finalizar Compra</span>
                     <ArrowRight className="w-4 h-4" />

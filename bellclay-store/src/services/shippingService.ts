@@ -103,11 +103,11 @@ export const calculateShipping = async ({
             if (isCampoMourao) {
               apiOptions.unshift({
                 id: 'pickup-cm',
-                name: 'Retirada no Ateliê Bellclay',
+                name: 'Retirada ou entrega em Campo Mourão',
                 company: 'Bellclay Campo Mourão',
                 price: 0,
                 deliveryDays: 1,
-                badge: 'Retirada'
+                badge: 'Grátis'
               });
             }
             return apiOptions;
@@ -127,11 +127,11 @@ export const calculateShipping = async ({
   if (isCampoMourao) {
     options.push({
       id: 'pickup-local',
-      name: 'Retirada no Ateliê Bellclay (Centro)',
+      name: 'Retirada ou entrega em Campo Mourão',
       company: 'Bellclay Artesanatos',
       price: 0,
       deliveryDays: 1,
-      badge: 'Retirada'
+      badge: 'Grátis'
     });
   }
 

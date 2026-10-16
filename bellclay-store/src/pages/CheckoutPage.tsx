@@ -1089,14 +1089,6 @@ export const CheckoutPage: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Account Connection Status Note */}
-                  {(!customerProfile.isGuest || isAccountCreated) ? (
-                    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white border border-brand-border/70 text-xs text-brand-charcoal shadow-2xs">
-                      <CheckCircle2 className="w-4 h-4 text-brand-green shrink-0" />
-                      <span>Pedido vinculado à sua conta (<strong className="font-semibold">{customerProfile.email || email}</strong>)</span>
-                    </div>
-                  ) : null}
-
                   {/* Address Summary Check before Paying */}
                   <div className="p-4 rounded-2xl bg-white border border-brand-border/70 flex items-start justify-between gap-3 shadow-2xs">
                     <div className="flex items-start gap-3">
@@ -1127,7 +1119,7 @@ export const CheckoutPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('pix')}
-                      className={`flex flex-col items-center justify-center p-4.5 rounded-2xl border-2 transition-all cursor-pointer ${
+                      className={`flex flex-col items-center justify-center py-6 px-4 rounded-2xl border-2 transition-all cursor-pointer ${
                         paymentMethod === 'pix'
                           ? 'border-brand-green bg-brand-green-subtle/50 text-brand-green shadow-xs'
                           : 'border-brand-border/70 hover:border-brand-pink/40 bg-white text-brand-muted'
@@ -1135,7 +1127,7 @@ export const CheckoutPage: React.FC = () => {
                     >
                       <QrCode className="w-6 h-6 mb-1.5" />
                       <span className="text-xs sm:text-sm font-bold text-brand-charcoal">Pix Instantâneo</span>
-                      <span className="text-[10px] text-brand-green font-bold mt-0.5">
+                      <span className="text-[10px] sm:text-xs text-brand-green font-bold mt-0.5">
                         {pixDiscountPercent > 0 ? `${pixDiscountPercent}% de desconto` : 'Aprovação imediata'}
                       </span>
                     </button>
@@ -1143,7 +1135,7 @@ export const CheckoutPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('credit_card')}
-                      className={`flex flex-col items-center justify-center p-4.5 rounded-2xl border-2 transition-all cursor-pointer ${
+                      className={`flex flex-col items-center justify-center py-6 px-4 rounded-2xl border-2 transition-all cursor-pointer ${
                         paymentMethod === 'credit_card'
                           ? 'border-brand-pink bg-brand-pink-subtle/50 text-brand-pink shadow-xs'
                           : 'border-brand-border/70 hover:border-brand-pink/40 bg-white text-brand-muted'
@@ -1151,7 +1143,7 @@ export const CheckoutPage: React.FC = () => {
                     >
                       <CreditCard className="w-6 h-6 mb-1.5" />
                       <span className="text-xs sm:text-sm font-bold text-brand-charcoal">Cartão de Crédito</span>
-                      <span className="text-[10px] text-brand-muted mt-0.5">
+                      <span className="text-[10px] sm:text-xs text-brand-muted mt-0.5">
                         {maxInstallmentsNoInterest > 1
                           ? `Até ${maxInstallmentsNoInterest}x sem juros`
                           : 'Em até 12x'}
@@ -1166,17 +1158,17 @@ export const CheckoutPage: React.FC = () => {
                   </div>
 
                   {/* Observação Geral do Pedido / Recado para a Artesã */}
-                  <div className="p-4 rounded-2xl bg-white border border-brand-border/70 space-y-1.5 shadow-2xs">
-                    <label className="block text-xs font-bold text-brand-charcoal flex items-center justify-between">
+                  <div className="p-4 rounded-2xl bg-white border border-brand-border/70 space-y-2 shadow-2xs">
+                    <label className="block font-bold text-brand-charcoal text-sm sm:text-base flex items-center justify-between">
                       <span>Alguma observação para seu pedido? (opcional)</span>
-                      <span className="text-[10px] text-brand-muted font-normal">Ex: embalagem de presente, instruções</span>
+                      <span className="text-xs text-brand-muted font-normal">Ex: embalagem de presente, instruções</span>
                     </label>
                     <textarea
                       rows={2}
                       value={orderNotes}
                       onChange={(e) => setOrderNotes(e.target.value)}
                       placeholder="Deixe aqui algum recado especial para a artesã Bellclay..."
-                      className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-[#FAF8F5] focus:bg-white transition-all shadow-2xs"
+                      className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-[#FAF8F5] focus:bg-white transition-all shadow-2xs"
                     />
                   </div>
 
@@ -1201,7 +1193,7 @@ export const CheckoutPage: React.FC = () => {
                         </>
                       ) : (
                         <>
-                          <span>Ir para o Pagamento Seguro</span>
+                          <span>Ir para Pagamento</span>
                           <ArrowRight className="w-4 h-4" />
                         </>
                       )}
