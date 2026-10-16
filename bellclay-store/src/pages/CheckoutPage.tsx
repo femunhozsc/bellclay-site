@@ -72,14 +72,14 @@ export const CheckoutPage: React.FC = () => {
       customerProfile.phone
   );
 
-  // Step 2: Address Form
-  const [cep, setCep] = useState('');
-  const [street, setStreet] = useState('');
-  const [number, setNumber] = useState('');
-  const [complement, setComplement] = useState('');
-  const [neighborhood, setNeighborhood] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
+  // Step 2: Address Form (auto-prefilled if already saved in profile or previous purchase)
+  const [cep, setCep] = useState(customerProfile.address?.cep || '');
+  const [street, setStreet] = useState(customerProfile.address?.street || '');
+  const [number, setNumber] = useState(customerProfile.address?.number || '');
+  const [complement, setComplement] = useState(customerProfile.address?.complement || '');
+  const [neighborhood, setNeighborhood] = useState(customerProfile.address?.neighborhood || '');
+  const [city, setCity] = useState(customerProfile.address?.city || '');
+  const [state, setState] = useState(customerProfile.address?.state || '');
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
 
   // Results & Outputs
@@ -110,6 +110,16 @@ export const CheckoutPage: React.FC = () => {
     if (customerProfile.email && !email) setEmail(customerProfile.email);
     if (customerProfile.phone && !phone) setPhone(customerProfile.phone);
     if (customerProfile.cpf && !cpf) setCpf(customerProfile.cpf);
+
+    if (customerProfile.address) {
+      if (!cep && customerProfile.address.cep) setCep(customerProfile.address.cep);
+      if (!street && customerProfile.address.street) setStreet(customerProfile.address.street);
+      if (!number && customerProfile.address.number) setNumber(customerProfile.address.number);
+      if (!complement && customerProfile.address.complement) setComplement(customerProfile.address.complement);
+      if (!neighborhood && customerProfile.address.neighborhood) setNeighborhood(customerProfile.address.neighborhood);
+      if (!city && customerProfile.address.city) setCity(customerProfile.address.city);
+      if (!state && customerProfile.address.state) setState(customerProfile.address.state);
+    }
   }, [customerProfile]);
 
   // Handle Return from InfinitePay Redirect URL
@@ -422,6 +432,16 @@ export const CheckoutPage: React.FC = () => {
         checkoutUrl: checkoutRes.checkoutUrl
       };
       await saveOrder(orderWithUrl);
+
+      // Auto-save address and contact to customerProfile
+      setCustomerProfile((prev) => ({
+        ...prev,
+        name: customerData.name,
+        email: customerData.email,
+        phone: customerData.phone,
+        cpf: customerData.cpf,
+        address: addressData
+      }));
 
       // 4. Track checkout event
       await trackEvent('checkout_completed', {
@@ -851,6 +871,12 @@ export const CheckoutPage: React.FC = () => {
                     <p className="text-xs sm:text-sm text-brand-muted mt-0.5">
                       Informe seu CEP para preencher o endereço automaticamente.
                     </p>
+                    {customerProfile.address?.cep && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 mt-2.5 rounded-full bg-brand-green/10 border border-brand-green/20 text-brand-green text-xs font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Endereço preenchido com base no seu perfil (você pode editar livremente abaixo)</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-4">
@@ -966,7 +992,21 @@ export const CheckoutPage: React.FC = () => {
                     <button
                       onClick={() => {
                         if (validateStep2()) {
-                          calculateFreight(cep.replace(/\D/g, ''));
+                          const cleanCep = cep.replace(/\D/g, '');
+                          const savedAddr = {
+                            cep: cleanCep,
+                            street: street.trim(),
+                            number: number.trim(),
+                            complement: complement.trim(),
+                            neighborhood: neighborhood.trim(),
+                            city: city.trim(),
+                            state: state.trim().toUpperCase()
+                          };
+                          setCustomerProfile((prev) => ({
+                            ...prev,
+                            address: savedAddr
+                          }));
+                          calculateFreight(cleanCep);
                           setCurrentStep(3);
                         }
                       }}

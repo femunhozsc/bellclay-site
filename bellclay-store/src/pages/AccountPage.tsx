@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   User, Package, Mail, Lock, Phone, FileText, CheckCircle2,
-  ChevronRight, MessageCircle, AlertCircle, LogOut, ArrowRight
+  ChevronRight, AlertCircle, LogOut, ArrowRight, Truck,
+  MapPin, Building, Home, Edit3
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getCustomerOrders, subscribeToCustomerOrders } from '../services/firebase';
 import { generatePixPayment } from '../services/mercadoPagoService';
-import { Order } from '../types';
+import { fetchAddressByCep } from '../services/viaCepService';
+import { Order, Address } from '../types';
 
 export const AccountPage: React.FC = () => {
   const {
@@ -33,13 +36,24 @@ export const AccountPage: React.FC = () => {
   const [regPhone, setRegPhone] = useState('');
   const [regCpf, setRegCpf] = useState('');
 
-  // Edit profile state
+  // Edit profile state: Contact
   const [name, setName] = useState(customerProfile.name || '');
   const [email, setEmail] = useState(customerProfile.email || '');
   const [phone, setPhone] = useState(customerProfile.phone || '');
   const [cpf, setCpf] = useState(customerProfile.cpf || '');
-  const [isSaved, setIsSaved] = useState(false);
 
+  // Edit profile state: Address / Delivery
+  const [cep, setCep] = useState(customerProfile.address?.cep || '');
+  const [street, setStreet] = useState(customerProfile.address?.street || '');
+  const [number, setNumber] = useState(customerProfile.address?.number || '');
+  const [complement, setComplement] = useState(customerProfile.address?.complement || '');
+  const [neighborhood, setNeighborhood] = useState(customerProfile.address?.neighborhood || '');
+  const [city, setCity] = useState(customerProfile.address?.city || '');
+  const [state, setState] = useState(customerProfile.address?.state || '');
+  const [isLoadingCep, setIsLoadingCep] = useState(false);
+  const [cepError, setCepError] = useState<string | null>(null);
+
+  const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -53,7 +67,44 @@ export const AccountPage: React.FC = () => {
     setEmail(customerProfile.email || '');
     setPhone(customerProfile.phone || '');
     setCpf(customerProfile.cpf || '');
-  }, [customerProfile.name, customerProfile.email, customerProfile.phone, customerProfile.cpf]);
+
+    if (customerProfile.address) {
+      setCep(customerProfile.address.cep || '');
+      setStreet(customerProfile.address.street || '');
+      setNumber(customerProfile.address.number || '');
+      setComplement(customerProfile.address.complement || '');
+      setNeighborhood(customerProfile.address.neighborhood || '');
+      setCity(customerProfile.address.city || '');
+      setState(customerProfile.address.state || '');
+    }
+  }, [
+    customerProfile.name,
+    customerProfile.email,
+    customerProfile.phone,
+    customerProfile.cpf,
+    customerProfile.address
+  ]);
+
+  // Auto-populate address from latest order if profile address isn't filled yet
+  useEffect(() => {
+    if (!customerProfile.address?.cep && orders.length > 0) {
+      const pastOrder = orders.find((o) => o.address?.cep);
+      if (pastOrder?.address) {
+        const a = pastOrder.address;
+        setCep(a.cep || '');
+        setStreet(a.street || '');
+        setNumber(a.number || '');
+        setComplement(a.complement || '');
+        setNeighborhood(a.neighborhood || '');
+        setCity(a.city || '');
+        setState(a.state || '');
+        setCustomerProfile((prev) => ({
+          ...prev,
+          address: a
+        }));
+      }
+    }
+  }, [orders, customerProfile.address]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -126,18 +177,51 @@ export const AccountPage: React.FC = () => {
     }
   };
 
+  const handleCepChange = async (val: string) => {
+    const clean = val.replace(/\D/g, '').slice(0, 8);
+    const formatted = clean.length > 5 ? `${clean.slice(0, 5)}-${clean.slice(5)}` : clean;
+    setCep(formatted);
+    setCepError(null);
+
+    if (clean.length === 8) {
+      setIsLoadingCep(true);
+      const addr = await fetchAddressByCep(clean);
+      setIsLoadingCep(false);
+      if (addr && addr.uf) {
+        setStreet(addr.logradouro || '');
+        setNeighborhood(addr.bairro || '');
+        setCity(addr.localidade || '');
+        setState(addr.uf || '');
+      } else {
+        setCepError('CEP não encontrado. Por favor, confira o número.');
+      }
+    }
+  };
+
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanCep = cep.replace(/\D/g, '');
+    const updatedAddress: Address = {
+      cep: cleanCep,
+      street: street.trim(),
+      number: number.trim(),
+      complement: complement.trim(),
+      neighborhood: neighborhood.trim(),
+      city: city.trim(),
+      state: state.trim().toUpperCase()
+    };
+
     setCustomerProfile({
       ...customerProfile,
-      name,
-      email,
-      phone,
-      cpf,
+      name: name.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      cpf: cpf.trim(),
+      address: updatedAddress,
       isGuest: false
     });
     setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2500);
+    setTimeout(() => setIsSaved(false), 3000);
   };
 
   const getStatusBadge = (status: Order['orderStatus'], paymentStatus?: Order['paymentStatus']) => {
@@ -171,7 +255,7 @@ export const AccountPage: React.FC = () => {
         </nav>
       </div>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
         
         {/* LOGGED OUT: Professional Login & Registration Screen */}
         {!isLoggedIn ? (
@@ -401,12 +485,12 @@ export const AccountPage: React.FC = () => {
           </div>
         ) : (
           /* LOGGED IN VIEW */
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Header info */}
-            <div className="border-b border-brand-border/60 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="border-b border-brand-border/60 pb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h1 className="font-serif text-2xl sm:text-3xl font-extrabold text-brand-charcoal">
-                  Olá, {customerProfile.name.split(' ')[0]}
+                  Olá, {customerProfile.name ? customerProfile.name.split(' ')[0] : 'Cliente'}
                 </h1>
                 <p className="text-xs sm:text-sm text-brand-muted mt-0.5">
                   {customerProfile.email}
@@ -424,226 +508,410 @@ export const AccountPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Tabs */}
-            <div className="flex gap-2 sm:gap-3">
+            {/* Navigation Tabs: Minhas Encomendas | Dados de Envio & Contato (Same style as CartDrawer) */}
+            <div className="flex border-b border-brand-border/60 bg-[#FDFBF7] shrink-0">
               <button
+                type="button"
                 onClick={() => setActiveTab('orders')}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                className={`flex-1 py-3 sm:py-3.5 text-center text-xs sm:text-sm font-bold transition-all relative cursor-pointer flex items-center justify-center gap-2 ${
                   activeTab === 'orders'
-                    ? 'bg-brand-charcoal text-white shadow-sm'
-                    : 'bg-white hover:bg-[#F6F1E8] text-brand-muted border border-brand-border/80'
+                    ? 'text-brand-pink'
+                    : 'text-brand-muted hover:text-brand-charcoal'
                 }`}
               >
                 <Package className="w-4 h-4" />
                 <span>Minhas Encomendas ({orders.length})</span>
+                {activeTab === 'orders' && (
+                  <motion.div
+                    layoutId="accountActiveTab"
+                    className="absolute bottom-0 inset-x-0 h-0.5 bg-brand-pink"
+                  />
+                )}
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab('profile')}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                className={`flex-1 py-3 sm:py-3.5 text-center text-xs sm:text-sm font-bold transition-all relative cursor-pointer flex items-center justify-center gap-2 ${
                   activeTab === 'profile'
-                    ? 'bg-brand-charcoal text-white shadow-sm'
-                    : 'bg-white hover:bg-[#F6F1E8] text-brand-muted border border-brand-border/80'
+                    ? 'text-brand-pink'
+                    : 'text-brand-muted hover:text-brand-charcoal'
                 }`}
               >
-                <User className="w-4 h-4" />
+                <Truck className="w-4 h-4" />
                 <span>Dados de Envio & Contato</span>
+                {customerProfile.address?.cep && (
+                  <span className="w-2 h-2 rounded-full bg-brand-green"></span>
+                )}
+                {activeTab === 'profile' && (
+                  <motion.div
+                    layoutId="accountActiveTab"
+                    className="absolute bottom-0 inset-x-0 h-0.5 bg-brand-pink"
+                  />
+                )}
               </button>
             </div>
 
-            {/* Tab: Orders */}
+            {/* Tab: Minhas Encomendas - Takes full width to phone edges on mobile */}
             {activeTab === 'orders' && (
               <div className="space-y-4">
                 {orders.length === 0 ? (
-                  <div className="py-14 text-center space-y-3">
+                  <div className="py-16 text-center space-y-3 bg-white sm:rounded-3xl p-8 border-y sm:border border-brand-border/60 -mx-4 sm:mx-0">
                     <Package className="w-12 h-12 text-brand-muted/60 mx-auto" />
                     <h3 className="font-serif text-lg font-bold text-brand-charcoal">
                       Nenhuma encomenda recente
                     </h3>
                     <p className="text-xs text-brand-muted max-w-sm mx-auto">
-                      Suas peças artesanais encomendadas aparecerão aqui com status de secagem e rastreio.
+                      Suas peças artesanais encomendadas aparecerão aqui com status de produção, secagem e código de rastreamento.
                     </p>
                     <Link
                       to="/"
                       className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white text-xs font-bold shadow-soft transition-all"
                     >
-                      <span>Ver Catálogo</span>
+                      <span>Ver Catálogo de Artesanatos</span>
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                   </div>
                 ) : (
-                  orders.map((order) => {
-                    const effectiveStatus = order.orderStatus === 'pending' && order.paymentStatus === 'approved' ? 'paid' : order.orderStatus;
-                    const isPendingInfinitePay = effectiveStatus === 'pending' && Boolean(order.checkoutUrl);
-                    const isPendingPix = effectiveStatus === 'pending' && !order.checkoutUrl && order.paymentMethod === 'pix';
-                    const pixInfo = isPendingPix ? generatePixPayment(order.id, order.total, order.customer?.name || customerProfile.name || 'Cliente') : null;
+                  <div className="-mx-4 sm:mx-0 space-y-3 sm:space-y-4">
+                    {orders.map((order) => {
+                      const effectiveStatus = order.orderStatus === 'pending' && order.paymentStatus === 'approved' ? 'paid' : order.orderStatus;
+                      const isPendingInfinitePay = effectiveStatus === 'pending' && Boolean(order.checkoutUrl);
+                      const isPendingPix = effectiveStatus === 'pending' && !order.checkoutUrl && order.paymentMethod === 'pix';
+                      const pixInfo = isPendingPix ? generatePixPayment(order.id, order.total, order.customer?.name || customerProfile.name || 'Cliente') : null;
 
-                    return (
-                    <div
-                      key={order.id}
-                      className="p-5 rounded-2xl bg-white border border-brand-border/70 space-y-3 shadow-2xs"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-border/40 pb-3">
-                        <div>
-                          <span className="text-xs sm:text-sm font-extrabold text-brand-charcoal">
-                            Pedido #{order.id}
-                          </span>
-                          <span className="text-[11px] text-brand-muted block mt-0.5">
-                            {new Date(order.createdAt).toLocaleDateString('pt-BR', {
-                              day: '2-digit',
-                              month: 'long',
-                              year: 'numeric'
-                            })}
-                          </span>
-                        </div>
-                        <div>{getStatusBadge(order.orderStatus, order.paymentStatus)}</div>
-                      </div>
+                      return (
+                        <div
+                          key={order.id}
+                          className="bg-white border-y sm:border sm:border-brand-border/70 sm:rounded-2xl p-4 sm:p-6 space-y-4 shadow-xs"
+                        >
+                          {/* Order Header */}
+                          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-border/40 pb-3">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs sm:text-sm font-extrabold text-brand-charcoal tracking-wide">
+                                  Pedido #{order.id}
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-brand-muted block mt-0.5">
+                                Realizado em {new Date(order.createdAt).toLocaleDateString('pt-BR', {
+                                  day: '2-digit',
+                                  month: 'long',
+                                  year: 'numeric'
+                                })}
+                              </span>
+                            </div>
+                            <div>{getStatusBadge(order.orderStatus, order.paymentStatus)}</div>
+                          </div>
 
-                      <div className="space-y-2">
-                        {order.items.map((item, idx) => (
-                          <div key={`${item.product.id}-${idx}`} className="flex items-center gap-3">
-                            <img
-                              src={item.product.images[0]}
-                              alt={item.product.title}
-                              className="w-10 h-10 rounded-lg object-cover bg-gray-100"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <span className="text-xs font-bold text-brand-charcoal block truncate">
-                                {item.product.title}
+                          {/* Items List */}
+                          <div className="space-y-3">
+                            {order.items.map((item, idx) => (
+                              <div key={`${item.product.id}-${idx}`} className="flex items-center gap-3">
+                                <img
+                                  src={item.product.images[0]}
+                                  alt={item.product.title}
+                                  className="w-12 h-12 rounded-xl object-cover bg-gray-100 shrink-0 border border-brand-border/60"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-xs sm:text-sm font-bold text-brand-charcoal block truncate">
+                                    {item.product.title}
+                                  </span>
+                                  <span className="text-[11px] text-brand-muted">
+                                    {item.quantity}x • R$ {((item.product.promotionalPrice || item.product.price) * item.quantity).toFixed(2).replace('.', ',')}
+                                  </span>
+                                  {item.customObservation && (
+                                    <span className="text-[11px] text-brand-pink font-semibold block truncate">
+                                      Obs: "{item.customObservation}"
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Pending Payment Callout */}
+                          {isPendingInfinitePay && order.checkoutUrl && (
+                            <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-brand-border/60 flex flex-col sm:flex-row items-center justify-between gap-3">
+                              <div className="text-xs space-y-0.5 text-center sm:text-left">
+                                <span className="font-bold text-brand-charcoal block">Aguardando confirmação do pagamento</span>
+                                <span className="text-[11px] text-brand-muted block">Pague com Pix ou Cartão para iniciar a produção artesanal</span>
+                              </div>
+                              <a
+                                href={order.checkoutUrl}
+                                className="w-full sm:w-auto text-center px-5 py-2.5 rounded-full bg-brand-green hover:bg-brand-green-hover text-white text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs"
+                              >
+                                Concluir Pagamento
+                              </a>
+                            </div>
+                          )}
+
+                          {isPendingPix && pixInfo && (
+                            <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-brand-border/60 flex flex-col sm:flex-row items-center justify-between gap-3">
+                              <div className="text-xs space-y-0.5 text-center sm:text-left">
+                                <span className="font-bold text-brand-charcoal block">Aguardando pagamento via Pix</span>
+                                <span className="text-[11px] text-brand-muted block">Copie o código Pix abaixo para pagar no app do seu banco</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(pixInfo.pixCopiaECola);
+                                  setCopiedOrderId(order.id);
+                                  setTimeout(() => setCopiedOrderId(null), 2500);
+                                }}
+                                className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-brand-green hover:bg-brand-green-hover text-white text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs"
+                              >
+                                {copiedOrderId === order.id ? 'Código Pix Copiado!' : 'Copiar Pix Copia e Cola'}
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Address & Shipping Footer */}
+                          <div className="pt-3 border-t border-brand-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                            <div className="space-y-0.5">
+                              <span className="text-brand-muted block">
+                                Envio: <strong className="text-brand-charcoal">{order.shipping?.name || 'Padrão'}</strong>
+                                {order.address?.city && (
+                                  <span> para {order.address.city} - {order.address.state}</span>
+                                )}
                               </span>
-                              <span className="text-[11px] text-brand-muted">
-                                {item.quantity}x • R$ {((item.product.promotionalPrice || item.product.price) * item.quantity).toFixed(2).replace('.', ',')}
-                              </span>
-                              {item.customObservation && (
-                                <span className="text-[10px] text-brand-pink font-semibold block truncate">
-                                  Obs: "{item.customObservation}"
+                              {order.trackingCode && (
+                                <span className="font-mono font-bold text-brand-green flex items-center gap-1.5 mt-0.5">
+                                  <Truck className="w-3.5 h-3.5" />
+                                  <span>Rastreio: {order.trackingCode}</span>
                                 </span>
                               )}
                             </div>
+                            <div className="text-right self-end sm:self-auto">
+                              <span className="text-xs text-brand-muted block">Valor total</span>
+                              <span className="text-base sm:text-lg font-extrabold text-brand-charcoal">
+                                R$ {order.total.toFixed(2).replace('.', ',')}
+                              </span>
+                            </div>
                           </div>
-                        ))}
-                      </div>
-
-                      {isPendingInfinitePay && order.checkoutUrl && (
-                        <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-brand-border/60 flex flex-col sm:flex-row items-center justify-between gap-3">
-                          <div className="text-xs space-y-0.5 text-center sm:text-left">
-                            <span className="font-bold text-brand-charcoal block">Aguardando confirmação do pagamento</span>
-                            <span className="text-[11px] text-brand-muted block">Pague com Pix ou Cartão de Crédito para iniciar a produção</span>
-                          </div>
-                          <a
-                            href={order.checkoutUrl}
-                            className="px-4 py-2 rounded-full bg-brand-green hover:bg-brand-green-hover text-white text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs"
-                          >
-                            Concluir Pagamento
-                          </a>
                         </div>
-                      )}
-
-                      {isPendingPix && pixInfo && (
-                        <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-brand-border/60 flex flex-col sm:flex-row items-center justify-between gap-3">
-                          <div className="text-xs space-y-0.5 text-center sm:text-left">
-                            <span className="font-bold text-brand-charcoal block">Aguardando pagamento via Pix</span>
-                            <span className="text-[11px] text-brand-muted block">Copie o código Pix abaixo para concluir no seu banco</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(pixInfo.pixCopiaECola);
-                              setCopiedOrderId(order.id);
-                              setTimeout(() => setCopiedOrderId(null), 2500);
-                            }}
-                            className="px-4 py-2 rounded-full bg-brand-green hover:bg-brand-green-hover text-white text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs"
-                          >
-                            {copiedOrderId === order.id ? 'Código Pix Copiado!' : 'Copiar Pix Copia e Cola'}
-                          </button>
-                        </div>
-                      )}
-
-                      <div className="pt-2 border-t border-brand-border/40 flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <div>
-                          <span className="text-brand-muted">Envio: {order.shipping?.name}</span>
-                          {order.trackingCode && (
-                            <span className="font-mono font-bold text-brand-green block mt-0.5">
-                              Rastreio: {order.trackingCode}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <span className="text-sm font-extrabold text-brand-charcoal">
-                            Total: R$ {order.total.toFixed(2).replace('.', ',')}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                  })
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             )}
 
-            {/* Tab: Profile */}
+            {/* Tab: Dados de Envio & Contato */}
             {activeTab === 'profile' && (
-              <div className="max-w-xl space-y-4">
-                <form onSubmit={handleSaveProfile} className="space-y-3.5">
-                  <div>
-                    <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                      Nome Completo
-                    </label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                      E-mail
-                    </label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                        WhatsApp
-                      </label>
-                      <input
-                        type="text"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
-                      />
+              <div className="space-y-6">
+                <form onSubmit={handleSaveProfile} className="space-y-6">
+                  
+                  {/* Section 1: Contato e Identificação */}
+                  <div className="bg-white border-y sm:border sm:border-brand-border/70 sm:rounded-2xl p-4 sm:p-6 -mx-4 sm:mx-0 space-y-4 shadow-2xs">
+                    <div className="border-b border-brand-border/60 pb-3">
+                      <h3 className="font-serif text-lg font-bold text-brand-charcoal flex items-center gap-2">
+                        <User className="w-4 h-4 text-brand-pink" />
+                        <span>Dados de Contato</span>
+                      </h3>
+                      <p className="text-xs text-brand-muted mt-0.5">
+                        Utilizados para notificações de envio e confirmação de pedidos.
+                      </p>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                        CPF
-                      </label>
-                      <input
-                        type="text"
-                        value={cpf}
-                        onChange={(e) => setCpf(e.target.value)}
-                        className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div>
+                        <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                          Nome Completo *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="Seu nome completo"
+                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                          E-mail *
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="seuemail@exemplo.com"
+                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div>
+                        <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                          WhatsApp / Telefone *
+                        </label>
+                        <input
+                          type="text"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="(00) 00000-0000"
+                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                          CPF
+                        </label>
+                        <input
+                          type="text"
+                          value={cpf}
+                          onChange={(e) => setCpf(e.target.value)}
+                          placeholder="000.000.000-00"
+                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="pt-2">
+                  {/* Section 2: Endereço de Envio (Auto-Preenchido com Checkout) */}
+                  <div className="bg-white border-y sm:border sm:border-brand-border/70 sm:rounded-2xl p-4 sm:p-6 -mx-4 sm:mx-0 space-y-4 shadow-2xs">
+                    <div className="border-b border-brand-border/60 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                      <div>
+                        <h3 className="font-serif text-lg font-bold text-brand-charcoal flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-brand-green" />
+                          <span>Endereço de Envio</span>
+                        </h3>
+                        <p className="text-xs text-brand-muted mt-0.5">
+                          Endereço padrão que será preenchido automaticamente na etapa de entrega do checkout.
+                        </p>
+                      </div>
+                      {cep && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-green bg-brand-green/10 px-2.5 py-0.5 rounded-full self-start sm:self-auto">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Endereço Salvo</span>
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="space-y-3.5">
+                      <div>
+                        <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                          CEP {isLoadingCep && <span className="text-brand-pink font-normal">(Buscando endereço...)</span>}
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={9}
+                          value={cep}
+                          onChange={(e) => handleCepChange(e.target.value)}
+                          placeholder="00000-000"
+                          className="w-full sm:w-1/2 text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
+                        />
+                        {cepError && (
+                          <p className="text-xs text-red-500 mt-1">{cepError}</p>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                            Rua / Avenida
+                          </label>
+                          <input
+                            type="text"
+                            value={street}
+                            onChange={(e) => setStreet(e.target.value)}
+                            placeholder="Nome da sua rua ou avenida"
+                            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                            Número
+                          </label>
+                          <input
+                            type="text"
+                            value={number}
+                            onChange={(e) => setNumber(e.target.value)}
+                            placeholder="Ex: 123"
+                            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                            Complemento (opcional)
+                          </label>
+                          <input
+                            type="text"
+                            value={complement}
+                            onChange={(e) => setComplement(e.target.value)}
+                            placeholder="Apto, Bloco, Casa fundos..."
+                            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                            Bairro
+                          </label>
+                          <input
+                            type="text"
+                            value={neighborhood}
+                            onChange={(e) => setNeighborhood(e.target.value)}
+                            placeholder="Bairro"
+                            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                            Cidade
+                          </label>
+                          <input
+                            type="text"
+                            value={city}
+                            onChange={(e) => setCity(e.target.value)}
+                            placeholder="Cidade"
+                            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                            Estado (UF)
+                          </label>
+                          <input
+                            type="text"
+                            maxLength={2}
+                            value={state}
+                            onChange={(e) => setState(e.target.value.toUpperCase())}
+                            placeholder="UF"
+                            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs uppercase"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                    <p className="text-xs text-brand-muted">
+                      Os dados de endereço preenchidos aqui serão reutilizados automaticamente no seu checkout.
+                    </p>
                     <button
                       type="submit"
-                      className="px-6 py-2.5 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white font-bold text-xs shadow-soft cursor-pointer flex items-center gap-1.5 active:scale-95 transition-all"
+                      className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white font-extrabold text-xs sm:text-sm shadow-soft cursor-pointer flex items-center justify-center gap-2 active:scale-95 transition-all"
                     >
                       {isSaved ? <CheckCircle2 className="w-4 h-4" /> : null}
-                      <span>{isSaved ? 'Dados Salvos!' : 'Salvar Alterações'}</span>
+                      <span>{isSaved ? 'Dados Salvos com Sucesso!' : 'Salvar Alterações'}</span>
                     </button>
                   </div>
+
                 </form>
               </div>
             )}

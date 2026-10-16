@@ -11,6 +11,7 @@ import {
   signOut,
   User
 } from 'firebase/auth';
+import { Address } from '../types';
 
 export interface CustomerProfile {
   uid?: string;
@@ -19,6 +20,7 @@ export interface CustomerProfile {
   phone?: string;
   cpf?: string;
   isGuest: boolean;
+  address?: Address;
 }
 
 interface AuthContextType {
@@ -50,6 +52,7 @@ const syncCustomerToFirestore = async (profile: CustomerProfile) => {
       email: profile.email.trim(),
       phone: profile.phone || '',
       cpf: profile.cpf || '',
+      address: profile.address || null,
       updatedAt: serverTimestamp()
     });
     await setDoc(docRef, cleaned, { merge: true });
@@ -98,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: user.email || remoteProfile.email || prev.email,
               phone: remoteProfile.phone || prev.phone || '',
               cpf: remoteProfile.cpf || prev.cpf || '',
+              address: remoteProfile.address || prev.address,
               isGuest: false
             };
             syncCustomerToFirestore(merged);
@@ -139,6 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: res.user.email || prev.email || '',
             phone: remoteProfile.phone || prev.phone || '',
             cpf: remoteProfile.cpf || prev.cpf || '',
+            address: remoteProfile.address || prev.address,
             isGuest: false
           }));
           return { success: true };
@@ -194,6 +199,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: res.user.email || email,
             phone: remoteProfile.phone || prev.phone || '',
             cpf: remoteProfile.cpf || prev.cpf || '',
+            address: remoteProfile.address || prev.address,
             isGuest: false
           }));
           return { success: true };

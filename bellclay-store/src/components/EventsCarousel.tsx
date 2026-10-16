@@ -53,7 +53,7 @@ export const EventsCarousel: React.FC = () => {
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.1 }}
-      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
       className="space-y-4 sm:space-y-6 pt-4 sm:pt-6 scroll-mt-24 relative"
     >
       <div id="evento" className="absolute -top-24 pointer-events-none" />
@@ -62,7 +62,7 @@ export const EventsCarousel: React.FC = () => {
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.2 }}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-brand-border/60 pb-3 px-1"
       >
         <div>
@@ -86,7 +86,7 @@ export const EventsCarousel: React.FC = () => {
         initial={{ opacity: 0, scale: 0.99, y: 16 }}
         whileInView={{ opacity: 1, scale: 1, y: 0 }}
         viewport={{ once: true, amount: 0.12 }}
-        transition={{ duration: 0.65, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.8, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
         className="relative w-full h-[460px] sm:h-[520px] md:h-[560px] rounded-3xl overflow-hidden select-none bg-black shadow-xl touch-pan-y"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}

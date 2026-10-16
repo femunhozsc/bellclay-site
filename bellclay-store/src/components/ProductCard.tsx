@@ -25,8 +25,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) 
   const hasDiscount = Boolean(product.promotionalPrice && product.promotionalPrice < product.price);
   const currentPrice = product.promotionalPrice || product.price;
 
-  // Stagger natural por coluna (máximo de 0.18s para fluidez imediata)
-  const staggerDelay = Math.min((index % 4) * 0.05, 0.18);
+  // Stagger natural por coluna (leve e cadenciado)
+  const staggerDelay = Math.min((index % 4) * 0.07, 0.22);
 
   return (
     <motion.div
@@ -34,7 +34,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) 
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.08 }}
       transition={{
-        duration: 0.48,
+        duration: 0.62,
         delay: staggerDelay,
         ease: [0.22, 1, 0.36, 1]
       }}
