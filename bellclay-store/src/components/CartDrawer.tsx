@@ -223,13 +223,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                             <button
                               type="button"
                               onClick={() => handleProductClick(item.product.id)}
-                              className="w-18 h-18 rounded-xl overflow-hidden bg-white shrink-0 shadow-xs group cursor-pointer"
+                              className="w-16 h-16 min-w-[64px] min-h-[64px] max-w-[64px] max-h-[64px] rounded-xl overflow-hidden bg-white shrink-0 shadow-2xs group cursor-pointer block p-0 border border-brand-border/40"
                               title="Ver detalhes do produto"
                             >
                               <img
                                 src={item.product.images[0]}
                                 alt={item.product.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200 block"
                               />
                             </button>
 
