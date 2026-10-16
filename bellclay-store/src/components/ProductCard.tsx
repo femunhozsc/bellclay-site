@@ -111,7 +111,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </div>
           </div>
 
-          <span className="text-xs sm:text-sm font-semibold text-brand-pink group-hover:underline">
+          <span className="hidden sm:inline text-xs sm:text-sm font-semibold text-brand-pink group-hover:underline">
             Ver detalhes
           </span>
         </div>

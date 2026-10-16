@@ -86,33 +86,25 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                       const hasFreeOption = shippingOptions.some((opt) => opt.price === 0);
                       const hasCep = Boolean(destinationCep && destinationCep.replace(/\D/g, '').length === 8);
 
-                      if (hasCep && shippingOptions.length > 0) {
-                        if (hasFreeOption) {
-                          return (
-                            <span className="text-brand-green font-bold flex items-center gap-1">
-                              <CheckCircle2 className="w-4 h-4" /> Parabéns! Você ganhou Frete Grátis!
-                            </span>
-                          );
-                        } else if (freeShippingRemaining === 0) {
-                          return (
-                            <span className="text-brand-charcoal font-semibold text-[11px] sm:text-xs">
-                              Frete Grátis acima de R$ {freeShippingThreshold.toFixed(0)} exclusivo para PR ou envios até R$ 15
-                            </span>
-                          );
-                        }
+                      if (hasCep && shippingOptions.length > 0 && hasFreeOption) {
+                        return (
+                          <span className="text-brand-green font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-4 h-4 shrink-0" /> Parabéns! Você ganhou Frete Grátis!
+                          </span>
+                        );
                       }
 
                       if (freeShippingRemaining > 0) {
                         return (
-                          <span>
-                            Faltam <strong className="text-brand-pink">R$ {freeShippingRemaining.toFixed(2).replace('.', ',')}</strong> para Frete Grátis (pedido mínimo R$ {freeShippingThreshold.toFixed(0)})!
+                          <span className="text-xs text-brand-charcoal font-medium">
+                            Faltam <strong className="text-brand-pink font-bold">R$ {freeShippingRemaining.toFixed(2).replace('.', ',')}</strong> para Frete Grátis!
                           </span>
                         );
                       }
 
                       return (
                         <span className="text-brand-green font-bold flex items-center gap-1">
-                          <CheckCircle2 className="w-4 h-4" /> Frete Grátis liberado para o Paraná (ou envios até R$ 15)!
+                          <CheckCircle2 className="w-4 h-4 shrink-0" /> Frete Grátis garantido para seu pedido!
                         </span>
                       );
                     })()}
@@ -193,19 +185,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                             </span>
 
                             {/* Quantity controls */}
-                            <div className="flex items-center border border-brand-border rounded-full bg-white px-2 py-0.5">
+                            <div className="flex items-center border border-brand-border/80 rounded-full bg-white p-0.5 shadow-2xs">
                               <button
                                 onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                                className="text-xs font-bold text-brand-charcoal px-1 hover:text-brand-pink"
+                                className="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold text-brand-charcoal hover:bg-brand-pink-subtle/50 hover:text-brand-pink transition-colors cursor-pointer"
+                                aria-label="Diminuir quantidade"
                               >
                                 -
                               </button>
-                              <span className="text-xs font-bold text-brand-charcoal px-2">
+                              <span className="text-xs font-bold text-brand-charcoal px-2.5 min-w-[20px] text-center">
                                 {item.quantity}
                               </span>
                               <button
                                 onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                                className="text-xs font-bold text-brand-charcoal px-1 hover:text-brand-pink"
+                                className="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold text-brand-charcoal hover:bg-brand-pink-subtle/50 hover:text-brand-pink transition-colors cursor-pointer"
+                                aria-label="Aumentar quantidade"
                               >
                                 +
                               </button>

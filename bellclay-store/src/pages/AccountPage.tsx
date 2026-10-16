@@ -144,17 +144,17 @@ export const AccountPage: React.FC = () => {
     const effectiveStatus = status === 'pending' && paymentStatus === 'approved' ? 'paid' : status;
     switch (effectiveStatus) {
       case 'paid':
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">Pago & Confirmado</span>;
+        return <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-brand-green/15 text-brand-green border border-brand-green/20">Pago & Confirmado</span>;
       case 'production':
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Em Modelagem & Secagem</span>;
+        return <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200/60">Em Modelagem & Secagem</span>;
       case 'shipped':
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">Enviado / A caminho</span>;
+        return <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-brand-pink-subtle text-brand-pink border border-brand-pink/20">Enviado / A caminho</span>;
       case 'delivered':
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">Entregue com Sucesso</span>;
+        return <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-brand-green text-white shadow-xs">Entregue com Sucesso</span>;
       case 'cancelled':
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">Cancelado</span>;
+        return <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-gray-100 text-gray-500">Cancelado</span>;
       default:
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700">Aguardando Pagamento</span>;
+        return <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#F5EFE6] text-brand-muted border border-brand-border/80">Aguardando Pagamento</span>;
     }
   };
 
@@ -527,7 +527,7 @@ export const AccountPage: React.FC = () => {
                       {isPendingInfinitePay && order.checkoutUrl && (
                         <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-brand-border/60 flex flex-col sm:flex-row items-center justify-between gap-3">
                           <div className="text-xs space-y-0.5 text-center sm:text-left">
-                            <span className="font-bold text-brand-charcoal block">Aguardando pagamento via InfinitePay</span>
+                            <span className="font-bold text-brand-charcoal block">Aguardando confirmação do pagamento</span>
                             <span className="text-[11px] text-brand-muted block">Pague com Pix ou Cartão de Crédito para iniciar a produção</span>
                           </div>
                           <a

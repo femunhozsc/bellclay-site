@@ -155,7 +155,7 @@ export const EventPage: React.FC = () => {
 
         {/* High-Impact Photos Carousel for this specific event */}
         <div className="space-y-3">
-          <div className="relative w-full h-[360px] sm:h-[500px] md:h-[580px] rounded-3xl overflow-hidden bg-black shadow-xl">
+          <div className="relative w-full h-[280px] sm:h-[420px] md:h-[500px] rounded-3xl overflow-hidden bg-black shadow-xl">
             <AnimatePresence mode="wait">
               <motion.img
                 key={activeImageIndex}

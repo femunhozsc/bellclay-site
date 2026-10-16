@@ -412,14 +412,14 @@ export const ProductPage: React.FC = () => {
                     </p>
                   ) : (
                     <p className="text-xs sm:text-sm text-brand-green font-semibold">
-                      • Pagamento instantâneo via Pix ou Cartão (InfinitePay)
+                      • Pagamento seguro via Pix instantâneo ou Cartão de Crédito
                     </p>
                   )}
                 </div>
               </div>
 
               {/* Trust Highlights - Clean Ribbon */}
-              <div className="grid grid-cols-3 gap-3 py-3 px-4 rounded-2xl bg-[#F6F1E8]/70">
+              <div className="grid grid-cols-3 gap-3 py-3 px-4 rounded-2xl bg-[#FAF7F2] border border-brand-border/60 shadow-2xs">
                 <div className="flex flex-col items-center text-center">
                   <Heart className="w-5 h-5 text-brand-pink mb-1 fill-brand-pink/20" />
                   <span className="text-xs font-bold text-brand-charcoal">Feito à Mão</span>
@@ -668,21 +668,21 @@ export const ProductPage: React.FC = () => {
             {activeTab === 'specs' && (
               <div className="space-y-3">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-3.5 rounded-xl bg-[#FAF8F5]">
+                  <div className="p-4 rounded-2xl bg-white border border-brand-border/70 shadow-2xs">
                     <span className="text-xs text-brand-muted block">Altura aprox.</span>
-                    <strong className="text-base font-bold">{product.dimensions?.heightCm || 4} cm</strong>
+                    <strong className="text-base font-bold text-brand-charcoal">{product.dimensions?.heightCm || 4} cm</strong>
                   </div>
-                  <div className="p-3.5 rounded-xl bg-[#FAF8F5]">
+                  <div className="p-4 rounded-2xl bg-white border border-brand-border/70 shadow-2xs">
                     <span className="text-xs text-brand-muted block">Largura aprox.</span>
-                    <strong className="text-base font-bold">{product.dimensions?.widthCm || 4} cm</strong>
+                    <strong className="text-base font-bold text-brand-charcoal">{product.dimensions?.widthCm || 4} cm</strong>
                   </div>
-                  <div className="p-3.5 rounded-xl bg-[#FAF8F5]">
+                  <div className="p-4 rounded-2xl bg-white border border-brand-border/70 shadow-2xs">
                     <span className="text-xs text-brand-muted block">Comprimento aprox.</span>
-                    <strong className="text-base font-bold">{product.dimensions?.lengthCm || 4} cm</strong>
+                    <strong className="text-base font-bold text-brand-charcoal">{product.dimensions?.lengthCm || 4} cm</strong>
                   </div>
-                  <div className="p-3.5 rounded-xl bg-[#FAF8F5]">
+                  <div className="p-4 rounded-2xl bg-white border border-brand-border/70 shadow-2xs">
                     <span className="text-xs text-brand-muted block">Peso aprox.</span>
-                    <strong className="text-base font-bold">{Math.round((product.weightKg || 0.05) * 1000)} g</strong>
+                    <strong className="text-base font-bold text-brand-charcoal">{Math.round((product.weightKg || 0.05) * 1000)} g</strong>
                   </div>
                 </div>
                 <p className="text-xs text-brand-muted italic">
@@ -696,7 +696,7 @@ export const ProductPage: React.FC = () => {
                 <p className="font-semibold text-brand-charcoal">
                   Como manter sua peça linda por muitos anos:
                 </p>
-                <ul className="space-y-2 list-disc pl-5">
+                <ul className="space-y-2 list-disc pl-5 text-brand-charcoal/90">
                   <li>Limpe suavemente com um pano macio e seco ou levemente umedecido em água.</li>
                   <li>Evite submergir ou lavar em água quente/fervente ou produtos químicos abrasivos como álcool ou acetona.</li>
                   <li>Embora seja resistente e envernizada, evite quedas bruscas em superfícies de pedra ou atritos pontiagudos.</li>
@@ -722,8 +722,8 @@ export const ProductPage: React.FC = () => {
         )}
       </main>
 
-      {/* Mobile Sticky Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 md:hidden bg-white/95 backdrop-blur-md border-t border-brand-border/80 px-4 py-3 shadow-lg flex items-center justify-between gap-3">
+      {/* Mobile Sticky Bottom Action Bar with Safe-Area insets */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 md:hidden bg-[#FDFBF7]/95 backdrop-blur-md border-t border-brand-border/80 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <img
             src={product.images[0]}

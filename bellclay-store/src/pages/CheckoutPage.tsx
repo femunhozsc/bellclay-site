@@ -95,6 +95,10 @@ export const CheckoutPage: React.FC = () => {
   const infinitePayHandle = (settings.infinitePayTag || 'isabela-munhoz-4sb')
     .trim()
     .replace(/^[$@]+/, '');
+  const whatsappNumber = (settings.whatsapp || '5544991074932').replace(/\D/g, '') || '5544991074932';
+  const whatsappHelpMessage = encodeURIComponent(
+    'Olá Bellclay! Estou no checkout e gostaria de tirar uma dúvida sobre o meu pedido.'
+  );
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -434,7 +438,7 @@ export const CheckoutPage: React.FC = () => {
     } catch (err: any) {
       console.error('Erro ao finalizar pedido:', err);
       setErrorMessage(
-        err?.message || 'Houve um erro ao gerar o link de pagamento na InfinitePay. Tente novamente.'
+        err?.message || 'Houve um erro ao iniciar o pagamento seguro. Por favor, tente novamente.'
       );
       setIsProcessing(false);
     }
@@ -514,23 +518,50 @@ export const CheckoutPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] flex flex-col">
-      {/* Clean, Proportionate Checkout Header */}
-      <header className="bg-white border-b border-brand-border/60 sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 sm:h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center transition-transform hover:scale-105 duration-200">
-            <img src="/bellclay_logo.png" alt="Bellclay" className="h-10 sm:h-12 w-auto object-contain" />
-          </Link>
+      {/* Premium Topbar - Identical height, presence, spacing and tokens to Homepage Header */}
+      <header className="sticky top-0 z-40 w-full bg-[#FDFBF7]/95 backdrop-blur-md border-b border-brand-border/60 transition-all duration-300 shadow-2xs">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-3.5 sm:py-4.5 gap-2 sm:gap-4 min-h-[80px] sm:min-h-[92px]">
+            {/* Left: LOGO ONLY with comfortable margin matching Homepage */}
+            <div className="flex items-center shrink-0 pl-1.5 sm:pl-3">
+              <Link
+                to="/"
+                className="flex items-center transition-transform hover:scale-105 active:scale-95 duration-200"
+                aria-label="Bellclay Artesanatos - Voltar ao início"
+              >
+                <img
+                  src="/bellclay_logo.png"
+                  alt="Bellclay Artesanatos"
+                  className="h-12 sm:h-16 w-auto max-h-[60px] object-contain"
+                />
+              </Link>
+            </div>
 
-          <div className="flex items-center gap-2 text-xs font-semibold text-brand-charcoal/80 bg-[#FAF8F5] px-3 py-1.5 rounded-full border border-brand-border/60">
-            <ShieldCheck className="w-4 h-4 text-brand-green" />
-            <span>Checkout Seguro InfinitePay</span>
-            <span className="text-[10px] text-brand-muted hidden sm:inline">• SSL 256-Bit</span>
+            {/* Right: Security & Support */}
+            <div className="flex items-center gap-2 sm:gap-3 pr-1">
+              <div className="flex items-center gap-2 text-xs font-semibold text-brand-charcoal/90 bg-white/80 backdrop-blur-xs px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full border border-brand-border/70 shadow-2xs">
+                <ShieldCheck className="w-4 h-4 text-brand-green shrink-0" />
+                <span className="font-bold">Ambiente Seguro</span>
+                <span className="text-[11px] text-brand-muted hidden sm:inline">• Criptografia SSL</span>
+              </div>
+
+              <a
+                href={`https://wa.me/${whatsappNumber}?text=${whatsappHelpMessage}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs font-bold px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full bg-brand-green-subtle text-brand-green hover:bg-brand-green hover:text-white transition-all duration-200 cursor-pointer shadow-xs"
+                title="Dúvidas no checkout? Fale conosco no WhatsApp"
+              >
+                <WhatsAppIcon className="w-4 h-4 shrink-0 fill-current" />
+                <span className="hidden sm:inline">Ajuda</span>
+              </a>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 w-full">
+      <main className="flex-1 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-10 w-full">
         
         {/* Step Indicator (Only for steps 1 to 4) */}
         {currentStep < 5 && (
@@ -783,9 +814,9 @@ export const CheckoutPage: React.FC = () => {
                               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                           </div>
-                          <p className="text-[11px] text-brand-muted flex items-start gap-1.5 leading-relaxed">
-                            <ShieldCheck className="w-3.5 h-3.5 text-brand-green shrink-0 mt-0.5" />
-                            <span>Sua conta será criada e conectada automaticamente ao avançar para a etapa de pagamento, permitindo que você acompanhe seus pedidos e entregas no site.</span>
+                          <p className="text-[11px] text-brand-muted flex items-center gap-1.5 leading-relaxed">
+                            <ShieldCheck className="w-3.5 h-3.5 text-brand-green shrink-0" />
+                            <span>Para você acompanhar a produção artesanal e a entrega do seu pedido com comodidade.</span>
                           </p>
                         </div>
                       )}
@@ -1046,7 +1077,7 @@ export const CheckoutPage: React.FC = () => {
                 </div>
               )}
 
-              {/* STEP 4: Pagamento & Revisão via InfinitePay */}
+              {/* STEP 4: Pagamento Seguro & Revisão */}
               {currentStep === 4 && (
                 <div className="space-y-6">
                   <div>
@@ -1054,40 +1085,25 @@ export const CheckoutPage: React.FC = () => {
                       4. Pagamento Seguro
                     </h2>
                     <p className="text-xs sm:text-sm text-brand-muted mt-0.5">
-                      Transação 100% protegida via <strong>InfinitePay</strong> (Pix ou Cartão de Crédito).
+                      Escolha como deseja concluir sua compra. Transação 100% criptografada.
                     </p>
                   </div>
 
-                  {/* Account Connection Status Notification */}
+                  {/* Account Connection Status Note */}
                   {(!customerProfile.isGuest || isAccountCreated) ? (
-                    <div className="p-3.5 rounded-2xl bg-brand-green/10 border border-brand-green/20 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-brand-green text-white flex items-center justify-center shrink-0">
-                        <Check className="w-4 h-4 stroke-[3]" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-brand-charcoal flex items-center gap-1.5">
-                          <span>Conta Bellclay conectada com sucesso!</span>
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-brand-green/20 text-brand-green uppercase tracking-wider">Conectado</span>
-                        </p>
-                        <p className="text-[11px] text-brand-muted truncate mt-0.5">
-                          Vinculada a <strong>{customerProfile.email || email}</strong> • Seu pedido ficará salvo na sua conta para você acompanhar.
-                        </p>
-                      </div>
-                    </div>
-                  ) : isCreatingAccount ? (
-                    <div className="p-3.5 rounded-2xl bg-brand-pink/10 border border-brand-pink/20 flex items-center gap-3 text-xs text-brand-charcoal animate-pulse">
-                      <div className="w-4 h-4 border-2 border-brand-pink border-t-transparent rounded-full animate-spin shrink-0" />
-                      <span>Criando sua conta Bellclay e conectando automaticamente...</span>
+                    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white border border-brand-border/70 text-xs text-brand-charcoal shadow-2xs">
+                      <CheckCircle2 className="w-4 h-4 text-brand-green shrink-0" />
+                      <span>Pedido vinculado à sua conta (<strong className="font-semibold">{customerProfile.email || email}</strong>)</span>
                     </div>
                   ) : null}
 
                   {/* Address Summary Check before Paying */}
-                  <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-brand-border/70 flex items-start justify-between gap-3">
+                  <div className="p-4 rounded-2xl bg-white border border-brand-border/70 flex items-start justify-between gap-3 shadow-2xs">
                     <div className="flex items-start gap-3">
                       <MapPin className="w-4 h-4 text-brand-pink shrink-0 mt-0.5" />
                       <div className="text-xs space-y-0.5">
                         <span className="font-bold text-brand-charcoal block">
-                          Endereço de Entrega Confirmado:
+                          Endereço de Entrega:
                         </span>
                         <p className="text-brand-muted">
                           {street}, {number} {complement ? `(${complement})` : ''} — {neighborhood}
@@ -1100,9 +1116,9 @@ export const CheckoutPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setCurrentStep(2)}
-                      className="text-xs font-bold text-brand-pink hover:underline shrink-0 cursor-pointer"
+                      className="text-xs font-bold text-brand-pink hover:underline shrink-0 cursor-pointer p-1"
                     >
-                      Editar
+                      Alterar
                     </button>
                   </div>
 
@@ -1111,53 +1127,48 @@ export const CheckoutPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('pix')}
-                      className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                      className={`flex flex-col items-center justify-center p-4.5 rounded-2xl border-2 transition-all cursor-pointer ${
                         paymentMethod === 'pix'
                           ? 'border-brand-green bg-brand-green-subtle/50 text-brand-green shadow-xs'
-                          : 'border-brand-border/60 hover:border-gray-300 bg-white text-brand-muted'
+                          : 'border-brand-border/70 hover:border-brand-pink/40 bg-white text-brand-muted'
                       }`}
                     >
                       <QrCode className="w-6 h-6 mb-1.5" />
                       <span className="text-xs sm:text-sm font-bold text-brand-charcoal">Pix Instantâneo</span>
-                      <span className="text-[10px] text-brand-green font-bold">
-                        {pixDiscountPercent > 0 ? `${pixDiscountPercent}% OFF` : 'Aprovação na hora'}
+                      <span className="text-[10px] text-brand-green font-bold mt-0.5">
+                        {pixDiscountPercent > 0 ? `${pixDiscountPercent}% de desconto` : 'Aprovação imediata'}
                       </span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('credit_card')}
-                      className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                      className={`flex flex-col items-center justify-center p-4.5 rounded-2xl border-2 transition-all cursor-pointer ${
                         paymentMethod === 'credit_card'
                           ? 'border-brand-pink bg-brand-pink-subtle/50 text-brand-pink shadow-xs'
-                          : 'border-brand-border/60 hover:border-gray-300 bg-white text-brand-muted'
+                          : 'border-brand-border/70 hover:border-brand-pink/40 bg-white text-brand-muted'
                       }`}
                     >
                       <CreditCard className="w-6 h-6 mb-1.5" />
                       <span className="text-xs sm:text-sm font-bold text-brand-charcoal">Cartão de Crédito</span>
-                      <span className="text-[10px] text-brand-muted">
+                      <span className="text-[10px] text-brand-muted mt-0.5">
                         {maxInstallmentsNoInterest > 1
                           ? `Até ${maxInstallmentsNoInterest}x sem juros`
-                          : 'Parcelamento em até 12x'}
+                          : 'Em até 12x'}
                       </span>
                     </button>
                   </div>
 
-                  {/* InfinitePay Explanation Box */}
-                  <div className="p-4 rounded-2xl bg-brand-green-subtle/40 border border-brand-green/30 space-y-2.5">
-                    <div className="flex items-center gap-2 text-xs font-bold text-brand-green">
-                      <ShieldCheck className="w-4 h-4 shrink-0" />
-                      <span>Ambiente Criptografado InfinitePay</span>
-                    </div>
-                    <p className="text-xs text-brand-charcoal/85 leading-relaxed">
-                      Ao clicar em <strong>Ir para o Pagamento</strong>, seu pedido e seu endereço já ficam salvos e você será direcionado para a tela oficial da <strong>InfinitePay</strong> para concluir via <strong>Pix (QR Code / Copia e Cola)</strong> ou <strong>Cartão de Crédito (Visa, Mastercard, Elo, Apple Pay e Google Pay)</strong>.
-                    </p>
+                  {/* Security Assurance Notice */}
+                  <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-white border border-brand-border/70 text-xs text-brand-muted shadow-2xs">
+                    <ShieldCheck className="w-4 h-4 text-brand-green shrink-0" />
+                    <span>Ambiente protegido com criptografia de ponta a ponta. Seus dados nunca são armazenados.</span>
                   </div>
 
                   {/* Observação Geral do Pedido / Recado para a Artesã */}
-                  <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 space-y-1.5">
+                  <div className="p-4 rounded-2xl bg-white border border-brand-border/70 space-y-1.5 shadow-2xs">
                     <label className="block text-xs font-bold text-brand-charcoal flex items-center justify-between">
-                      <span>Alguma observação geral para o pedido? (opcional)</span>
+                      <span>Alguma observação para seu pedido? (opcional)</span>
                       <span className="text-[10px] text-brand-muted font-normal">Ex: embalagem de presente, instruções</span>
                     </label>
                     <textarea
@@ -1165,7 +1176,7 @@ export const CheckoutPage: React.FC = () => {
                       value={orderNotes}
                       onChange={(e) => setOrderNotes(e.target.value)}
                       placeholder="Deixe aqui algum recado especial para a artesã Bellclay..."
-                      className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white shadow-2xs"
+                      className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-[#FAF8F5] focus:bg-white transition-all shadow-2xs"
                     />
                   </div>
 
@@ -1181,16 +1192,16 @@ export const CheckoutPage: React.FC = () => {
                     <button
                       onClick={handleFinalizeOrder}
                       disabled={isProcessing}
-                      className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-brand-green hover:bg-brand-green-hover text-white font-bold text-sm shadow-green-soft cursor-pointer transition-all disabled:opacity-50"
+                      className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-brand-green hover:bg-brand-green-hover text-white font-bold text-sm shadow-green-soft cursor-pointer transition-all disabled:opacity-50 active:scale-95"
                     >
                       {isProcessing ? (
                         <>
                           <RefreshCw className="w-4 h-4 animate-spin" />
-                          <span>Abrindo InfinitePay...</span>
+                          <span>Conectando ambiente seguro...</span>
                         </>
                       ) : (
                         <>
-                          <span>Ir para o Pagamento</span>
+                          <span>Ir para o Pagamento Seguro</span>
                           <ArrowRight className="w-4 h-4" />
                         </>
                       )}
@@ -1201,8 +1212,8 @@ export const CheckoutPage: React.FC = () => {
 
             </div>
 
-            {/* Right Order Summary Column - Soft warm background, zero card border */}
-            <div className="lg:col-span-5 bg-[#F8F5EE] p-5 sm:p-7 rounded-2xl sm:rounded-3xl space-y-4">
+            {/* Right Order Summary Column - Sticky on desktop with refined porcelain styling */}
+            <div className="lg:col-span-5 bg-[#FAF7F2] p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-brand-border/70 space-y-4 lg:sticky lg:top-28 shadow-2xs">
               <h3 className="font-serif text-lg font-bold text-brand-charcoal border-b border-brand-border/60 pb-3">
                 Resumo da Compra ({items.length} {items.length === 1 ? 'item' : 'itens'})
               </h3>
@@ -1216,7 +1227,7 @@ export const CheckoutPage: React.FC = () => {
                       <img
                         src={item.product.images[0]}
                         alt={item.product.title}
-                        className="w-12 h-12 rounded-xl object-cover bg-white shrink-0"
+                        className="w-12 h-12 rounded-xl object-cover bg-white shrink-0 shadow-2xs"
                       />
                       <div className="flex-1 min-w-0">
                         <span className="text-xs font-bold text-brand-charcoal truncate block">
@@ -1306,7 +1317,7 @@ export const CheckoutPage: React.FC = () => {
                   <RefreshCw className="w-8 h-8 animate-spin" />
                 </div>
                 <h2 className="font-serif text-2xl font-bold text-brand-charcoal">
-                  Confirmando seu pagamento com a InfinitePay...
+                  Confirmando seu pagamento com segurança...
                 </h2>
                 <p className="text-xs sm:text-sm text-brand-muted">
                   Aguarde um instante enquanto atualizamos o status do seu pedido.
@@ -1351,13 +1362,13 @@ export const CheckoutPage: React.FC = () => {
 
                 {/* Order & Delivery Summary Card */}
                 {completedOrder && (
-                  <div className="p-5 rounded-2xl bg-[#F6F2E9] border border-brand-border/60 space-y-4 max-w-md mx-auto text-left text-xs">
+                  <div className="p-5 rounded-2xl bg-[#FAF7F2] border border-brand-border/70 space-y-4 max-w-md mx-auto text-left text-xs shadow-2xs">
                     <div className="flex items-center justify-between border-b border-brand-border/60 pb-3">
                       <span className="font-bold text-brand-charcoal">Status do Pagamento:</span>
                       {isOrderPaid ? (
                         <span className="px-2.5 py-1 rounded-full bg-green-100 text-green-800 font-bold text-[11px] flex items-center gap-1">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Pago via InfinitePay</span>
+                          <span>Pagamento Confirmado</span>
                         </span>
                       ) : (
                         <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-bold text-[11px]">
@@ -1391,16 +1402,16 @@ export const CheckoutPage: React.FC = () => {
                       </span>
                     </div>
 
-                    {/* Receipt Link if provided by InfinitePay */}
+                    {/* Receipt Link if provided */}
                     {(completedOrder.receiptUrl || returnedReceiptUrl) && (
                       <a
                         href={completedOrder.receiptUrl || returnedReceiptUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white border border-brand-border text-brand-charcoal hover:border-brand-pink font-bold transition-all"
+                        className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white border border-brand-border text-brand-charcoal hover:border-brand-pink font-bold transition-all shadow-2xs"
                       >
                         <ExternalLink className="w-4 h-4 text-brand-pink" />
-                        <span>Ver Comprovante Oficial InfinitePay</span>
+                        <span>Visualizar Comprovante do Pedido</span>
                       </a>
                     )}
 
@@ -1413,13 +1424,13 @@ export const CheckoutPage: React.FC = () => {
                             className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-brand-pink hover:bg-brand-pink-hover text-white font-bold transition-all shadow-xs"
                           >
                             <ExternalLink className="w-4 h-4" />
-                            <span>Abrir Pagamento na InfinitePay</span>
+                            <span>Concluir Pagamento Seguro</span>
                           </a>
                         )}
                         <button
                           type="button"
                           onClick={handleManualPaymentCheck}
-                          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white border border-brand-border text-brand-charcoal hover:bg-gray-50 font-semibold transition-all cursor-pointer"
+                          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white border border-brand-border text-brand-charcoal hover:bg-gray-50 font-semibold transition-all cursor-pointer shadow-2xs"
                         >
                           <RefreshCw className="w-3.5 h-3.5" />
                           <span>Já paguei! Atualizar status</span>
