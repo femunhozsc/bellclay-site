@@ -24,6 +24,7 @@ import {
   subscribeToOrder,
   trackEvent
 } from '../services/firebase';
+import { isCampoMouraoCep } from '../services/shippingService';
 import { Order } from '../types';
 
 export const CheckoutPage: React.FC = () => {
@@ -112,7 +113,13 @@ export const CheckoutPage: React.FC = () => {
     if (customerProfile.cpf && !cpf) setCpf(customerProfile.cpf);
 
     if (customerProfile.address) {
-      if (!cep && customerProfile.address.cep) setCep(customerProfile.address.cep);
+      if (!cep && customerProfile.address.cep) {
+        setCep(customerProfile.address.cep);
+        const cleanSaved = customerProfile.address.cep.replace(/\D/g, '');
+        if (cleanSaved.length === 8) {
+          calculateFreight(cleanSaved);
+        }
+      }
       if (!street && customerProfile.address.street) setStreet(customerProfile.address.street);
       if (!number && customerProfile.address.number) setNumber(customerProfile.address.number);
       if (!complement && customerProfile.address.complement) setComplement(customerProfile.address.complement);
@@ -121,6 +128,18 @@ export const CheckoutPage: React.FC = () => {
       if (!state && customerProfile.address.state) setState(customerProfile.address.state);
     }
   }, [customerProfile]);
+
+  // If selected shipping is pickup in Campo Mourão, but the destination is NOT Campo Mourão, invalidate it immediately
+  useEffect(() => {
+    const clean = cep.replace(/\D/g, '');
+    if (clean.length === 8 && selectedShipping?.id?.includes('pickup')) {
+      const isCM = isCampoMouraoCep(clean, city);
+      if (!isCM) {
+        const nonPickup = shippingOptions.find((opt) => !opt.id.includes('pickup'));
+        setSelectedShipping(nonPickup || null);
+      }
+    }
+  }, [cep, city, selectedShipping, shippingOptions, setSelectedShipping]);
 
   // Handle Return from InfinitePay Redirect URL
   useEffect(() => {
@@ -990,7 +1009,7 @@ export const CheckoutPage: React.FC = () => {
                     </button>
 
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         if (validateStep2()) {
                           const cleanCep = cep.replace(/\D/g, '');
                           const savedAddr = {
@@ -1006,7 +1025,7 @@ export const CheckoutPage: React.FC = () => {
                             ...prev,
                             address: savedAddr
                           }));
-                          calculateFreight(cleanCep);
+                          await calculateFreight(cleanCep);
                           setCurrentStep(3);
                         }
                       }}

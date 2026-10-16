@@ -9,6 +9,25 @@ export interface ShippingCalculationParams {
   melhorEnvioToken?: string;
 }
 
+export const isCampoMouraoCep = (cep: string, city?: string): boolean => {
+  const clean = (cep || '').replace(/\D/g, '');
+  if (clean.length !== 8) return false;
+
+  // If city name is available, strictly check if it's Campo Mourão
+  if (city && city.trim().length > 0) {
+    const normalizedCity = city
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+    return normalizedCity === 'campo mourao';
+  }
+
+  // Official postal code range for Campo Mourão - PR: 87300-000 to 87319-999
+  const cepNum = parseInt(clean, 10);
+  return !isNaN(cepNum) && cepNum >= 87300000 && cepNum <= 87319999;
+};
+
 export const calculateShipping = async ({
   destinationCep,
   items,
@@ -31,11 +50,7 @@ export const calculateShipping = async ({
   // Address and State lookup
   const addressInfo = await fetchAddressByCep(cleanDestCep);
   const state = addressInfo?.uf?.toUpperCase() || getUfFromCepPrefix(cleanDestCep);
-  const isCampoMourao = Boolean(
-    addressInfo?.localidade?.toLowerCase().includes('campo mourão') ||
-    cleanDestCep.startsWith('8730') ||
-    cleanDestCep.startsWith('8731')
-  );
+  const isCampoMourao = isCampoMouraoCep(cleanDestCep, addressInfo?.localidade);
 
   const rawThreshold = Number(freeShippingThreshold);
   const minOrderValue = !isNaN(rawThreshold) && rawThreshold > 0 ? rawThreshold : 150;

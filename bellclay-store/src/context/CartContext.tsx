@@ -151,10 +151,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode; freeShippingThr
 
       setShippingOptions(options);
       if (options.length > 0) {
-        // Auto select cheapest or free
-        const cheapest = [...options].sort((a, b) => a.price - b.price)[0];
-        setSelectedShipping(cheapest);
+        // Preserve current selection only if it exists in the new options list
+        const validCurrent = options.find((o) => o.id === selectedShipping?.id);
+        if (validCurrent) {
+          setSelectedShipping(validCurrent);
+        } else {
+          const cheapest = [...options].sort((a, b) => a.price - b.price)[0];
+          setSelectedShipping(cheapest);
+        }
       } else {
+        setSelectedShipping(null);
         setShippingError('Nenhuma opção de frete encontrada para este CEP.');
       }
     } catch (err) {

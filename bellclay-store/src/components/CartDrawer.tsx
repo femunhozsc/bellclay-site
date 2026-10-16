@@ -217,7 +217,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                         return (
                           <div
                             key={item.product.id}
-                            className="flex gap-3.5 p-3 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 hover:border-brand-pink/30 transition-all"
+                            className="flex gap-3.5 p-3.5 rounded-2xl bg-gradient-to-r from-brand-pink-light/80 via-white/40 to-brand-green-light/80 shadow-2xs transition-all"
                           >
                             {/* Product Thumbnail (Click goes to product page) */}
                             <button
@@ -341,10 +341,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                           {shippingOptions.map((opt) => (
                             <label
                               key={opt.id}
-                              className={`flex items-center justify-between text-xs sm:text-sm p-3 rounded-xl border cursor-pointer transition-all ${
+                              className={`flex items-center justify-between text-xs sm:text-sm p-3.5 rounded-xl cursor-pointer transition-all shadow-2xs ${
                                 selectedShipping?.id === opt.id
-                                  ? 'border-brand-pink bg-brand-pink-subtle/50 font-semibold shadow-xs'
-                                  : 'border-brand-border/60 hover:bg-gray-50 bg-[#FAF8F5]'
+                                  ? 'bg-gradient-to-r from-brand-pink-light via-white/30 to-brand-green-light font-semibold shadow-xs'
+                                  : 'bg-gradient-to-r from-brand-pink-light/75 via-white/40 to-brand-green-light/75 hover:opacity-95'
                               }`}
                             >
                               <div className="flex items-center gap-2.5">
@@ -373,12 +373,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                           ))}
                         </div>
                       ) : (
-                        <div className="p-4 rounded-xl bg-[#FAF8F5] border border-brand-border/60 text-center space-y-1 mt-3">
+                        <div className="p-4 rounded-xl bg-gradient-to-r from-brand-pink-light/70 via-white/40 to-brand-green-light/70 text-center space-y-1 mt-3 shadow-2xs">
                           <p className="text-xs sm:text-sm text-brand-charcoal font-semibold">
                             Digite seu CEP para ver os prazos e valores de envio
                           </p>
                           <p className="text-xs text-brand-muted">
-                            Enviamos com carinho para todo o Brasil ou retirada/entrega em Campo Mourão.
+                            Enviamos com carinho para todo o Brasil.
                           </p>
                         </div>
                       )}

@@ -26,7 +26,6 @@ export const ProductPage: React.FC = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
-  const [customObservation, setCustomObservation] = useState('');
   const [isAdded, setIsAdded] = useState(false);
 
   // Freight calculation
@@ -88,7 +87,6 @@ export const ProductPage: React.FC = () => {
     window.scrollTo(0, 0);
     setActiveImageIndex(0);
     setQuantity(1);
-    setCustomObservation('');
     setIsAdded(false);
   }, [slug]);
 
@@ -142,14 +140,14 @@ export const ProductPage: React.FC = () => {
   const pixPrice = (currentPrice * (1 - pixDiscountPercent / 100)).toFixed(2).replace('.', ',');
 
   const handleAddToCart = () => {
-    addItem(product, quantity, customObservation);
+    addItem(product, quantity);
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
     setIsCartOpen(true);
   };
 
   const handleBuyNow = () => {
-    addItem(product, quantity, customObservation);
+    addItem(product, quantity);
     navigate('/checkout');
   };
 
@@ -418,8 +416,13 @@ export const ProductPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Trust Highlights - Clean Ribbon */}
-              <div className="grid grid-cols-3 gap-3 py-3 px-4 rounded-2xl bg-[#FAF7F2] border border-brand-border/60 shadow-2xs">
+              {/* Short Description */}
+              <p className="text-sm sm:text-base text-brand-charcoal/85 leading-relaxed">
+                {product.description}
+              </p>
+
+              {/* Trust Highlights - Below Description, Above Purchase Buttons, Borderless */}
+              <div className="grid grid-cols-3 gap-3 py-3 px-4 rounded-2xl bg-[#FAF7F2] shadow-2xs">
                 <div className="flex flex-col items-center text-center">
                   <Heart className="w-5 h-5 text-brand-pink mb-1 fill-brand-pink/20" />
                   <span className="text-xs font-bold text-brand-charcoal">Feito à Mão</span>
@@ -435,28 +438,6 @@ export const ProductPage: React.FC = () => {
                   <span className="text-xs font-bold text-brand-charcoal">Envio Seguro</span>
                   <span className="text-[10px] text-brand-muted">Embalagem protegida</span>
                 </div>
-              </div>
-
-              {/* Short Description */}
-              <p className="text-sm sm:text-base text-brand-charcoal/85 leading-relaxed">
-                {product.description}
-              </p>
-
-              {/* Customization / Observation Field */}
-              <div className="space-y-1.5 pt-2">
-                <label className="block text-xs sm:text-sm font-bold text-brand-charcoal">
-                  Alguma observação sobre a peça?
-                </label>
-                <input
-                  type="text"
-                  value={customObservation}
-                  onChange={(e) => setCustomObservation(e.target.value)}
-                  placeholder="Ex: alteração de cor, nome para gravar, etc."
-                  className="w-full text-xs sm:text-sm px-4 py-3 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
-                />
-                <p className="text-[11px] text-brand-muted">
-                  Cada peça é feita artesanalmente. Pode deixar observações para a artesã!
-                </p>
               </div>
 
               {/* Quantity and Action Buttons */}
@@ -753,10 +734,20 @@ export const ProductPage: React.FC = () => {
         </div>
 
         <button
-          onClick={handleBuyNow}
-          className="shrink-0 px-6 py-2.5 rounded-full bg-brand-green text-white font-extrabold text-xs sm:text-sm shadow-green-soft active:scale-95 transition-all"
+          onClick={handleAddToCart}
+          className="shrink-0 px-5 py-2.5 rounded-full bg-gradient-to-r from-brand-pink to-[#f56377] text-white font-extrabold text-xs sm:text-sm shadow-pink-soft active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
         >
-          Comprar Agora
+          {isAdded ? (
+            <>
+              <Check className="w-4 h-4 stroke-[3]" />
+              <span>Adicionado!</span>
+            </>
+          ) : (
+            <>
+              <ShoppingBag className="w-4 h-4" />
+              <span>Adicionar ao Carrinho</span>
+            </>
+          )}
         </button>
       </div>
 
