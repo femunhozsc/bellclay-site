@@ -10,12 +10,14 @@ export const EventsCarousel: React.FC = () => {
 
   const activeEvents = (settings.events || []).filter((e) => e.active);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
   const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     if (activeEvents.length <= 1 || isPaused) return;
 
     const timer = setInterval(() => {
+      setSlideDirection('right');
       setCurrentIndex((prev) => (prev + 1) % activeEvents.length);
     }, 6500);
 
@@ -27,20 +29,57 @@ export const EventsCarousel: React.FC = () => {
   const current = activeEvents[currentIndex] || activeEvents[0];
 
   const handleNext = () => {
+    setSlideDirection('right');
     setCurrentIndex((prev) => (prev + 1) % activeEvents.length);
   };
 
   const handlePrev = () => {
+    setSlideDirection('left');
     setCurrentIndex((prev) => (prev - 1 + activeEvents.length) % activeEvents.length);
   };
 
+  const handleSelectSlide = (idx: number) => {
+    if (idx === currentIndex) return;
+    setSlideDirection(idx > currentIndex ? 'right' : 'left');
+    setCurrentIndex(idx);
+  };
+
   const handleDragEnd = (_: any, info: PanInfo) => {
-    const swipeThreshold = 50;
-    if (info.offset.x < -swipeThreshold || info.velocity.x < -300) {
+    const swipeThreshold = 40;
+    if (info.offset.x < -swipeThreshold || info.velocity.x < -250) {
       handleNext();
-    } else if (info.offset.x > swipeThreshold || info.velocity.x > 300) {
+    } else if (info.offset.x > swipeThreshold || info.velocity.x > 250) {
       handlePrev();
     }
+  };
+
+  // Variantes de animação: arrasto para o lado com transição idêntica ao banner principal
+  const slideVariants = {
+    enter: (direction: 'left' | 'right') => ({
+      x: direction === 'right' ? '100%' : '-100%',
+      opacity: 0,
+      scale: 1
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+      scale: 1,
+      transition: {
+        x: { type: 'spring' as const, stiffness: 280, damping: 32 },
+        opacity: { duration: 0.45, ease: 'easeOut' as const },
+        scale: { duration: 0.45 }
+      }
+    },
+    exit: (direction: 'left' | 'right') => ({
+      x: direction === 'right' ? '-100%' : '100%',
+      opacity: 0,
+      scale: 0.98,
+      transition: {
+        x: { type: 'spring' as const, stiffness: 280, damping: 32 },
+        opacity: { duration: 0.35, ease: 'easeIn' as const },
+        scale: { duration: 0.35 }
+      }
+    })
   };
 
   const handleOpenEvent = (slug: string) => {
@@ -91,19 +130,20 @@ export const EventsCarousel: React.FC = () => {
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
-        <AnimatePresence mode="wait">
+        <AnimatePresence initial={false} custom={slideDirection} mode="popLayout">
           <motion.div
             key={current.id || currentIndex}
+            custom={slideDirection}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.15}
+            dragElastic={0.2}
             onDragStart={() => setIsPaused(true)}
             onDragEnd={handleDragEnd}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.6 }}
-            className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
+            className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing bg-black"
           >
             {/* Background Cover Image */}
             <img
@@ -213,7 +253,7 @@ export const EventsCarousel: React.FC = () => {
             {activeEvents.map((_, idx) => (
               <button
                 key={idx}
-                onClick={() => setCurrentIndex(idx)}
+                onClick={() => handleSelectSlide(idx)}
                 className={`transition-all duration-300 rounded-full cursor-pointer ${
                   currentIndex === idx
                     ? 'w-7 h-2 bg-white shadow-md'
