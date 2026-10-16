@@ -14,7 +14,18 @@ const ScrollToTop: React.FC = () => {
   const { pathname, hash } = useLocation();
 
   useEffect(() => {
-    // Only force scroll to top if there is no anchor/hash in the URL
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
+    // Clean up residual #produtos or #todos hash so page always enters 100% at the top
+    if (window.location.hash === '#produtos' || window.location.hash === '#todos') {
+      window.history.replaceState(null, '', window.location.pathname);
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      return;
+    }
+
+    // Force scroll to top if there is no explicit anchor in the URL
     if (!hash && !window.location.hash) {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }

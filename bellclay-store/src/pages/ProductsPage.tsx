@@ -89,7 +89,7 @@ export const ProductsPage: React.FC = () => {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-brand-border/60 pb-4"
+          className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-1"
         >
           <div>
             <div className="flex items-center gap-2">
@@ -103,12 +103,6 @@ export const ProductsPage: React.FC = () => {
                 ? `Exibindo artesanatos que coincidem com o termo "${searchQuery}".`
                 : 'Todas as nossas criações colecionáveis modeladas à mão em cerâmica fria com acabamento vitrificado.'}
             </p>
-          </div>
-
-          <div className="self-start sm:self-auto flex items-center gap-2 text-xs sm:text-sm font-semibold text-brand-muted">
-            <span className="px-3 py-1 rounded-full bg-white border border-brand-border/70 shadow-2xs text-brand-charcoal font-bold">
-              {filteredProducts.length} {filteredProducts.length === 1 ? 'peça encontrada' : 'peças encontradas'}
-            </span>
           </div>
         </motion.div>
 
@@ -168,32 +162,6 @@ export const ProductsPage: React.FC = () => {
         >
           <CategoryPills layoutId="productsPageCategoryActiveTab" updateHash={false} />
         </motion.div>
-
-        {/* Active Filter Reminder / Quick Reset */}
-        {(selectedCategory !== 'all' || searchQuery) && (
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-[#FAF8F5] border border-brand-border/60 rounded-xl px-3.5 py-2.5 text-xs text-brand-charcoal">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-brand-muted">Filtros ativos:</span>
-              {selectedCategory !== 'all' && (
-                <span className="px-2.5 py-0.5 rounded-md bg-white border border-brand-border font-bold text-brand-pink">
-                  {categoryDisplayName}
-                </span>
-              )}
-              {searchQuery && (
-                <span className="px-2.5 py-0.5 rounded-md bg-white border border-brand-border font-bold text-brand-charcoal">
-                  Busca: "{searchQuery}"
-                </span>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={handleClearFilters}
-              className="text-brand-pink hover:underline font-bold cursor-pointer text-xs"
-            >
-              Limpar todos os filtros
-            </button>
-          </div>
-        )}
 
         {/* Products Grid - Identical Card Style & Responsive Grid */}
         {isLoading ? (

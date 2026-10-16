@@ -49,15 +49,6 @@ export const CategoryPills: React.FC<CategoryPillsProps> = ({
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
 
-  // Scroll active category into view smoothly when changed
-  useEffect(() => {
-    if (!scrollContainerRef.current) return;
-    const activeEl = scrollContainerRef.current.querySelector<HTMLElement>('[data-active="true"]');
-    if (activeEl) {
-      activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
-  }, [selectedCategory]);
-
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!scrollContainerRef.current) return;
     setIsMouseDown(true);
@@ -83,12 +74,22 @@ export const CategoryPills: React.FC<CategoryPillsProps> = ({
     }, 50);
   };
 
+  // Adjust container horizontal scroll ONLY on user interaction without touching window vertical scroll
   const handleSelect = (slug: string) => {
     if (isDraggingRef.current) return;
     setSelectedCategory(slug);
-    if (updateHash) {
-      const newHash = slug === 'all' ? '#produtos' : `#${slug}`;
-      window.history.pushState(null, '', newHash);
+
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      setTimeout(() => {
+        const activeEl = container.querySelector<HTMLElement>('[data-active="true"]');
+        if (activeEl) {
+          const containerRect = container.getBoundingClientRect();
+          const activeRect = activeEl.getBoundingClientRect();
+          const offset = activeRect.left - containerRect.left - (container.clientWidth / 2) + (activeEl.clientWidth / 2);
+          container.scrollBy({ left: offset, behavior: 'smooth' });
+        }
+      }, 40);
     }
   };
 

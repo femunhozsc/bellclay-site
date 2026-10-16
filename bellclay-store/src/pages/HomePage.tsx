@@ -58,11 +58,20 @@ export const HomePage: React.FC = () => {
         };
       }
 
+      if (rawTag === 'produtos' || rawTag === 'todos' || rawTag === 'catalogo') {
+        setSelectedCategory('all');
+        setSearchQuery('');
+        if (window.location.hash) {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+        return;
+      }
+
       const targetSlug = resolveCategorySlug(rawTag, settings.categories);
       setSelectedCategory(targetSlug);
       setSearchQuery('');
 
-      // Execute smooth scrolling with retries to account for image loads / layout settling
+      // Execute smooth scrolling only if navigating specifically to a category slug
       scrollToCatalogSection();
       const t1 = setTimeout(scrollToCatalogSection, 80);
       const t2 = setTimeout(scrollToCatalogSection, 250);
@@ -208,7 +217,7 @@ export const HomePage: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-brand-border/60 pb-3 px-1"
+            className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-1 px-1"
           >
             <div>
               <h3 className="font-serif text-[22px] sm:text-2xl md:text-3xl font-extrabold text-brand-charcoal tracking-tight">
