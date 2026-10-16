@@ -229,7 +229,130 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
         )}
       </div>
 
-      {/* Section 1: Welcome Header & Announcement Bar */}
+      {/* Section 1: Banners do Carrossel Inicial */}
+      <div className="bg-white p-6 rounded-3xl border border-brand-border/70 shadow-xs space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-brand-border/60">
+          <div className="flex items-center gap-2">
+            <Image className="w-5 h-5 text-brand-pink" />
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-bold text-sm text-brand-charcoal">Banners do Carrossel Inicial</h3>
+                <span className="text-[11px] font-semibold text-brand-pink bg-brand-pink-subtle px-2.5 py-0.5 rounded-full border border-brand-pink/20">
+                  Proporção no celular: 2:3
+                </span>
+              </div>
+              <p className="text-xs text-brand-muted">Adicione, reordene (mude a ordem de exibição) ou edite os slides. Proporção recomendada para celular: 2:3 vertical.</p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => onOpenBannerModal()}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-brand-pink-light text-brand-pink hover:bg-brand-pink hover:text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Novo Slide</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          {settings.banners.map((banner, idx) => (
+            <div key={banner.id} className="rounded-2xl border border-brand-border overflow-hidden bg-[#FAF8F5] flex flex-col justify-between">
+              <div className="relative aspect-video bg-gray-100">
+                <img src={banner.imageUrl} alt="" className="w-full h-full object-cover" />
+                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/75 text-white text-[10px] font-bold shadow-xs">
+                  Slide {idx + 1} de {settings.banners.length}
+                </span>
+                {banner.active && (
+                  <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-brand-green text-white text-[10px] font-bold shadow-xs">
+                    Ativo
+                  </span>
+                )}
+              </div>
+
+              {/* Order / Position Controls Bar */}
+              <div className="px-3.5 py-2 bg-[#F3EDE2] border-b border-brand-border/60 flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold text-brand-charcoal flex items-center gap-1">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-brand-pink" />
+                  <span>Ordem:</span>
+                </span>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleMoveBanner(idx, 'left')}
+                    disabled={idx === 0 || isSaving}
+                    className="p-1 rounded-md bg-white border border-brand-border hover:bg-brand-pink hover:text-white hover:border-transparent text-brand-charcoal transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-2xs"
+                    title="Mover para trás (exibir antes)"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+
+                  <select
+                    value={idx}
+                    onChange={(e) => handleChangeBannerPosition(idx, Number(e.target.value))}
+                    disabled={isSaving}
+                    className="bg-white border border-brand-border rounded-md px-1.5 py-0.5 text-[11px] font-bold text-brand-charcoal cursor-pointer outline-none shadow-2xs"
+                    title="Mudar posição na fila de slides"
+                  >
+                    {settings.banners.map((_, i) => (
+                      <option key={i} value={i}>
+                        {i + 1}º lugar
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    type="button"
+                    onClick={() => handleMoveBanner(idx, 'right')}
+                    disabled={idx === settings.banners.length - 1 || isSaving}
+                    className="p-1 rounded-md bg-white border border-brand-border hover:bg-brand-pink hover:text-white hover:border-transparent text-brand-charcoal transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-2xs"
+                    title="Mover para frente (exibir depois)"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-4 flex-1 flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-brand-pink uppercase tracking-wide block">{banner.badge}</span>
+                  <h4 className="font-bold text-xs text-brand-charcoal line-clamp-1 mt-0.5">{banner.title}</h4>
+                  <p className="text-[11px] text-brand-muted line-clamp-2 mt-1">{banner.subtitle}</p>
+                </div>
+
+                <div className="pt-3 mt-3 border-t border-brand-border/60 flex items-center justify-between gap-2">
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-[10px] text-brand-charcoal font-bold truncate">{banner.buttonText || 'Ver Coleção'}</span>
+                    <span className="text-[9px] text-brand-pink font-mono truncate" title={banner.buttonLink || '#produtos'}>
+                      {banner.buttonLink || '#produtos'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => onOpenBannerModal(banner)}
+                      className="p-1.5 rounded-lg hover:bg-white text-brand-charcoal cursor-pointer"
+                      title="Editar"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    {settings.banners.length > 1 && (
+                      <button
+                        onClick={() => onDeleteBanner(banner.id)}
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 cursor-pointer"
+                        title="Remover"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Section 2: Títulos de Boas-Vindas da Página Inicial */}
       <form onSubmit={handleSaveTextChanges} className="bg-white p-6 rounded-3xl border border-brand-border/70 shadow-xs space-y-6">
         <div className="flex items-center gap-2 pb-2 border-b border-brand-border/60">
           <Palette className="w-5 h-5 text-brand-pink" />
@@ -435,125 +558,57 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
         </div>
       </div>
 
-      {/* Section 2: Carousel & Banners */}
+      {/* Section 4: Categorias da Loja */}
       <div className="bg-white p-6 rounded-3xl border border-brand-border/70 shadow-xs space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-brand-border/60">
           <div className="flex items-center gap-2">
-            <Image className="w-5 h-5 text-brand-pink" />
+            <Layers className="w-5 h-5 text-brand-green" />
             <div>
-              <h3 className="font-bold text-sm text-brand-charcoal">Banners do Carrossel Inicial</h3>
-              <p className="text-xs text-brand-muted">Adicione, reordene (mude a ordem de exibição) ou edite os slides</p>
+              <h3 className="font-bold text-sm text-brand-charcoal">Categorias da Loja</h3>
+              <p className="text-xs text-brand-muted">Defina as seções de artesanato (chaveiros, bottons, etc.)</p>
             </div>
           </div>
 
           <button
-            onClick={() => onOpenBannerModal()}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-brand-pink-light text-brand-pink hover:bg-brand-pink hover:text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
+            onClick={() => onOpenCategoryModal()}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-brand-green-subtle text-brand-green hover:bg-brand-green hover:text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Novo Slide</span>
+            <span>Nova Categoria</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-          {settings.banners.map((banner, idx) => (
-            <div key={banner.id} className="rounded-2xl border border-brand-border overflow-hidden bg-[#FAF8F5] flex flex-col justify-between">
-              <div className="relative aspect-video bg-gray-100">
-                <img src={banner.imageUrl} alt="" className="w-full h-full object-cover" />
-                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/75 text-white text-[10px] font-bold shadow-xs">
-                  Slide {idx + 1} de {settings.banners.length}
-                </span>
-                {banner.active && (
-                  <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-brand-green text-white text-[10px] font-bold shadow-xs">
-                    Ativo
-                  </span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+          {settings.categories.map((cat) => (
+            <div key={cat.id} className="p-4 rounded-2xl border border-brand-border bg-[#FAF8F5] flex items-center justify-between">
+              <div>
+                <span className="font-bold text-xs text-brand-charcoal block">{cat.name}</span>
+                <span className="text-[10px] text-brand-muted font-mono">{cat.slug} • {cat.iconName}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => onOpenCategoryModal(cat)}
+                  className="p-1.5 rounded-lg hover:bg-white text-brand-charcoal cursor-pointer"
+                  title="Editar"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                </button>
+                {settings.categories.length > 1 && (
+                  <button
+                    onClick={() => onDeleteCategory(cat.id)}
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 cursor-pointer"
+                    title="Remover"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 )}
-              </div>
-
-              {/* Order / Position Controls Bar */}
-              <div className="px-3.5 py-2 bg-[#F3EDE2] border-b border-brand-border/60 flex items-center justify-between gap-2">
-                <span className="text-[11px] font-bold text-brand-charcoal flex items-center gap-1">
-                  <ArrowUpDown className="w-3.5 h-3.5 text-brand-pink" />
-                  <span>Ordem:</span>
-                </span>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handleMoveBanner(idx, 'left')}
-                    disabled={idx === 0 || isSaving}
-                    className="p-1 rounded-md bg-white border border-brand-border hover:bg-brand-pink hover:text-white hover:border-transparent text-brand-charcoal transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-2xs"
-                    title="Mover para trás (exibir antes)"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
-
-                  <select
-                    value={idx}
-                    onChange={(e) => handleChangeBannerPosition(idx, Number(e.target.value))}
-                    disabled={isSaving}
-                    className="bg-white border border-brand-border rounded-md px-1.5 py-0.5 text-[11px] font-bold text-brand-charcoal cursor-pointer outline-none shadow-2xs"
-                    title="Mudar posição na fila de slides"
-                  >
-                    {settings.banners.map((_, i) => (
-                      <option key={i} value={i}>
-                        {i + 1}º lugar
-                      </option>
-                    ))}
-                  </select>
-
-                  <button
-                    type="button"
-                    onClick={() => handleMoveBanner(idx, 'right')}
-                    disabled={idx === settings.banners.length - 1 || isSaving}
-                    className="p-1 rounded-md bg-white border border-brand-border hover:bg-brand-pink hover:text-white hover:border-transparent text-brand-charcoal transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-2xs"
-                    title="Mover para frente (exibir depois)"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-4 flex-1 flex flex-col justify-between">
-                <div>
-                  <span className="text-[10px] font-bold text-brand-pink uppercase tracking-wide block">{banner.badge}</span>
-                  <h4 className="font-bold text-xs text-brand-charcoal line-clamp-1 mt-0.5">{banner.title}</h4>
-                  <p className="text-[11px] text-brand-muted line-clamp-2 mt-1">{banner.subtitle}</p>
-                </div>
-
-                <div className="pt-3 mt-3 border-t border-brand-border/60 flex items-center justify-between gap-2">
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-[10px] text-brand-charcoal font-bold truncate">{banner.buttonText || 'Ver Coleção'}</span>
-                    <span className="text-[9px] text-brand-pink font-mono truncate" title={banner.buttonLink || '#produtos'}>
-                      {banner.buttonLink || '#produtos'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => onOpenBannerModal(banner)}
-                      className="p-1.5 rounded-lg hover:bg-white text-brand-charcoal cursor-pointer"
-                      title="Editar"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </button>
-                    {settings.banners.length > 1 && (
-                      <button
-                        onClick={() => onDeleteBanner(banner.id)}
-                        className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 cursor-pointer"
-                        title="Remover"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Section 3: Eventos Bellclay */}
+      {/* Section 5: Eventos Bellclay */}
       <div className="bg-white p-6 rounded-3xl border border-brand-border/70 shadow-xs space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-brand-border/60">
           <div className="flex items-center gap-2">
@@ -705,56 +760,6 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
             ))}
           </div>
         )}
-      </div>
-
-      {/* Section 4: Categories Management */}
-      <div className="bg-white p-6 rounded-3xl border border-brand-border/70 shadow-xs space-y-4">
-        <div className="flex items-center justify-between pb-2 border-b border-brand-border/60">
-          <div className="flex items-center gap-2">
-            <Layers className="w-5 h-5 text-brand-green" />
-            <div>
-              <h3 className="font-bold text-sm text-brand-charcoal">Categorias da Loja</h3>
-              <p className="text-xs text-brand-muted">Defina as seções de artesanato (chaveiros, bottons, etc.)</p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => onOpenCategoryModal()}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-brand-green-subtle text-brand-green hover:bg-brand-green hover:text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Nova Categoria</span>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
-          {settings.categories.map((cat) => (
-            <div key={cat.id} className="p-4 rounded-2xl border border-brand-border bg-[#FAF8F5] flex items-center justify-between">
-              <div>
-                <span className="font-bold text-xs text-brand-charcoal block">{cat.name}</span>
-                <span className="text-[10px] text-brand-muted font-mono">{cat.slug} • {cat.iconName}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => onOpenCategoryModal(cat)}
-                  className="p-1.5 rounded-lg hover:bg-white text-brand-charcoal cursor-pointer"
-                  title="Editar"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                </button>
-                {settings.categories.length > 1 && (
-                  <button
-                    onClick={() => onDeleteCategory(cat.id)}
-                    className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 cursor-pointer"
-                    title="Remover"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
 
     </div>

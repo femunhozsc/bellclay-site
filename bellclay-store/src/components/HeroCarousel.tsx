@@ -176,7 +176,10 @@ export const HeroCarousel: React.FC = () => {
   };
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
       className="relative w-full aspect-[2/3] max-h-[82vh] sm:max-h-none sm:aspect-auto sm:h-[580px] md:h-[640px] overflow-hidden select-none bg-white touch-pan-y"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
@@ -196,12 +199,15 @@ export const HeroCarousel: React.FC = () => {
           onDragEnd={handleDragEnd}
           className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing bg-white"
         >
-          {/* Background Photo Occupying 100% of Width & Height */}
-          <img
+          {/* Background Photo Occupying 100% of Width & Height with smooth settle */}
+          <motion.img
             src={current.imageUrl}
             alt={current.title}
             draggable={false}
-            className="w-full h-full object-cover object-center scale-105 transition-transform duration-1000"
+            initial={{ scale: 1.08 }}
+            animate={{ scale: 1.03 }}
+            transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full h-full object-cover object-center"
           />
 
           {/* Flash/Fade branco sutil nas transições */}
@@ -218,17 +224,32 @@ export const HeroCarousel: React.FC = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-8 pb-12 sm:pb-16 pt-20 flex flex-col items-start text-left space-y-4 sm:space-y-6">
               
               {/* Large, High-Impact Title */}
-              <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1] drop-shadow-lg max-w-4xl">
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.75, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+                className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1] drop-shadow-lg max-w-4xl"
+              >
                 {current.title}
-              </h1>
+              </motion.h1>
 
               {/* Large, Readable Subtitle */}
-              <p className="text-white/95 text-sm sm:text-lg md:text-xl font-normal leading-relaxed max-w-2xl drop-shadow-md">
+              <motion.p
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.75, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                className="text-white/95 text-sm sm:text-lg md:text-xl font-normal leading-relaxed max-w-2xl drop-shadow-md"
+              >
                 {current.subtitle}
-              </p>
+              </motion.p>
 
               {/* CTA Button with continuous uninterrupted rotating pink & pastel-green gradient */}
-              <div className="pt-2 sm:pt-4">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.75, delay: 0.36, ease: [0.22, 1, 0.36, 1] }}
+                className="pt-2 sm:pt-4"
+              >
                 <a
                   href={current.buttonLink || "#produtos"}
                   onClick={(e) => handleBannerButtonClick(e, current.buttonLink)}
@@ -254,7 +275,7 @@ export const HeroCarousel: React.FC = () => {
                   </span>
                   <ArrowRight className="relative z-10 w-5 h-5 stroke-[2.5] text-white drop-shadow-sm transition-transform duration-200 group-hover:translate-x-1" />
                 </a>
-              </div>
+              </motion.div>
 
             </div>
           </div>
@@ -278,6 +299,6 @@ export const HeroCarousel: React.FC = () => {
           ))}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };

@@ -154,7 +154,12 @@ export const BannerModal: React.FC<BannerModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-brand-charcoal mb-1">Imagem do Banner</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-bold text-brand-charcoal">Imagem do Banner *</label>
+              <span className="text-[10px] font-semibold text-brand-pink bg-brand-pink-subtle px-2 py-0.5 rounded-full border border-brand-pink/20">
+                Proporção no celular: 2:3
+              </span>
+            </div>
             <div className="flex gap-2">
               <input
                 type="url"
