@@ -113,7 +113,7 @@ export const HeroCarousel: React.FC = () => {
 
   if (activeBanners.length === 0) {
     return (
-      <div className="relative w-full h-[520px] sm:h-[620px] md:h-[680px] bg-[#F7F4EE] flex items-center justify-center">
+      <div className="relative w-full h-[480px] sm:h-[580px] md:h-[640px] bg-[#F7F4EE] flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-brand-pink border-t-transparent animate-spin opacity-30" />
       </div>
     );
@@ -177,7 +177,7 @@ export const HeroCarousel: React.FC = () => {
 
   return (
     <div
-      className="relative w-full h-[520px] sm:h-[620px] md:h-[680px] overflow-hidden select-none bg-white touch-pan-y"
+      className="relative w-full h-[480px] sm:h-[580px] md:h-[640px] overflow-hidden select-none bg-white touch-pan-y"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -215,7 +215,7 @@ export const HeroCarousel: React.FC = () => {
 
           {/* Content Overlay - slides naturally with the banner */}
           <div className="absolute inset-x-0 bottom-0 z-10">
-            <div className="max-w-7xl mx-auto px-4 sm:px-8 pb-16 sm:pb-20 pt-20 flex flex-col items-start text-left space-y-4 sm:space-y-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-8 pb-12 sm:pb-16 pt-20 flex flex-col items-start text-left space-y-4 sm:space-y-6">
               
               {/* Large, High-Impact Title */}
               <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1] drop-shadow-lg max-w-4xl">
@@ -261,23 +261,17 @@ export const HeroCarousel: React.FC = () => {
         </motion.div>
       </AnimatePresence>
 
-      {/* Transição suave e sutil na borda inferior do banner (compacta e sem invadir o botão) */}
-      <div
-        className="absolute inset-x-0 bottom-0 h-6 sm:h-8 md:h-10 bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7]/40 to-transparent pointer-events-none z-10"
-        aria-hidden="true"
-      />
-
       {/* Pagination Dots at Bottom Center */}
       {activeBanners.length > 1 && (
-        <div className="absolute bottom-3 sm:bottom-4 inset-x-0 z-20 flex items-center justify-center gap-2">
+        <div className="absolute bottom-4 sm:bottom-6 inset-x-0 z-20 flex items-center justify-center gap-2">
           {activeBanners.map((_, idx) => (
             <button
               key={idx}
               onClick={() => handleSelectSlide(idx)}
-              className={`transition-all duration-300 rounded-full cursor-pointer shadow-sm ${
+              className={`transition-all duration-300 rounded-full cursor-pointer ${
                 currentIndex === idx
-                  ? 'w-7 h-2 bg-brand-pink shadow-md'
-                  : 'w-2 h-2 bg-brand-charcoal/30 hover:bg-brand-charcoal/60'
+                  ? 'w-7 h-2 bg-white shadow-md'
+                  : 'w-2 h-2 bg-white/40 hover:bg-white/70'
               }`}
               aria-label={`Ir para slide ${idx + 1}`}
             />

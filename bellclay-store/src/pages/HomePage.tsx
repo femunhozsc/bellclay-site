@@ -154,25 +154,15 @@ export const HomePage: React.FC = () => {
       {/* Full-width Edge-to-Edge Hero Carousel right beneath topbar */}
       <HeroCarousel />
 
-      {/* Welcome Section - Generous size & natural integration with hero banner */}
-      <section className="relative w-full pt-12 sm:pt-16 md:pt-20 pb-8 sm:pb-12 text-center overflow-hidden">
-        {/* Soft natural ambient tone to bridge gracefully with the hero banner */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#FDFBF7] via-white/50 to-[#FDFBF7] pointer-events-none" />
+      {/* Welcome Section - Balanced typography & elegant proportion */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-3 text-center space-y-3 w-full">
+        <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-extrabold text-brand-charcoal tracking-tight leading-snug max-w-2xl mx-auto">
+          {settings.welcomeTitle}
+        </h2>
 
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3.5 sm:space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-brand-pink/10 text-brand-pink text-xs font-bold tracking-wider uppercase">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-pink animate-pulse" />
-            Modelado à Mão com Amor
-          </div>
-
-          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[44px] font-extrabold text-brand-charcoal tracking-tight leading-[1.2] max-w-3xl mx-auto">
-            {settings.welcomeTitle}
-          </h2>
-
-          <p className="text-brand-muted text-sm sm:text-base md:text-lg font-normal leading-relaxed max-w-2xl mx-auto">
-            {settings.welcomeSubtitle}
-          </p>
-        </div>
+        <p className="text-brand-muted text-xs sm:text-sm md:text-base font-normal leading-relaxed max-w-lg mx-auto">
+          {settings.welcomeSubtitle}
+        </p>
       </section>
 
       {/* Full-width Edge-to-Edge 21:9 Promotional Banner */}
