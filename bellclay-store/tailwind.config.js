@@ -12,10 +12,10 @@ export default {
           'pink-hover': '#f06073',
           'pink-light': '#FFF0F2',
           'pink-subtle': '#FFE2E6',
-          green: '#83BC5C',
-          'green-hover': '#71a64d',
-          'green-light': '#F1F8EC',
-          'green-subtle': '#E2F2D7',
+          green: '#9BC778',
+          'green-hover': '#88b763',
+          'green-light': '#F4F9F0',
+          'green-subtle': '#E8F4DE',
           porcelain: '#FDFBF7',
           cream: '#F7F3EC',
           clay: '#EFEAE1',
@@ -32,7 +32,7 @@ export default {
       boxShadow: {
         'soft': '0 4px 20px -2px rgba(253, 118, 135, 0.08), 0 2px 6px -1px rgba(43, 38, 37, 0.04)',
         'soft-hover': '0 12px 30px -4px rgba(253, 118, 135, 0.16), 0 4px 12px -2px rgba(43, 38, 37, 0.06)',
-        'green-soft': '0 6px 20px -2px rgba(131, 188, 92, 0.2)',
+        'green-soft': '0 6px 20px -2px rgba(155, 199, 120, 0.28)',
         'pink-soft': '0 6px 20px -2px rgba(253, 118, 135, 0.25)',
       },
       animation: {

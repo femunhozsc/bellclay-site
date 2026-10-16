@@ -174,7 +174,7 @@ export const CheckoutPage: React.FC = () => {
             particleCount: 90,
             spread: 75,
             origin: { y: 0.6 },
-            colors: ['#e95f71', '#83bc5c', '#f58091', '#4ade80']
+            colors: ['#e95f71', '#9bc778', '#f58091', '#4ade80']
           });
         }
 
@@ -193,7 +193,7 @@ export const CheckoutPage: React.FC = () => {
                 particleCount: 90,
                 spread: 75,
                 origin: { y: 0.6 },
-                colors: ['#e95f71', '#83bc5c', '#f58091', '#4ade80']
+                colors: ['#e95f71', '#9bc778', '#f58091', '#4ade80']
               });
             }
             return liveOrder;
@@ -456,7 +456,7 @@ export const CheckoutPage: React.FC = () => {
           particleCount: 80,
           spread: 70,
           origin: { y: 0.6 },
-          colors: ['#e95f71', '#83bc5c', '#f58091', '#4ade80']
+          colors: ['#e95f71', '#9bc778', '#f58091', '#4ade80']
         });
         return;
       }
@@ -480,7 +480,7 @@ export const CheckoutPage: React.FC = () => {
           particleCount: 80,
           spread: 70,
           origin: { y: 0.6 },
-          colors: ['#e95f71', '#83bc5c', '#f58091', '#4ade80']
+          colors: ['#e95f71', '#9bc778', '#f58091', '#4ade80']
         });
       }
     } finally {
