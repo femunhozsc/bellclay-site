@@ -235,10 +235,10 @@ export const HeroCarousel: React.FC = () => {
                 >
                   {/* Internal rotating half-pink half-green gradient (one side pink, one side green, spinning in one direction) */}
                   <div
-                    className="absolute -inset-x-20 -inset-y-20 animate-gradient-dance pointer-events-none"
+                    className="absolute -inset-x-24 -inset-y-24 animate-gradient-dance pointer-events-none"
                     style={{
-                      background: 'conic-gradient(from 0deg at 50% 50%, #FD7687 0deg, #FD7687 150deg, #83BC5C 180deg, #83BC5C 330deg, #FD7687 360deg)',
-                      filter: 'blur(8px)'
+                      background: 'conic-gradient(from 0deg at 50% 50%, #FD7687 0deg, #FD7687 130deg, #83BC5C 190deg, #83BC5C 310deg, #FD7687 360deg)',
+                      filter: 'blur(16px)'
                     }}
                   />
 
