@@ -13,6 +13,8 @@ const normalizeText = (str: string) =>
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
 
+const pageStartTime = Date.now();
+
 export const HeroCarousel: React.FC = () => {
   const { settings, setSelectedCategory, setSearchQuery } = useSettings();
   const navigate = useNavigate();
@@ -195,23 +197,11 @@ export const HeroCarousel: React.FC = () => {
 
           {/* Vibrant Pink & Green Ambient Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-tr from-brand-pink/40 via-transparent to-brand-green/35 mix-blend-soft-light pointer-events-none" />
-        </motion.div>
-      </AnimatePresence>
 
-      {/* Content Overlay directly over the bottom fade - Persistent container so button rotation never resets */}
-      <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 pb-12 sm:pb-16 pt-20 flex flex-col items-start text-left space-y-4 sm:space-y-6">
-          
-          {/* Animated Title & Subtitle tied to current slide */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={current.id || currentIndex}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.35, ease: 'easeOut' }}
-              className="space-y-4 sm:space-y-6"
-            >
+          {/* Content Overlay - slides naturally with the banner */}
+          <div className="absolute inset-x-0 bottom-0 z-10">
+            <div className="max-w-7xl mx-auto px-4 sm:px-8 pb-12 sm:pb-16 pt-20 flex flex-col items-start text-left space-y-4 sm:space-y-6">
+              
               {/* Large, High-Impact Title */}
               <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1] drop-shadow-lg max-w-4xl">
                 {current.title}
@@ -221,38 +211,41 @@ export const HeroCarousel: React.FC = () => {
               <p className="text-white/95 text-sm sm:text-lg md:text-xl font-normal leading-relaxed max-w-2xl drop-shadow-md">
                 {current.subtitle}
               </p>
-            </motion.div>
-          </AnimatePresence>
 
-          {/* Persistent CTA Button with uninterrupted continuous rotating pink & green gradient */}
-          <div className="pt-2 sm:pt-4 pointer-events-auto">
-            <a
-              href={current.buttonLink || "#produtos"}
-              onClick={(e) => handleBannerButtonClick(e, current.buttonLink)}
-              className="relative group inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-4.5 rounded-full overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer touch-auto"
-            >
-              {/* Internal rotating half-pink half-green gradient: Rosa na esquerda, Verde na direita, giro contínuo ininterrupto */}
-              <div
-                className="absolute -inset-x-24 -inset-y-24 animate-gradient-dance pointer-events-none"
-                style={{
-                  background: 'conic-gradient(from 180deg at 50% 50%, #FD7687 0deg, #FD7687 130deg, #83BC5C 190deg, #83BC5C 310deg, #FD7687 360deg)',
-                  filter: 'blur(16px)'
-                }}
-              />
+              {/* CTA Button with continuous uninterrupted rotating pink & pastel-green gradient */}
+              <div className="pt-2 sm:pt-4">
+                <a
+                  href={current.buttonLink || "#produtos"}
+                  onClick={(e) => handleBannerButtonClick(e, current.buttonLink)}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="relative group inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-4.5 rounded-full overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer touch-auto"
+                >
+                  {/* Internal rotating half-pink half-pastel-green gradient */}
+                  {/* Rosa na esquerda, Verde Pastel (#9BC778) na direita, sincronizado com o relógio da página para nunca reiniciar */}
+                  <div
+                    className="absolute -inset-x-24 -inset-y-24 animate-gradient-dance pointer-events-none"
+                    style={{
+                      background: 'conic-gradient(from 180deg at 50% 50%, #FD7687 0deg, #FD7687 130deg, #9BC778 190deg, #9BC778 310deg, #FD7687 360deg)',
+                      filter: 'blur(16px)',
+                      ['--anim-offset' as any]: `${((Date.now() - pageStartTime) / 1000) % 7.5}s`
+                    }}
+                  />
 
-              {/* Subtle glass reflection highlight */}
-              <div className="absolute inset-0 bg-white/10 pointer-events-none rounded-full" />
+                  {/* Subtle glass reflection highlight */}
+                  <div className="absolute inset-0 bg-white/10 pointer-events-none rounded-full" />
 
-              {/* Foreground Content */}
-              <span className="relative z-10 text-white font-extrabold text-sm sm:text-base drop-shadow-sm tracking-wide">
-                {current.buttonText || "Ver Coleção"}
-              </span>
-              <ArrowRight className="relative z-10 w-5 h-5 stroke-[2.5] text-white drop-shadow-sm transition-transform duration-200 group-hover:translate-x-1" />
-            </a>
+                  {/* Foreground Content */}
+                  <span className="relative z-10 text-white font-extrabold text-sm sm:text-base drop-shadow-sm tracking-wide">
+                    {current.buttonText || "Ver Coleção"}
+                  </span>
+                  <ArrowRight className="relative z-10 w-5 h-5 stroke-[2.5] text-white drop-shadow-sm transition-transform duration-200 group-hover:translate-x-1" />
+                </a>
+              </div>
+
+            </div>
           </div>
-
-        </div>
-      </div>
+        </motion.div>
+      </AnimatePresence>
 
       {/* Pagination Dots at Bottom Center */}
       {activeBanners.length > 1 && (
