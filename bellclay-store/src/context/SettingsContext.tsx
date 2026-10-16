@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { SiteSettings, Product } from '../types';
-import { getSiteSettings, getProducts, subscribeToSiteSettings } from '../services/firebase';
+import { getSiteSettings, getProducts, subscribeToSiteSettings, subscribeToProducts, subscribeToEvents } from '../services/firebase';
 import { DEFAULT_SETTINGS, DEFAULT_PRODUCTS } from '../data/defaultData';
 
 interface SettingsContextType {
@@ -74,11 +74,27 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // 1. Initial refresh with timeout-safe Firestore fetch
     refreshData();
 
-    // 2. Real-time live listener from Firestore for instant sync on changes
+    // 2. Real-time live listeners from Firestore for instant sync on changes
     const unsubscribeSettings = subscribeToSiteSettings((updatedSettings) => {
-      setSettings(updatedSettings);
+      setSettings((prev) => ({
+        ...updatedSettings,
+        events: prev.events && prev.events.length > 0 && (!updatedSettings.events || updatedSettings.events.length === 0)
+          ? prev.events
+          : updatedSettings.events
+      }));
       setIsSettingsLoaded(true);
       setIsLoading(false);
+    });
+
+    const unsubscribeProducts = subscribeToProducts((updatedProducts) => {
+      setProducts(updatedProducts);
+    });
+
+    const unsubscribeEvents = subscribeToEvents((updatedEvents) => {
+      setSettings((prev) => ({
+        ...prev,
+        events: updatedEvents
+      }));
     });
 
     // 3. Listen to local storage changes or window events for live preview sync
@@ -91,6 +107,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     return () => {
       unsubscribeSettings();
+      unsubscribeProducts();
+      unsubscribeEvents();
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('bellclay_settings_updated', handleStorageChange);
       window.removeEventListener('bellclay_events_updated', handleStorageChange);

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, MessageCircle, Truck, PackageCheck, CheckCircle2, Clock, MapPin, Hash, MessageSquare } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, PackageCheck, CheckCircle2, MapPin, MessageSquare, ShieldCheck, ExternalLink } from 'lucide-react';
 import { WhatsAppIcon } from './SocialIcons';
 import { Order } from '../types';
 
@@ -16,11 +16,18 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
   onClose,
   onUpdateStatus
 }) => {
-  if (!isOpen || !order) return null;
-
-  const [status, setStatus] = useState<Order['orderStatus']>(order.orderStatus);
-  const [trackingCode, setTrackingCode] = useState(order.trackingCode || '');
+  const [status, setStatus] = useState<Order['orderStatus']>(order?.orderStatus || 'pending');
+  const [trackingCode, setTrackingCode] = useState(order?.trackingCode || '');
   const [isUpdating, setIsUpdating] = useState(false);
+
+  useEffect(() => {
+    if (order) {
+      setStatus(order.orderStatus);
+      setTrackingCode(order.trackingCode || '');
+    }
+  }, [order]);
+
+  if (!isOpen || !order) return null;
 
   const handleSave = async () => {
     setIsUpdating(true);
@@ -34,7 +41,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
 
   const statusColors: Record<Order['orderStatus'], string> = {
     pending: 'bg-amber-100 text-amber-800 border-amber-300',
-    paid: 'bg-blue-100 text-blue-800 border-blue-300',
+    paid: 'bg-emerald-100 text-emerald-800 border-emerald-300',
     production: 'bg-purple-100 text-purple-800 border-purple-300',
     shipped: 'bg-indigo-100 text-indigo-800 border-indigo-300',
     delivered: 'bg-green-100 text-green-800 border-green-300',
@@ -43,12 +50,19 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
 
   const statusLabels: Record<Order['orderStatus'], string> = {
     pending: 'Pendente de Pagamento',
-    paid: 'Pago / Confirmado',
+    paid: '✓ Pago / Confirmado',
     production: 'Em Produção Artesanal',
     shipped: 'Enviado / Rastreio Postado',
     delivered: 'Entregue com Sucesso',
     cancelled: 'Cancelado',
   };
+
+  const isPaid =
+    order.paymentStatus === 'approved' ||
+    order.orderStatus === 'paid' ||
+    order.orderStatus === 'production' ||
+    order.orderStatus === 'shipped' ||
+    order.orderStatus === 'delivered';
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
@@ -78,6 +92,45 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
         {/* Content Body */}
         <div className="p-6 overflow-y-auto flex-1 space-y-6">
           
+          {/* InfinitePay Payment Info Box */}
+          <div className={`p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3 ${
+            isPaid ? 'bg-emerald-50/70 border-emerald-200' : 'bg-amber-50/70 border-amber-200'
+          }`}>
+            <div className="flex items-center gap-2.5">
+              <ShieldCheck className={`w-5 h-5 ${isPaid ? 'text-emerald-600' : 'text-amber-600'}`} />
+              <div className="text-xs">
+                <span className="font-bold text-brand-charcoal block">
+                  Pagamento via InfinitePay ({order.paymentMethod === 'pix' ? 'Pix' : order.paymentMethod === 'credit_card' ? 'Cartão de Crédito' : 'Checkout Integrado'})
+                </span>
+                <span className={isPaid ? 'text-emerald-700 font-semibold' : 'text-amber-700 font-semibold'}>
+                  {isPaid ? '✓ Pagamento Aprovado e Confirmado' : 'Aguardando confirmação de pagamento'}
+                </span>
+              </div>
+            </div>
+
+            {order.receiptUrl ? (
+              <a
+                href={order.receiptUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-emerald-300 text-emerald-800 text-xs font-bold hover:bg-emerald-100 transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Comprovante InfinitePay</span>
+              </a>
+            ) : order.checkoutUrl && !isPaid ? (
+              <a
+                href={order.checkoutUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-amber-300 text-amber-800 text-xs font-bold hover:bg-amber-100 transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Link de Pagamento</span>
+              </a>
+            ) : null}
+          </div>
+
           {/* Customer & WhatsApp direct action */}
           <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 space-y-2">
             <div className="flex items-center justify-between">
@@ -85,7 +138,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                 Dados do Cliente
               </h3>
               <a
-                href={`https://wa.me/${order.customer.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${order.customer.name}! Aqui é do ateliê Bellclay Artesanatos a respeito do seu pedido #${order.id}.`)}`}
+                href={`https://wa.me/55${order.customer.phone.replace(/\D/g, '').replace(/^55/, '')}?text=${encodeURIComponent(`Olá ${order.customer.name}! Aqui é do ateliê Bellclay Artesanatos a respeito do seu pedido #${order.id}.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-green text-white text-xs font-bold shadow-xs hover:bg-brand-green-hover transition-colors"
@@ -115,7 +168,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
           <div className="p-4 rounded-2xl bg-white border border-brand-border/80 space-y-2">
             <h3 className="text-xs font-bold uppercase tracking-wider text-brand-muted flex items-center gap-1.5">
               <MapPin className="w-4 h-4 text-brand-pink" />
-              <span>Endereço de Entrega</span>
+              <span>Endereço de Entrega Completo</span>
             </h3>
             <p className="text-xs text-brand-charcoal leading-relaxed">
               <strong>{order.address.street}, {order.address.number}</strong>
@@ -236,6 +289,12 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                 <span>Subtotal:</span>
                 <span>R$ {order.subtotal.toFixed(2).replace('.', ',')}</span>
               </div>
+              {order.discount > 0 && (
+                <div className="flex justify-between text-brand-green font-semibold">
+                  <span>Desconto aplicado:</span>
+                  <span>- R$ {order.discount.toFixed(2).replace('.', ',')}</span>
+                </div>
+              )}
               <div className="flex justify-between text-brand-muted">
                 <span>Envio ({order.shipping.name}):</span>
                 <span>{order.shippingCost === 0 ? 'Grátis' : `R$ ${order.shippingCost.toFixed(2).replace('.', ',')}`}</span>

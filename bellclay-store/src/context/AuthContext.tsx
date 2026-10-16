@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth, hasValidFirebaseConfig } from '../services/firebase';
+import { auth, db, hasValidFirebaseConfig, sanitizeForFirestore } from '../services/firebase';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import {
   onAuthStateChanged,
   signInWithPopup,
@@ -38,6 +39,25 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const syncCustomerToFirestore = async (profile: CustomerProfile) => {
+  if (!db || profile.isGuest || (!profile.uid && !profile.email)) return;
+  try {
+    const docId = profile.uid || profile.email.trim().toLowerCase();
+    const docRef = doc(db, 'customers', docId);
+    const cleaned = sanitizeForFirestore({
+      uid: profile.uid || docId,
+      name: profile.name,
+      email: profile.email.trim(),
+      phone: profile.phone || '',
+      cpf: profile.cpf || '',
+      updatedAt: serverTimestamp()
+    });
+    await setDoc(docRef, cleaned, { merge: true });
+  } catch (err) {
+    // silent fallback
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
@@ -57,16 +77,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     if (auth && hasValidFirebaseConfig) {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
         setCurrentUser(user);
         if (user) {
-          setCustomerProfile((prev) => ({
-            ...prev,
-            uid: user.uid,
-            name: user.displayName || prev.name || user.email?.split('@')[0] || 'Cliente',
-            email: user.email || prev.email,
-            isGuest: false
-          }));
+          let remoteProfile: Partial<CustomerProfile> = {};
+          if (db) {
+            try {
+              const snap = await getDoc(doc(db, 'customers', user.uid));
+              if (snap.exists()) {
+                remoteProfile = snap.data() as Partial<CustomerProfile>;
+              }
+            } catch {}
+          }
+
+          setCustomerProfile((prev) => {
+            const merged: CustomerProfile = {
+              ...prev,
+              uid: user.uid,
+              name: remoteProfile.name || user.displayName || prev.name || user.email?.split('@')[0] || 'Cliente',
+              email: user.email || remoteProfile.email || prev.email,
+              phone: remoteProfile.phone || prev.phone || '',
+              cpf: remoteProfile.cpf || prev.cpf || '',
+              isGuest: false
+            };
+            syncCustomerToFirestore(merged);
+            return merged;
+          });
         }
       });
       return () => unsubscribe();
@@ -75,6 +111,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     localStorage.setItem('bellclay_customer', JSON.stringify(customerProfile));
+    if (!customerProfile.isGuest && (customerProfile.uid || customerProfile.email)) {
+      syncCustomerToFirestore(customerProfile);
+    }
   }, [customerProfile]);
 
   const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
@@ -84,11 +123,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         provider.setCustomParameters({ prompt: 'select_account' });
         const res = await signInWithPopup(auth, provider);
         if (res.user) {
+          let remoteProfile: Partial<CustomerProfile> = {};
+          if (db) {
+            try {
+              const snap = await getDoc(doc(db, 'customers', res.user.uid));
+              if (snap.exists()) {
+                remoteProfile = snap.data() as Partial<CustomerProfile>;
+              }
+            } catch {}
+          }
           setCustomerProfile((prev) => ({
             ...prev,
             uid: res.user.uid,
-            name: res.user.displayName || 'Cliente',
-            email: res.user.email || '',
+            name: remoteProfile.name || res.user.displayName || prev.name || 'Cliente',
+            email: res.user.email || prev.email || '',
+            phone: remoteProfile.phone || prev.phone || '',
+            cpf: remoteProfile.cpf || prev.cpf || '',
             isGuest: false
           }));
           return { success: true };
@@ -128,18 +178,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const res = await signInWithEmailAndPassword(auth, email, pass);
         if (res.user) {
+          let remoteProfile: Partial<CustomerProfile> = {};
+          if (db) {
+            try {
+              const snap = await getDoc(doc(db, 'customers', res.user.uid));
+              if (snap.exists()) {
+                remoteProfile = snap.data() as Partial<CustomerProfile>;
+              }
+            } catch {}
+          }
           setCustomerProfile((prev) => ({
             ...prev,
             uid: res.user.uid,
-            name: res.user.displayName || prev.name || email.split('@')[0],
+            name: remoteProfile.name || res.user.displayName || prev.name || email.split('@')[0],
             email: res.user.email || email,
+            phone: remoteProfile.phone || prev.phone || '',
+            cpf: remoteProfile.cpf || prev.cpf || '',
             isGuest: false
           }));
           return { success: true };
         }
       } catch (err: any) {
         let msg = 'E-mail ou senha incorretos.';
-        if (err.code === 'auth/user-not-found') msg = 'Nenhuma conta encontrada com este e-mail.';
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') msg = 'E-mail ou senha incorretos.';
         if (err.code === 'auth/wrong-password') msg = 'Senha incorreta.';
         if (err.code === 'auth/invalid-email') msg = 'E-mail inválido.';
         return { success: false, error: msg };
@@ -168,14 +229,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const res = await createUserWithEmailAndPassword(auth, email, pass);
         if (res.user) {
           await updateProfile(res.user, { displayName: name });
-          setCustomerProfile({
+          const newProfile: CustomerProfile = {
             uid: res.user.uid,
             name,
             email,
             phone: phone || '',
             cpf: cpf || '',
             isGuest: false
-          });
+          };
+          setCustomerProfile(newProfile);
+          await syncCustomerToFirestore(newProfile);
           return { success: true };
         }
       } catch (err: any) {
@@ -183,6 +246,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           try {
             const loginRes = await loginWithEmail(email, pass);
             if (loginRes.success) {
+              setCustomerProfile((prev) => ({
+                ...prev,
+                name: name || prev.name,
+                phone: phone || prev.phone,
+                cpf: cpf || prev.cpf,
+                isGuest: false
+              }));
               return { success: true };
             }
           } catch {}
@@ -195,13 +265,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Fallback: save locally
-    setCustomerProfile({
+    const fallbackProfile: CustomerProfile = {
       name,
       email,
       phone: phone || '',
       cpf: cpf || '',
       isGuest: false
-    });
+    };
+    setCustomerProfile(fallbackProfile);
+    await syncCustomerToFirestore(fallbackProfile);
     return { success: true };
   };
 

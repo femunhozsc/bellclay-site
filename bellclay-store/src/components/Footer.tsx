@@ -57,7 +57,7 @@ export const Footer: React.FC = () => {
               </div>
               <div className="flex items-start gap-2">
                 <ShieldCheck className="w-4 h-4 text-brand-pink shrink-0 mt-0.5" />
-                <span>Pagamento 100% blindado com a tecnologia oficial <strong>Mercado Pago</strong>.</span>
+                <span>Pagamento 100% blindado com a tecnologia oficial <strong>InfinitePay</strong> (Pix & Cartão).</span>
               </div>
             </div>
           </div>

@@ -15,12 +15,26 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   onClose,
   onSave
 }) => {
-  if (!isOpen) return null;
-
   const [name, setName] = useState(category?.name || '');
   const [slug, setSlug] = useState(category?.slug || '');
   const [description, setDescription] = useState(category?.description || '');
   const [iconName, setIconName] = useState(category?.iconName || 'Palette');
+
+  React.useEffect(() => {
+    if (category) {
+      setName(category.name || '');
+      setSlug(category.slug || '');
+      setDescription(category.description || '');
+      setIconName(category.iconName || 'Palette');
+    } else {
+      setName('');
+      setSlug('');
+      setDescription('');
+      setIconName('Palette');
+    }
+  }, [category, isOpen]);
+
+  if (!isOpen) return null;
 
   const handleNameChange = (val: string) => {
     setName(val);

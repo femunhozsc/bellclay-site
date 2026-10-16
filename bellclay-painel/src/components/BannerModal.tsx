@@ -16,8 +16,6 @@ export const BannerModal: React.FC<BannerModalProps> = ({
   onClose,
   onSave
 }) => {
-  if (!isOpen) return null;
-
   const [title, setTitle] = useState(banner?.title || '');
   const [subtitle, setSubtitle] = useState(banner?.subtitle || '');
   const [badge, setBadge] = useState(banner?.badge || 'Destaque');
@@ -26,6 +24,28 @@ export const BannerModal: React.FC<BannerModalProps> = ({
   const [buttonLink, setButtonLink] = useState(banner?.buttonLink || '#produtos');
   const [active, setActive] = useState(banner?.active !== false);
   const [isUploading, setIsUploading] = useState(false);
+
+  React.useEffect(() => {
+    if (banner) {
+      setTitle(banner.title || '');
+      setSubtitle(banner.subtitle || '');
+      setBadge(banner.badge || 'Destaque');
+      setImageUrl(banner.imageUrl || '');
+      setButtonText(banner.buttonText || 'Ver Coleção');
+      setButtonLink(banner.buttonLink || '#produtos');
+      setActive(banner.active !== false);
+    } else {
+      setTitle('');
+      setSubtitle('');
+      setBadge('Destaque');
+      setImageUrl('');
+      setButtonText('Ver Coleção');
+      setButtonLink('#produtos');
+      setActive(true);
+    }
+  }, [banner, isOpen]);
+
+  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

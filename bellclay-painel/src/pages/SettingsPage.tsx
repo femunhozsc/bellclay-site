@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, ShieldCheck, Truck, MapPin, CheckCircle2, Key } from 'lucide-react';
+import { ShieldCheck, Truck, CheckCircle2, Key, CreditCard, Percent } from 'lucide-react';
 import { SiteSettings } from '../types';
 import { WhatsAppIcon, InstagramIcon, TikTokIcon } from '../components/SocialIcons';
 
@@ -15,10 +15,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
   const [whatsapp, setWhatsapp] = useState(settings.whatsapp || '5544991074932');
   const [instagram, setInstagram] = useState(settings.instagram || '@bellclayart');
   const [tiktok, setTiktok] = useState(settings.tiktok || '@bellclayart');
-  
-  // API credentials
-  const [mercadoPagoPublicKey, setMercadoPagoPublicKey] = useState(settings.mercadoPagoPublicKey || '');
-  const [mercadoPagoAccessToken, setMercadoPagoAccessToken] = useState(settings.mercadoPagoAccessToken || '');
+
+  // InfinitePay & Payment Rules
+  const [infinitePayTag, setInfinitePayTag] = useState(
+    (settings.infinitePayTag || 'isabela-munhoz-4sb').replace(/^[$@]+/, '')
+  );
+  const [maxInstallmentsNoInterest, setMaxInstallmentsNoInterest] = useState(
+    String(settings.maxInstallmentsNoInterest ?? 3)
+  );
+  const [pixDiscountPercent, setPixDiscountPercent] = useState(
+    String(settings.pixDiscountPercent ?? 0)
+  );
+
+  // Shipping API
   const [melhorEnvioToken, setMelhorEnvioToken] = useState(settings.melhorEnvioToken || '');
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(String(settings.freeShippingThreshold || 149));
 
@@ -29,7 +38,24 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
     if (settings.tiktok) setTiktok(settings.tiktok);
     if (settings.instagram) setInstagram(settings.instagram);
     if (settings.whatsapp) setWhatsapp(settings.whatsapp);
-  }, [settings.freeShippingThreshold, settings.tiktok, settings.instagram, settings.whatsapp]);
+    if (settings.infinitePayTag) {
+      setInfinitePayTag(settings.infinitePayTag.replace(/^[$@]+/, ''));
+    }
+    if (settings.maxInstallmentsNoInterest !== undefined) {
+      setMaxInstallmentsNoInterest(String(settings.maxInstallmentsNoInterest));
+    }
+    if (settings.pixDiscountPercent !== undefined) {
+      setPixDiscountPercent(String(settings.pixDiscountPercent));
+    }
+  }, [
+    settings.freeShippingThreshold,
+    settings.tiktok,
+    settings.instagram,
+    settings.whatsapp,
+    settings.infinitePayTag,
+    settings.maxInstallmentsNoInterest,
+    settings.pixDiscountPercent
+  ]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -39,6 +65,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
     setIsSaving(true);
     try {
       const parsedThreshold = parseFloat(freeShippingThreshold);
+      const parsedInstallments = Math.min(12, Math.max(1, parseInt(maxInstallmentsNoInterest, 10) || 3));
+      const parsedPixDiscount = Math.min(50, Math.max(0, parseFloat(pixDiscountPercent) || 0));
+      const cleanTag = (infinitePayTag || 'isabela-munhoz-4sb').trim().replace(/^[$@]+/, '');
+
       const updated: SiteSettings = {
         ...settings,
         originCep: originCep.replace(/\D/g, ''),
@@ -47,8 +77,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
         whatsapp: whatsapp.replace(/\D/g, ''),
         instagram,
         tiktok,
-        mercadoPagoPublicKey,
-        mercadoPagoAccessToken,
+        infinitePayTag: cleanTag,
+        maxInstallmentsNoInterest: parsedInstallments,
+        pixDiscountPercent: parsedPixDiscount,
         melhorEnvioToken,
         freeShippingThreshold: !isNaN(parsedThreshold) && parsedThreshold > 0 ? parsedThreshold : 149
       };
@@ -66,7 +97,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
         <div>
           <h2 className="text-xl font-bold text-brand-charcoal">Configurações & Integrações</h2>
           <p className="text-xs text-brand-muted">
-            Configure seu CEP de envio padrão (Campo Mourão), chaves do Mercado Pago e token do Melhor Envio.
+            Configure seu CEP de envio padrão (Campo Mourão), Checkout InfinitePay (parcelas e Pix) e token do Melhor Envio.
           </p>
         </div>
 
@@ -80,6 +111,92 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
 
       <form onSubmit={handleSubmit} className="space-y-6">
         
+        {/* InfinitePay Checkout & Regras de Parcelamento / Pix */}
+        <div className="bg-white p-6 rounded-3xl border border-brand-border/70 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-brand-border/60">
+            <ShieldCheck className="w-5 h-5 text-brand-green" />
+            <div>
+              <h3 className="font-bold text-sm text-brand-charcoal">
+                InfinitePay — Checkout Integrado (Pix Taxa Zero & Cartão)
+              </h3>
+              <p className="text-xs text-brand-muted">
+                Configure sua InfiniteTag e como as parcelas sem juros e o desconto de Pix são exibidos na loja.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-brand-charcoal mb-1">
+                Sua InfiniteTag (sem o $) *
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-brand-green">
+                  $
+                </span>
+                <input
+                  type="text"
+                  required
+                  placeholder="isabela-munhoz-4sb"
+                  value={infinitePayTag}
+                  onChange={(e) => setInfinitePayTag(e.target.value.replace(/^[$@]+/, ''))}
+                  className="w-full text-xs pl-7 pr-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink font-mono font-bold"
+                />
+              </div>
+              <span className="text-[10px] text-brand-muted mt-1 block">
+                Conta ativa: <strong>${infinitePayTag || 'isabela-munhoz-4sb'}</strong>
+              </span>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-1 text-xs font-bold text-brand-charcoal mb-1">
+                <CreditCard className="w-3.5 h-3.5 text-brand-pink" />
+                <span>Parcelas Sem Juros Exibidas</span>
+              </label>
+              <select
+                value={maxInstallmentsNoInterest}
+                onChange={(e) => setMaxInstallmentsNoInterest(e.target.value)}
+                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink font-semibold"
+              >
+                <option value="1">1x (Apenas à vista / Juros comprador)</option>
+                <option value="2">Até 2x sem juros</option>
+                <option value="3">Até 3x sem juros</option>
+                <option value="4">Até 4x sem juros</option>
+                <option value="5">Até 5x sem juros</option>
+                <option value="6">Até 6x sem juros</option>
+                <option value="10">Até 10x sem juros</option>
+                <option value="12">Até 12x sem juros</option>
+              </select>
+              <span className="text-[10px] text-brand-muted mt-1 block">
+                Mostrado nos produtos e checkout (configure igual no app InfinitePay).
+              </span>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-1 text-xs font-bold text-brand-charcoal mb-1">
+                <Percent className="w-3.5 h-3.5 text-brand-green" />
+                <span>Desconto no Pix (%)</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="50"
+                step="1"
+                value={pixDiscountPercent}
+                onChange={(e) => setPixDiscountPercent(e.target.value)}
+                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink font-bold"
+              />
+              <span className="text-[10px] text-brand-muted mt-1 block">
+                Use <strong>0</strong> para cobrar o valor cheio no link da InfinitePay.
+              </span>
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 text-[11px] text-brand-muted leading-relaxed">
+            💡 <strong>Dica:</strong> Como na tela da InfinitePay o cliente pode escolher pagar por Pix ou Cartão no mesmo link, deixar o Desconto no Pix em <strong>0%</strong> garante que o valor cheio seja sempre cobrado independentemente de o cliente escolher Pix ou Cartão lá na tela da InfinitePay.
+          </div>
+        </div>
+
         {/* Origin CEP & Logistics */}
         <div className="bg-white p-6 rounded-3xl border border-brand-border/70 shadow-xs space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-brand-border/60">
@@ -173,49 +290,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
             <span className="text-[10px] text-brand-muted mt-1.5 block">
               💡 O site já conta com cálculo regional instantâneo integrado (Mini Envios, PAC, Sedex e Jadlog a partir de Campo Mourão PR), e ao colar o token acima conecta diretamente à sua conta oficial.
             </span>
-          </div>
-        </div>
-
-        {/* Mercado Pago API */}
-        <div className="bg-white p-6 rounded-3xl border border-brand-border/70 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-brand-border/60">
-            <ShieldCheck className="w-5 h-5 text-blue-500" />
-            <div>
-              <h3 className="font-bold text-sm text-brand-charcoal">
-                Mercado Pago (Pix, Cartão & Boleto)
-              </h3>
-              <p className="text-xs text-brand-muted">
-                Suas credenciais para receber pagamentos diretamente na sua conta Mercado Pago.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                Public Key (Chave Pública)
-              </label>
-              <input
-                type="text"
-                placeholder="APP_USR-xxxxxx..."
-                value={mercadoPagoPublicKey}
-                onChange={(e) => setMercadoPagoPublicKey(e.target.value)}
-                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                Access Token (Chave Privada)
-              </label>
-              <input
-                type="password"
-                placeholder="APP_USR-xxxxxx..."
-                value={mercadoPagoAccessToken}
-                onChange={(e) => setMercadoPagoAccessToken(e.target.value)}
-                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink font-mono"
-              />
-            </div>
           </div>
         </div>
 

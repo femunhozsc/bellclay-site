@@ -40,7 +40,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           change="+12%"
           isPositive={true}
           icon={<ShoppingBag className="w-5 h-5 text-brand-pink" />}
-          subtitle="Ticket Médio: R$ 84,50"
+          subtitle={`Ticket Médio: R$ ${metrics.averageTicket.toFixed(2).replace('.', ',')}`}
         />
         <MetricCard
           title="Itens no Carrinho"
@@ -89,7 +89,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-border/40">
-                {orders.slice(0, 5).map((order) => (
+                {orders.slice(0, 5).map((order) => {
+                  const statusMap: Record<Order['orderStatus'], { label: string; color: string }> = {
+                    pending: { label: 'Pendente', color: 'bg-amber-100 text-amber-700' },
+                    paid: { label: 'Pago', color: 'bg-blue-100 text-blue-700' },
+                    production: { label: 'Em Produção', color: 'bg-purple-100 text-purple-700' },
+                    shipped: { label: 'Enviado', color: 'bg-indigo-100 text-indigo-700' },
+                    delivered: { label: 'Entregue', color: 'bg-green-100 text-green-700' },
+                    cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-700' },
+                  };
+                  const st = statusMap[order.orderStatus] || { label: order.orderStatus, color: 'bg-gray-100 text-gray-700' };
+                  return (
                   <tr key={order.id} className="hover:bg-[#FAF7F2] transition-colors">
                     <td className="py-3 font-bold text-brand-charcoal">#{order.id}</td>
                     <td className="py-3 text-brand-charcoal">
@@ -103,14 +113,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       R$ {order.total.toFixed(2).replace('.', ',')}
                     </td>
                     <td className="py-3">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                        order.orderStatus === 'paid' ? 'bg-blue-100 text-blue-700' :
-                        order.orderStatus === 'production' ? 'bg-purple-100 text-purple-700' :
-                        order.orderStatus === 'shipped' ? 'bg-indigo-100 text-indigo-700' :
-                        order.orderStatus === 'delivered' ? 'bg-green-100 text-green-700' :
-                        'bg-amber-100 text-amber-700'
-                      }`}>
-                        {order.orderStatus}
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${st.color}`}>
+                        {st.label}
                       </span>
                     </td>
                     <td className="py-3 text-right">
@@ -122,7 +126,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       </button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

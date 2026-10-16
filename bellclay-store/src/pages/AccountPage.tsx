@@ -5,6 +5,8 @@ import {
   ChevronRight, MessageCircle, AlertCircle, LogOut, ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getCustomerOrders, subscribeToCustomerOrders } from '../services/firebase';
+import { generatePixPayment } from '../services/mercadoPagoService';
 import { Order } from '../types';
 
 export const AccountPage: React.FC = () => {
@@ -41,18 +43,52 @@ export const AccountPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
 
   const isLoggedIn = Boolean(customerProfile.email && !customerProfile.isGuest);
 
+  // Sync profile form fields when customerProfile updates
+  useEffect(() => {
+    setName(customerProfile.name || '');
+    setEmail(customerProfile.email || '');
+    setPhone(customerProfile.phone || '');
+    setCpf(customerProfile.cpf || '');
+  }, [customerProfile.name, customerProfile.email, customerProfile.phone, customerProfile.cpf]);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    try {
-      const savedOrders = localStorage.getItem('bellclay_orders');
-      if (savedOrders) {
-        setOrders(JSON.parse(savedOrders));
-      }
-    } catch {}
   }, []);
+
+  // Load and subscribe to customer orders from Firestore in real time
+  useEffect(() => {
+    const criteria = {
+      uid: customerProfile.uid,
+      email: customerProfile.email,
+      cpf: customerProfile.cpf
+    };
+
+    getCustomerOrders(criteria).then((fetched) => {
+      setOrders(fetched);
+    });
+
+    const unsubscribe = subscribeToCustomerOrders(criteria, (liveOrders) => {
+      setOrders(liveOrders);
+    });
+
+    const handleStorageUpdate = () => {
+      getCustomerOrders(criteria).then((fetched) => setOrders(fetched));
+    };
+    window.addEventListener('bellclay_order_saved', handleStorageUpdate);
+    window.addEventListener('bellclay_orders_updated', handleStorageUpdate);
+    window.addEventListener('storage', handleStorageUpdate);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('bellclay_order_saved', handleStorageUpdate);
+      window.removeEventListener('bellclay_orders_updated', handleStorageUpdate);
+      window.removeEventListener('storage', handleStorageUpdate);
+    };
+  }, [customerProfile.uid, customerProfile.email, customerProfile.cpf]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,8 +140,9 @@ export const AccountPage: React.FC = () => {
     setTimeout(() => setIsSaved(false), 2500);
   };
 
-  const getStatusBadge = (status: Order['orderStatus']) => {
-    switch (status) {
+  const getStatusBadge = (status: Order['orderStatus'], paymentStatus?: Order['paymentStatus']) => {
+    const effectiveStatus = status === 'pending' && paymentStatus === 'approved' ? 'paid' : status;
+    switch (effectiveStatus) {
       case 'paid':
         return <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">Pago & Confirmado</span>;
       case 'production':
@@ -435,7 +472,13 @@ export const AccountPage: React.FC = () => {
                     </Link>
                   </div>
                 ) : (
-                  orders.map((order) => (
+                  orders.map((order) => {
+                    const effectiveStatus = order.orderStatus === 'pending' && order.paymentStatus === 'approved' ? 'paid' : order.orderStatus;
+                    const isPendingInfinitePay = effectiveStatus === 'pending' && Boolean(order.checkoutUrl);
+                    const isPendingPix = effectiveStatus === 'pending' && !order.checkoutUrl && order.paymentMethod === 'pix';
+                    const pixInfo = isPendingPix ? generatePixPayment(order.id, order.total, order.customer?.name || customerProfile.name || 'Cliente') : null;
+
+                    return (
                     <div
                       key={order.id}
                       className="p-5 rounded-2xl bg-white border border-brand-border/70 space-y-3 shadow-2xs"
@@ -453,12 +496,12 @@ export const AccountPage: React.FC = () => {
                             })}
                           </span>
                         </div>
-                        <div>{getStatusBadge(order.orderStatus)}</div>
+                        <div>{getStatusBadge(order.orderStatus, order.paymentStatus)}</div>
                       </div>
 
                       <div className="space-y-2">
-                        {order.items.map((item) => (
-                          <div key={item.product.id} className="flex items-center gap-3">
+                        {order.items.map((item, idx) => (
+                          <div key={`${item.product.id}-${idx}`} className="flex items-center gap-3">
                             <img
                               src={item.product.images[0]}
                               alt={item.product.title}
@@ -471,16 +514,56 @@ export const AccountPage: React.FC = () => {
                               <span className="text-[11px] text-brand-muted">
                                 {item.quantity}x • R$ {((item.product.promotionalPrice || item.product.price) * item.quantity).toFixed(2).replace('.', ',')}
                               </span>
+                              {item.customObservation && (
+                                <span className="text-[10px] text-brand-pink font-semibold block truncate">
+                                  Obs: "{item.customObservation}"
+                                </span>
+                              )}
                             </div>
                           </div>
                         ))}
                       </div>
 
+                      {isPendingInfinitePay && order.checkoutUrl && (
+                        <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-brand-border/60 flex flex-col sm:flex-row items-center justify-between gap-3">
+                          <div className="text-xs space-y-0.5 text-center sm:text-left">
+                            <span className="font-bold text-brand-charcoal block">Aguardando pagamento via InfinitePay</span>
+                            <span className="text-[11px] text-brand-muted block">Pague com Pix ou Cartão de Crédito para iniciar a produção</span>
+                          </div>
+                          <a
+                            href={order.checkoutUrl}
+                            className="px-4 py-2 rounded-full bg-brand-green hover:bg-brand-green-hover text-white text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs"
+                          >
+                            Concluir Pagamento
+                          </a>
+                        </div>
+                      )}
+
+                      {isPendingPix && pixInfo && (
+                        <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-brand-border/60 flex flex-col sm:flex-row items-center justify-between gap-3">
+                          <div className="text-xs space-y-0.5 text-center sm:text-left">
+                            <span className="font-bold text-brand-charcoal block">Aguardando pagamento via Pix</span>
+                            <span className="text-[11px] text-brand-muted block">Copie o código Pix abaixo para concluir no seu banco</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(pixInfo.pixCopiaECola);
+                              setCopiedOrderId(order.id);
+                              setTimeout(() => setCopiedOrderId(null), 2500);
+                            }}
+                            className="px-4 py-2 rounded-full bg-brand-green hover:bg-brand-green-hover text-white text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs"
+                          >
+                            {copiedOrderId === order.id ? 'Código Pix Copiado!' : 'Copiar Pix Copia e Cola'}
+                          </button>
+                        </div>
+                      )}
+
                       <div className="pt-2 border-t border-brand-border/40 flex flex-wrap items-center justify-between gap-2 text-xs">
                         <div>
                           <span className="text-brand-muted">Envio: {order.shipping?.name}</span>
                           {order.trackingCode && (
-                            <span className="font-mono font-bold text-brand-green block">
+                            <span className="font-mono font-bold text-brand-green block mt-0.5">
                               Rastreio: {order.trackingCode}
                             </span>
                           )}
@@ -492,7 +575,8 @@ export const AccountPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  ))
+                  );
+                  })
                 )}
               </div>
             )}

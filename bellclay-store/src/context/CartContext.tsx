@@ -79,16 +79,28 @@ export const CartProvider: React.FC<{ children: React.ReactNode; freeShippingThr
   }, [subtotal, destinationCep, freeShippingThreshold]);
 
   const addItem = (product: Product, quantity = 1, customObservation?: string) => {
+    const trimmedObs = customObservation?.trim();
     setItems(prev => {
       const existing = prev.find(item => item.product.id === product.id);
       if (existing) {
-        return prev.map(item =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + quantity, customObservation: customObservation || item.customObservation }
-            : item
-        );
+        return prev.map(item => {
+          if (item.product.id !== product.id) return item;
+          const nextObs = trimmedObs || item.customObservation;
+          return {
+            ...item,
+            quantity: item.quantity + quantity,
+            ...(nextObs ? { customObservation: nextObs } : {})
+          };
+        });
       }
-      return [...prev, { product, quantity, customObservation }];
+      return [
+        ...prev,
+        {
+          product,
+          quantity,
+          ...(trimmedObs ? { customObservation: trimmedObs } : {})
+        }
+      ];
     });
     setIsOpen(true);
     trackEvent('add_to_cart', { productId: product.id, title: product.title, price: product.price, quantity });

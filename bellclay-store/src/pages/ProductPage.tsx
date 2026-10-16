@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Star, Heart, ShoppingBag, Truck, ShieldCheck, Check,
-  ChevronRight, ChevronLeft, ArrowLeft, MessageCircle, Info, CheckCircle2,
+  ChevronRight, ChevronLeft, ArrowLeft, Info, CheckCircle2,
   Maximize2
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
@@ -135,8 +135,11 @@ export const ProductPage: React.FC = () => {
     ? Math.round(((product.price - currentPrice) / product.price) * 100)
     : 0;
 
-  const installment3x = (currentPrice / 3).toFixed(2).replace('.', ',');
-  const pixPrice = (currentPrice * 0.95).toFixed(2).replace('.', ',');
+  // Dynamic Installments & Pix Discount configured in Admin Panel
+  const maxInstallments = Math.max(1, Number(settings.maxInstallmentsNoInterest ?? 3));
+  const pixDiscountPercent = Number(settings.pixDiscountPercent ?? 0);
+  const installmentValue = (currentPrice / maxInstallments).toFixed(2).replace('.', ',');
+  const pixPrice = (currentPrice * (1 - pixDiscountPercent / 100)).toFixed(2).replace('.', ',');
 
   const handleAddToCart = () => {
     addItem(product, quantity, customObservation);
@@ -393,12 +396,25 @@ export const ProductPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-1 text-xs sm:text-sm text-brand-muted">
-                  <p className="font-medium text-brand-charcoal">
-                    ou em até <strong className="text-brand-pink font-bold">3x de R$ {installment3x}</strong> sem juros no cartão
-                  </p>
-                  <p className="text-xs sm:text-sm text-brand-green font-semibold">
-                    • R$ {pixPrice} no Pix (5% de desconto automático)
-                  </p>
+                  {maxInstallments > 1 ? (
+                    <p className="font-medium text-brand-charcoal">
+                      ou em até <strong className="text-brand-pink font-bold">{maxInstallments}x de R$ {installmentValue}</strong> sem juros no cartão
+                    </p>
+                  ) : (
+                    <p className="font-medium text-brand-charcoal">
+                      ou em até <strong className="text-brand-pink font-bold">12x</strong> no cartão de crédito
+                    </p>
+                  )}
+
+                  {pixDiscountPercent > 0 ? (
+                    <p className="text-xs sm:text-sm text-brand-green font-semibold">
+                      • R$ {pixPrice} no Pix ({pixDiscountPercent}% de desconto automático)
+                    </p>
+                  ) : (
+                    <p className="text-xs sm:text-sm text-brand-green font-semibold">
+                      • Pagamento instantâneo via Pix ou Cartão (InfinitePay)
+                    </p>
+                  )}
                 </div>
               </div>
 

@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore, collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, Firestore, collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { getAuth, Auth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { getStorage, FirebaseStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Product, SiteSettings, Order, MetricsSummary, BellclayEvent } from '../types';
@@ -42,6 +42,22 @@ const STORAGE_KEYS = {
   EVENTS: 'bellclay_events',
 };
 
+const stripUndefined = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(stripUndefined);
+  }
+  if (obj !== null && typeof obj === 'object') {
+    const cleaned: Record<string, any> = {};
+    for (const [key, val] of Object.entries(obj)) {
+      if (val !== undefined) {
+        cleaned[key] = stripUndefined(val);
+      }
+    }
+    return cleaned;
+  }
+  return obj;
+};
+
 // Initial default settings matching store
 export const DEFAULT_PANEL_SETTINGS: SiteSettings = {
   welcomeTitle: "Peças Únicas Feitas com Amor em Cerâmica Fria",
@@ -56,6 +72,9 @@ export const DEFAULT_PANEL_SETTINGS: SiteSettings = {
   whatsapp: "5544991074932",
   city: "Campo Mourão",
   state: "PR",
+  infinitePayTag: "isabela-munhoz-4sb",
+  pixDiscountPercent: 0,
+  maxInstallmentsNoInterest: 3,
   mercadoPagoPublicKey: "",
   mercadoPagoAccessToken: "",
   melhorEnvioToken: "",
@@ -267,11 +286,37 @@ export const fetchPanelProducts = async (): Promise<Product[]> => {
   return DEFAULT_PANEL_PRODUCTS;
 };
 
+export const subscribeToPanelProducts = (
+  callback: (products: Product[]) => void
+): (() => void) => {
+  if (!db) return () => {};
+  try {
+    const colRef = collection(db, 'products');
+    return onSnapshot(
+      colRef,
+      (snap) => {
+        if (!snap.empty) {
+          const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+          try {
+            localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(list));
+          } catch {}
+          callback(list);
+        }
+      },
+      (err) => {
+        console.warn('Listener de produtos no painel:', err);
+      }
+    );
+  } catch {
+    return () => {};
+  }
+};
+
 export const savePanelProduct = async (product: Product): Promise<void> => {
   if (db) {
     try {
       const docRef = doc(db, 'products', product.id);
-      await setDoc(docRef, { ...product, updatedAt: serverTimestamp() });
+      await setDoc(docRef, { ...stripUndefined(product), updatedAt: serverTimestamp() });
     } catch (err) {
       console.warn('Erro ao salvar no Firestore:', err);
     }
@@ -334,7 +379,7 @@ export const savePanelEvent = async (event: BellclayEvent): Promise<void> => {
   if (db) {
     try {
       const docRef = doc(db, 'events', event.id);
-      await setDoc(docRef, { ...event, updatedAt: serverTimestamp() });
+      await setDoc(docRef, { ...stripUndefined(event), updatedAt: serverTimestamp() });
     } catch (err) {
       console.warn('Erro ao salvar evento no Firestore:', err);
     }
@@ -402,7 +447,7 @@ export const saveAllPanelEvents = async (events: BellclayEvent[]): Promise<void>
   if (currentDb) {
     try {
       await Promise.all(
-        events.map(ev => setDoc(doc(currentDb, 'events', ev.id), { ...ev, updatedAt: serverTimestamp() }))
+        events.map(ev => setDoc(doc(currentDb, 'events', ev.id), { ...stripUndefined(ev), updatedAt: serverTimestamp() }))
       );
     } catch (err) {
       console.warn('Erro ao salvar lote de eventos no Firestore:', err);
@@ -434,7 +479,12 @@ export const fetchPanelSettings = async (): Promise<SiteSettings> => {
     try {
       const snap = await getDoc(doc(db, 'settings', 'general'));
       if (snap.exists()) {
-        settingsObj = { ...DEFAULT_PANEL_SETTINGS, ...(snap.data() as SiteSettings) };
+        const remote = snap.data() as SiteSettings;
+        settingsObj = {
+          ...DEFAULT_PANEL_SETTINGS,
+          ...remote,
+          infinitePayTag: (remote.infinitePayTag || DEFAULT_PANEL_SETTINGS.infinitePayTag || 'isabela-munhoz-4sb').replace(/^[$@]+/, '')
+        };
       }
     } catch (err) {
       console.warn('Erro ao carregar settings do Firestore:', err);
@@ -467,10 +517,15 @@ export const savePanelSettings = async (settings: SiteSettings): Promise<void> =
     await saveAllPanelEvents(settings.events);
   }
 
+  const cleanedSettings: SiteSettings = {
+    ...settings,
+    infinitePayTag: (settings.infinitePayTag || 'isabela-munhoz-4sb').replace(/^[$@]+/, '').trim()
+  };
+
   if (db) {
     try {
       await setDoc(doc(db, 'settings', 'general'), {
-        ...settings,
+        ...stripUndefined(cleanedSettings),
         updatedAt: serverTimestamp()
       });
     } catch (err) {
@@ -479,7 +534,7 @@ export const savePanelSettings = async (settings: SiteSettings): Promise<void> =
   }
 
   try {
-    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(cleanedSettings));
   } catch (err) {
     console.warn('Cota excedida no LocalStorage ao salvar settings:', err);
   }
@@ -493,7 +548,8 @@ export const fetchPanelOrders = async (): Promise<Order[]> => {
     try {
       const snap = await getDocs(collection(db, 'orders'));
       if (!snap.empty) {
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+        return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       }
     } catch (err) {
       console.warn('Erro ao carregar pedidos do Firestore:', err);
@@ -597,19 +653,60 @@ export const fetchPanelOrders = async (): Promise<Order[]> => {
   ];
 };
 
+// Real-time orders subscription for instant panel updates when webhook or checkout completes
+export const subscribeToPanelOrders = (
+  callback: (orders: Order[]) => void
+): (() => void) => {
+  if (!db) return () => {};
+  try {
+    const colRef = collection(db, 'orders');
+    return onSnapshot(
+      colRef,
+      (snap) => {
+        if (!snap.empty) {
+          const list = snap.docs
+            .map(d => ({ id: d.id, ...d.data() } as Order))
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          try {
+            localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(list));
+          } catch {}
+          callback(list);
+        }
+      },
+      (err) => {
+        console.warn('Listener de pedidos no painel:', err);
+      }
+    );
+  } catch {
+    return () => {};
+  }
+};
+
 export const updateOrderStatus = async (
   orderId: string,
   status: Order['orderStatus'],
   trackingCode?: string
 ): Promise<void> => {
+  const paymentStatus: Order['paymentStatus'] =
+    status === 'paid' || status === 'production' || status === 'shipped' || status === 'delivered'
+      ? 'approved'
+      : status === 'cancelled'
+      ? 'rejected'
+      : 'pending';
+
   if (db) {
     try {
       const docRef = doc(db, 'orders', orderId);
-      await updateDoc(docRef, {
-        orderStatus: status,
-        ...(trackingCode ? { trackingCode } : {}),
-        updatedAt: serverTimestamp()
-      });
+      await setDoc(
+        docRef,
+        {
+          orderStatus: status,
+          paymentStatus,
+          ...(trackingCode !== undefined ? { trackingCode: trackingCode.trim() } : {}),
+          updatedAt: serverTimestamp()
+        },
+        { merge: true }
+      );
     } catch (err) {
       console.warn('Erro ao atualizar pedido no Firestore:', err);
     }
@@ -619,8 +716,9 @@ export const updateOrderStatus = async (
   const index = orders.findIndex(o => o.id === orderId);
   if (index >= 0) {
     orders[index].orderStatus = status;
+    orders[index].paymentStatus = paymentStatus;
     if (trackingCode !== undefined) {
-      orders[index].trackingCode = trackingCode;
+      orders[index].trackingCode = trackingCode.trim();
     }
     localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
     window.dispatchEvent(new Event('bellclay_orders_updated'));
@@ -628,27 +726,50 @@ export const updateOrderStatus = async (
 };
 
 // Analytics & Metrics Computation
-export const fetchMetrics = async (): Promise<MetricsSummary> => {
-  const orders = await fetchPanelOrders();
+export const fetchMetrics = async (preloadedOrders?: Order[]): Promise<MetricsSummary> => {
+  const orders = preloadedOrders || (await fetchPanelOrders());
   
   let rawEvents: any = {};
   try {
     rawEvents = JSON.parse(localStorage.getItem(STORAGE_KEYS.METRICS) || '{}');
   } catch {}
 
+  if (db) {
+    try {
+      const snap = await getDocs(collection(db, 'analytics_events'));
+      if (!snap.empty) {
+        const remoteCounts: Record<string, number> = {};
+        snap.docs.forEach(d => {
+          const evName = d.data()?.event;
+          if (evName) remoteCounts[evName] = (remoteCounts[evName] || 0) + 1;
+        });
+        rawEvents = {
+          page_view: Math.max(rawEvents.page_view || 0, remoteCounts.page_view || 0),
+          add_to_cart: Math.max(rawEvents.add_to_cart || 0, remoteCounts.add_to_cart || 0),
+          begin_checkout: Math.max(rawEvents.begin_checkout || 0, remoteCounts.begin_checkout || 0),
+        };
+      }
+    } catch {}
+  }
+
   const pageViews = (rawEvents.page_view || 0) + 1420;
   const uniqueVisitors = Math.round(pageViews * 0.72);
   const addToCartClicks = (rawEvents.add_to_cart || 0) + 184;
   const checkoutStarts = (rawEvents.begin_checkout || 0) + 67;
-  const totalOrders = orders.length;
+  const validOrders = orders.filter(o => o.orderStatus !== 'cancelled');
+  const totalOrders = validOrders.length;
 
-  const totalRevenue = orders.reduce((acc, o) => {
-    return o.paymentStatus === 'approved' || o.orderStatus === 'paid' || o.orderStatus === 'shipped' || o.orderStatus === 'production'
+  const totalRevenue = validOrders.reduce((acc, o) => {
+    return o.paymentStatus === 'approved' || o.orderStatus === 'paid' || o.orderStatus === 'shipped' || o.orderStatus === 'production' || o.orderStatus === 'delivered'
       ? acc + o.total
       : acc;
   }, 0);
 
-  const averageTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+  const paidOrdersCount = validOrders.filter(
+    o => o.paymentStatus === 'approved' || o.orderStatus === 'paid' || o.orderStatus === 'shipped' || o.orderStatus === 'production' || o.orderStatus === 'delivered'
+  ).length;
+
+  const averageTicket = paidOrdersCount > 0 ? totalRevenue / paidOrdersCount : 0;
   const conversionRate = uniqueVisitors > 0 ? (totalOrders / uniqueVisitors) * 100 : 0;
 
   return {

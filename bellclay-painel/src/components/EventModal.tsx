@@ -28,8 +28,6 @@ export const EventModal: React.FC<EventModalProps> = ({
   onClose,
   onSave
 }) => {
-  if (!isOpen) return null;
-
   const [title, setTitle] = useState(event?.title || '');
   const [slug, setSlug] = useState(event?.slug || '');
   const [subtitle, setSubtitle] = useState(event?.subtitle || '');
@@ -46,6 +44,38 @@ export const EventModal: React.FC<EventModalProps> = ({
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (event) {
+      setTitle(event.title || '');
+      setSlug(event.slug || '');
+      setSubtitle(event.subtitle || '');
+      setBadge(event.badge || 'Edição Especial');
+      setDateText(event.dateText || '');
+      setLocationText(event.locationText || 'Campo Mourão, PR');
+      setButtonText(event.buttonText || 'Ver Fotos e Detalhes');
+      setCoverImage(event.coverImage || '');
+      setImages(event.images || []);
+      setDescription(event.description || '');
+      setActive(event.active !== false);
+    } else {
+      setTitle('');
+      setSlug('');
+      setSubtitle('');
+      setBadge('Edição Especial');
+      setDateText('');
+      setLocationText('Campo Mourão, PR');
+      setButtonText('Ver Fotos e Detalhes');
+      setCoverImage('');
+      setImages([]);
+      setDescription('');
+      setActive(true);
+    }
+    setNewImageUrl('');
+    setSaveError(null);
+  }, [event, isOpen]);
+
+  if (!isOpen) return null;
 
   // Auto-generate slug when title changes if slug is empty or matches previous slug
   const handleTitleChange = (val: string) => {

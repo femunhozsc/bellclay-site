@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, ShoppingBag, MessageCircle, Truck, PackageCheck, Filter, ExternalLink, MessageSquare } from 'lucide-react';
+import { Search, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { Order } from '../types';
 
 interface OrdersPageProps {
@@ -43,11 +43,18 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ orders, onSelectOrder })
 
   const statusBadges: Record<Order['orderStatus'], { label: string; color: string }> = {
     pending: { label: 'Pendente', color: 'bg-amber-100 text-amber-800' },
-    paid: { label: 'Pago', color: 'bg-blue-100 text-blue-800' },
+    paid: { label: '✓ Pago', color: 'bg-emerald-100 text-emerald-800 border border-emerald-300' },
     production: { label: 'Em Produção', color: 'bg-purple-100 text-purple-800' },
     shipped: { label: 'Enviado', color: 'bg-indigo-100 text-indigo-800' },
     delivered: { label: 'Entregue', color: 'bg-green-100 text-green-800' },
     cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-800' },
+  };
+
+  const paymentLabels: Record<string, string> = {
+    pix: 'PIX',
+    credit_card: 'CARTÃO',
+    infinitepay: 'INFINITEPAY',
+    boleto: 'BOLETO'
   };
 
   return (
@@ -56,7 +63,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ orders, onSelectOrder })
         <div>
           <h2 className="text-xl font-bold text-brand-charcoal">Gestão de Pedidos & Vendas</h2>
           <p className="text-xs text-brand-muted">
-            Monitore pagamentos do Mercado Pago, etapas de produção manual e códigos de rastreio.
+            Monitore pagamentos em tempo real via InfinitePay, endereços de entrega, etapas de produção e rastreio.
           </p>
         </div>
       </div>
@@ -106,7 +113,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ orders, onSelectOrder })
               <tr>
                 <th className="py-3.5 px-6">ID / Data</th>
                 <th className="py-3.5 px-4">Cliente</th>
-                <th className="py-3.5 px-4">Destino / Frete</th>
+                <th className="py-3.5 px-4">Endereço / Frete</th>
                 <th className="py-3.5 px-4">Pagamento</th>
                 <th className="py-3.5 px-4">Total</th>
                 <th className="py-3.5 px-4">Status</th>
@@ -124,6 +131,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ orders, onSelectOrder })
                 filtered.map((order) => {
                   const badge = statusBadges[order.orderStatus] || { label: order.orderStatus, color: 'bg-gray-100 text-gray-700' };
                   const obsList = getOrderObservations(order);
+                  const isPaid = order.paymentStatus === 'approved' || order.orderStatus === 'paid' || order.orderStatus === 'production' || order.orderStatus === 'shipped' || order.orderStatus === 'delivered';
 
                   return (
                     <tr key={order.id} className="hover:bg-[#FAF7F2]/60 transition-colors">
@@ -153,12 +161,22 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ orders, onSelectOrder })
                         )}
                       </td>
                       <td className="py-3.5 px-4">
-                        <span className="font-medium text-brand-charcoal block">{order.address.city} - {order.address.state}</span>
+                        <span className="font-medium text-brand-charcoal block">
+                          {order.address.city} - {order.address.state}
+                        </span>
+                        <span className="text-[10px] text-brand-muted block truncate max-w-[180px]" title={`${order.address.street}, ${order.address.number} - ${order.address.neighborhood} (CEP ${order.address.cep})`}>
+                          {order.address.street}, {order.address.number}
+                        </span>
                         <span className="text-[10px] text-brand-pink font-semibold">{order.shipping.name}</span>
                       </td>
                       <td className="py-3.5 px-4">
-                        <span className="uppercase font-bold text-[11px] text-brand-charcoal block">{order.paymentMethod}</span>
-                        <span className="text-[10px] text-brand-muted">Mercado Pago</span>
+                        <span className="uppercase font-bold text-[11px] text-brand-charcoal block">
+                          {paymentLabels[order.paymentMethod] || order.paymentMethod}
+                        </span>
+                        <span className="text-[10px] text-brand-green font-semibold flex items-center gap-1">
+                          {isPaid && <CheckCircle2 className="w-3 h-3" />}
+                          <span>InfinitePay</span>
+                        </span>
                       </td>
                       <td className="py-3.5 px-4">
                         <span className="font-extrabold text-brand-charcoal block">

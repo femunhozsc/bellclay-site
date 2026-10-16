@@ -97,6 +97,7 @@ export const getSiteSettings = async (): Promise<SiteSettings> => {
         settingsObj = {
           ...settingsObj,
           ...remote,
+          infinitePayTag: (remote.infinitePayTag || settingsObj.infinitePayTag || 'isabela-munhoz-4sb').replace(/^[$@]+/, ''),
           banners: Array.isArray(remote.banners) && remote.banners.length > 0
             ? remote.banners
             : (settingsObj.banners || []),
@@ -151,6 +152,7 @@ export const subscribeToSiteSettings = (
           const merged: SiteSettings = {
             ...current,
             ...remote,
+            infinitePayTag: (remote.infinitePayTag || current.infinitePayTag || 'isabela-munhoz-4sb').replace(/^[$@]+/, ''),
             banners: Array.isArray(remote.banners) && remote.banners.length > 0
               ? remote.banners
               : (current.banners || []),
@@ -174,13 +176,41 @@ export const subscribeToSiteSettings = (
   }
 };
 
+export const subscribeToEvents = (
+  callback: (events: BellclayEvent[]) => void
+): (() => void) => {
+  if (!db) return () => {};
+  try {
+    const colRef = collection(db, 'events');
+    return onSnapshot(
+      colRef,
+      (snap) => {
+        if (!snap.empty) {
+          const events = snap.docs.map(d => ({ id: d.id, ...d.data() } as BellclayEvent));
+          try {
+            localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
+          } catch {}
+          callback(events);
+        }
+      },
+      (err) => {
+        console.warn('Listener de eventos do Firestore:', err);
+      }
+    );
+  } catch {
+    return () => {};
+  }
+};
+
 export const getProducts = async (): Promise<Product[]> => {
   if (db) {
     try {
       const colRef = collection(db, 'products');
       const snap = await getDocs(colRef);
       if (!snap.empty) {
-        const prods = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+        const prods = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as Product))
+          .filter(p => p.active !== false);
         try {
           localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(prods));
         } catch {}
@@ -195,43 +225,392 @@ export const getProducts = async (): Promise<Product[]> => {
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.filter((p: Product) => p.active !== false);
+      }
     } catch {}
   }
   return DEFAULT_PRODUCTS;
 };
 
+export const subscribeToProducts = (
+  callback: (products: Product[]) => void
+): (() => void) => {
+  if (!db) return () => {};
+  try {
+    const colRef = collection(db, 'products');
+    return onSnapshot(
+      colRef,
+      (snap) => {
+        if (!snap.empty) {
+          const prods = snap.docs
+            .map(d => ({ id: d.id, ...d.data() } as Product))
+            .filter(p => p.active !== false);
+          try {
+            localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(prods));
+          } catch {}
+          callback(prods);
+        }
+      },
+      (err) => {
+        console.warn('Listener de produtos do Firestore:', err);
+      }
+    );
+  } catch {
+    return () => {};
+  }
+};
+
+// Recursively remove undefined fields before saving to Firestore while preserving FieldValues
+export const sanitizeForFirestore = (obj: any): any => {
+  if (obj === undefined) return null;
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (obj instanceof Date) return obj.toISOString();
+  if (typeof obj._methodName === 'string') return obj; // Preserve Firestore serverTimestamp()
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeForFirestore(item)).filter(item => item !== undefined);
+  }
+  const cleaned: Record<string, any> = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (val !== undefined) {
+      cleaned[key] = sanitizeForFirestore(val);
+    }
+  }
+  return cleaned;
+};
+
 export const saveOrder = async (order: Order): Promise<string> => {
+  const cleanOrder = sanitizeForFirestore(order);
+
   if (db) {
     try {
       const docRef = doc(db, 'orders', order.id);
       await setDoc(docRef, {
-        ...order,
-        firebaseTimestamp: serverTimestamp()
+        ...cleanOrder,
+        firebaseTimestamp: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
-      return order.id;
+
+      // Automatically decrement product stock in Firestore when order is placed
+      for (const item of order.items || []) {
+        if (item.product?.id) {
+          try {
+            const prodRef = doc(db, 'products', item.product.id);
+            const prodSnap = await getDoc(prodRef);
+            if (prodSnap.exists()) {
+              const currentStock = Number(prodSnap.data().stock ?? item.product.stock ?? 0);
+              const nextStock = Math.max(0, currentStock - (item.quantity || 1));
+              await setDoc(prodRef, { stock: nextStock, updatedAt: serverTimestamp() }, { merge: true });
+            }
+          } catch (stockErr) {
+            console.warn('Aviso ao atualizar estoque do produto:', stockErr);
+          }
+        }
+      }
     } catch (err) {
-      console.warn('Erro ao salvar pedido no Firestore, salvando localmente:', err);
+      console.error('Erro ao salvar pedido no Firestore, salvando localmente:', err);
     }
   }
 
-  // Local fallback
-  const savedOrders: Order[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS) || '[]');
-  savedOrders.unshift(order);
-  localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(savedOrders));
+  // Local sync
+  try {
+    const savedOrders: Order[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS) || '[]');
+    const existingIdx = savedOrders.findIndex(o => o.id === order.id);
+    if (existingIdx >= 0) {
+      savedOrders[existingIdx] = cleanOrder;
+    } else {
+      savedOrders.unshift(cleanOrder);
+    }
+    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(savedOrders));
+  } catch {}
 
-  // Dispatch storage event so admin panel on same browser/subdomain can react immediately if opened
   window.dispatchEvent(new Event('bellclay_order_saved'));
+  window.dispatchEvent(new Event('bellclay_orders_updated'));
   return order.id;
 };
 
+const matchesCustomerOrder = (
+  order: Order,
+  criteria: { uid?: string; email?: string; cpf?: string }
+): boolean => {
+  if (!order || !order.customer) return false;
+  const cleanEmail = (criteria.email || '').trim().toLowerCase();
+  const cleanCpf = (criteria.cpf || '').replace(/\D/g, '');
+  const cleanUid = (criteria.uid || '').trim();
+
+  const orderUid = (order.customer.uid || '').trim();
+  const orderEmail = (order.customer.email || '').trim().toLowerCase();
+  const orderCpf = (order.customer.cpf || '').replace(/\D/g, '');
+
+  if (cleanUid && orderUid && cleanUid === orderUid) return true;
+  if (cleanEmail && orderEmail && cleanEmail === orderEmail) return true;
+  if (cleanCpf && cleanCpf.length >= 11 && orderCpf && cleanCpf === orderCpf) return true;
+  return false;
+};
+
+export const getCustomerOrders = async (criteria: {
+  uid?: string;
+  email?: string;
+  cpf?: string;
+}): Promise<Order[]> => {
+  const localOrders: Order[] = (() => {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS) || '[]');
+    } catch {
+      return [];
+    }
+  })();
+
+  const hasCriteria = Boolean(
+    (criteria.uid && criteria.uid.trim()) ||
+    (criteria.email && criteria.email.trim()) ||
+    (criteria.cpf && criteria.cpf.replace(/\D/g, '').length >= 11)
+  );
+
+  if (db) {
+    try {
+      const snap = await getDocs(collection(db, 'orders'));
+      if (!snap.empty) {
+        const remoteOrders = snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+        const orderMap = new Map<string, Order>();
+
+        // Local orders first, then remote overwrites with latest status from panel
+        for (const lo of localOrders) {
+          if (!hasCriteria || matchesCustomerOrder(lo, criteria)) {
+            orderMap.set(lo.id, lo);
+          }
+        }
+        for (const ro of remoteOrders) {
+          if (hasCriteria ? matchesCustomerOrder(ro, criteria) : localOrders.some(lo => lo.id === ro.id)) {
+            orderMap.set(ro.id, ro);
+          }
+        }
+
+        const merged = Array.from(orderMap.values()).sort(
+          (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        );
+
+        // Update local cache with latest statuses from Firestore
+        try {
+          const updatedLocal = localOrders.map(lo => orderMap.get(lo.id) || lo);
+          for (const m of merged) {
+            if (!updatedLocal.some(u => u.id === m.id)) {
+              updatedLocal.unshift(m);
+            }
+          }
+          localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(updatedLocal));
+        } catch {}
+
+        return merged;
+      }
+    } catch (err) {
+      console.warn('Erro ao buscar pedidos do cliente no Firestore:', err);
+    }
+  }
+
+  const filteredLocal = hasCriteria
+    ? localOrders.filter(o => matchesCustomerOrder(o, criteria))
+    : localOrders;
+
+  return filteredLocal.sort(
+    (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+  );
+};
+
+export const subscribeToCustomerOrders = (
+  criteria: { uid?: string; email?: string; cpf?: string },
+  callback: (orders: Order[]) => void
+): (() => void) => {
+  if (!db) return () => {};
+  const hasCriteria = Boolean(
+    (criteria.uid && criteria.uid.trim()) ||
+    (criteria.email && criteria.email.trim()) ||
+    (criteria.cpf && criteria.cpf.replace(/\D/g, '').length >= 11)
+  );
+
+  try {
+    const colRef = collection(db, 'orders');
+    return onSnapshot(
+      colRef,
+      (snap) => {
+        const localOrders: Order[] = (() => {
+          try {
+            return JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS) || '[]');
+          } catch {
+            return [];
+          }
+        })();
+
+        const remoteOrders = snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+        const orderMap = new Map<string, Order>();
+
+        for (const lo of localOrders) {
+          if (!hasCriteria || matchesCustomerOrder(lo, criteria)) {
+            orderMap.set(lo.id, lo);
+          }
+        }
+        for (const ro of remoteOrders) {
+          if (hasCriteria ? matchesCustomerOrder(ro, criteria) : localOrders.some(lo => lo.id === ro.id)) {
+            orderMap.set(ro.id, ro);
+          }
+        }
+
+        const merged = Array.from(orderMap.values()).sort(
+          (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        );
+
+        try {
+          const updatedLocal = localOrders.map(lo => orderMap.get(lo.id) || lo);
+          for (const m of merged) {
+            if (!updatedLocal.some(u => u.id === m.id)) {
+              updatedLocal.unshift(m);
+            }
+          }
+          localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(updatedLocal));
+        } catch {}
+
+        callback(merged);
+      },
+      (err) => {
+        console.warn('Listener de pedidos do cliente no Firestore:', err);
+      }
+    );
+  } catch {
+    return () => {};
+  }
+};
+
+export const getOrderById = async (orderId: string): Promise<Order | null> => {
+  if (db) {
+    try {
+      const docRef = doc(db, 'orders', orderId);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        return { id: snap.id, ...snap.data() } as Order;
+      }
+    } catch (err) {
+      console.warn('Erro ao buscar pedido no Firestore:', err);
+    }
+  }
+
+  try {
+    const savedOrders: Order[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS) || '[]');
+    const found = savedOrders.find(o => o.id === orderId);
+    if (found) return found;
+  } catch {}
+
+  return null;
+};
+
+export const confirmOrderPayment = async (
+  orderId: string,
+  details: {
+    captureMethod?: string;
+    receiptUrl?: string;
+    transactionNsu?: string;
+    slug?: string;
+  } = {}
+): Promise<Order | null> => {
+  const resolvedMethod: Order['paymentMethod'] =
+    details.captureMethod === 'pix'
+      ? 'pix'
+      : details.captureMethod === 'credit_card'
+      ? 'credit_card'
+      : 'infinitepay';
+
+  const updates: Record<string, any> = {
+    paymentStatus: 'approved',
+    orderStatus: 'paid',
+  };
+
+  if (details.captureMethod) {
+    updates.paymentMethod = resolvedMethod;
+  }
+  if (details.receiptUrl) {
+    updates.receiptUrl = details.receiptUrl;
+  }
+  if (details.transactionNsu) {
+    updates.transactionNsu = details.transactionNsu;
+  }
+  if (details.slug) {
+    updates.infinitePaySlug = details.slug;
+  }
+
+  if (db) {
+    try {
+      const docRef = doc(db, 'orders', orderId);
+      await setDoc(
+        docRef,
+        {
+          ...updates,
+          updatedAt: serverTimestamp()
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      console.warn('Erro ao confirmar pagamento no Firestore:', err);
+    }
+  }
+
+  // Update local storage order list
+  try {
+    const savedOrders: Order[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS) || '[]');
+    const idx = savedOrders.findIndex(o => o.id === orderId);
+    if (idx >= 0) {
+      savedOrders[idx] = {
+        ...savedOrders[idx],
+        ...updates
+      };
+      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(savedOrders));
+    }
+  } catch {}
+
+  window.dispatchEvent(new Event('bellclay_order_saved'));
+  return await getOrderById(orderId);
+};
+
+export const subscribeToOrder = (
+  orderId: string,
+  callback: (order: Order) => void
+): (() => void) => {
+  if (!db) return () => {};
+  try {
+    const docRef = doc(db, 'orders', orderId);
+    return onSnapshot(
+      docRef,
+      (snap) => {
+        if (snap.exists()) {
+          const orderData = { id: snap.id, ...snap.data() } as Order;
+          // Also sync into localStorage so AccountPage stays up to date
+          try {
+            const savedOrders: Order[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS) || '[]');
+            const idx = savedOrders.findIndex(o => o.id === orderId);
+            if (idx >= 0) {
+              savedOrders[idx] = orderData;
+              localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(savedOrders));
+            }
+          } catch {}
+          callback(orderData);
+        }
+      },
+      (err) => {
+        console.warn('Listener do pedido no Firestore:', err);
+      }
+    );
+  } catch {
+    return () => {};
+  }
+};
+
+export const subscribeToOrderById = subscribeToOrder;
+
 export const trackEvent = async (eventName: string, data: Record<string, any> = {}) => {
-  const eventPayload = {
+  const eventPayload = sanitizeForFirestore({
     event: eventName,
     data,
     timestamp: new Date().toISOString(),
     userAgent: navigator.userAgent
-  };
+  });
 
   if (db) {
     try {

@@ -22,11 +22,13 @@ import {
   savePanelEvent,
   deletePanelEvent,
   fetchPanelOrders,
+  subscribeToPanelOrders,
   updateOrderStatus,
-  fetchMetrics
+  fetchMetrics,
+  DEFAULT_PANEL_SETTINGS,
+  DEFAULT_PANEL_PRODUCTS
 } from './services/firebase';
 import { Product, SiteSettings, Order, MetricsSummary, BannerSlide, CategoryItem, BellclayEvent } from './types';
-import { DEFAULT_PANEL_SETTINGS, DEFAULT_PANEL_PRODUCTS } from './services/firebase';
 
 export const App: React.FC = () => {
   const { isAuthenticated } = useAdminAuth();
@@ -83,6 +85,13 @@ export const App: React.FC = () => {
     if (isAuthenticated) {
       loadData();
 
+      // Subscribe to real-time order updates from Firestore
+      const unsubOrders = subscribeToPanelOrders(async (liveOrders) => {
+        setOrders(liveOrders);
+        const updatedMetrics = await fetchMetrics();
+        setMetrics(updatedMetrics);
+      });
+
       const handleUpdate = () => loadData();
       window.addEventListener('bellclay_order_saved', handleUpdate);
       window.addEventListener('bellclay_products_updated', handleUpdate);
@@ -92,6 +101,7 @@ export const App: React.FC = () => {
       window.addEventListener('storage', handleUpdate);
 
       return () => {
+        unsubOrders();
         window.removeEventListener('bellclay_order_saved', handleUpdate);
         window.removeEventListener('bellclay_products_updated', handleUpdate);
         window.removeEventListener('bellclay_settings_updated', handleUpdate);
@@ -194,7 +204,7 @@ export const App: React.FC = () => {
     products: { title: 'Gestão de Produtos & Frete', subtitle: 'Cadastre peças com fotos, preços, peso e dimensões para o Melhor Envio' },
     orders: { title: 'Pedidos & Vendas', subtitle: 'Fulfillment de pedidos, códigos de rastreio e contato direto com clientes' },
     customizer: { title: 'Personalização do Site', subtitle: 'Modifique banners, títulos de boas-vindas e categorias em tempo real' },
-    settings: { title: 'Configurações & Integrações', subtitle: 'Configure CEP de origem (Campo Mourão), Mercado Pago e Melhor Envio' }
+    settings: { title: 'Configurações & Integrações', subtitle: 'Configure CEP de origem (Campo Mourão), InfinitePay e Melhor Envio' }
   };
 
   const currentInfo = pageTitles[currentTab] || pageTitles.dashboard;

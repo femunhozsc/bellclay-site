@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import {
   ShieldCheck, ArrowLeft, ArrowRight, Check, CheckCircle2,
-  Truck, User, MapPin, CreditCard, QrCode, FileText,
-  Copy, ExternalLink, MessageCircle, AlertCircle, ShoppingBag, Edit3,
-  Lock, Eye, EyeOff, UserCheck
+  Truck, User, MapPin, CreditCard, QrCode,
+  ExternalLink, AlertCircle, ShoppingBag, Edit3,
+  Lock, Eye, EyeOff, UserCheck, Clock, RefreshCw, Sparkles
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -14,17 +14,20 @@ import { useSettings } from '../context/SettingsContext';
 import { WhatsAppIcon } from '../components/SocialIcons';
 import { fetchAddressByCep } from '../services/viaCepService';
 import {
-  generatePixPayment,
-  generateBoletoPayment,
-  calculateInstallments,
-  detectCardBrand,
-  PixPaymentResult
-} from '../services/mercadoPagoService';
-import { saveOrder, trackEvent } from '../services/firebase';
-import { Order, ShippingOption } from '../types';
+  createInfinitePayCheckout,
+  checkInfinitePayPayment
+} from '../services/infinitePayService';
+import {
+  saveOrder,
+  getOrderById,
+  confirmOrderPayment,
+  subscribeToOrder,
+  trackEvent
+} from '../services/firebase';
+import { Order } from '../types';
 
 export const CheckoutPage: React.FC = () => {
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { settings } = useSettings();
   const {
     items,
@@ -37,9 +40,18 @@ export const CheckoutPage: React.FC = () => {
   } = useCart();
   const { customerProfile, setCustomerProfile, registerWithEmail } = useAuth();
 
-  // Steps: 1: Contato, 2: Endereço, 3: Envio, 4: Pagamento & Revisão, 5: Sucesso
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(1);
-  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card' | 'boleto'>('pix');
+  // Check if returning from InfinitePay redirect_url
+  const returnedOrderNsu = searchParams.get('order_nsu') || searchParams.get('orderId');
+  const returnedTransactionNsu = searchParams.get('transaction_nsu') || undefined;
+  const returnedSlug = searchParams.get('slug') || undefined;
+  const returnedCaptureMethod = searchParams.get('capture_method') || undefined;
+  const returnedReceiptUrl = searchParams.get('receipt_url') || undefined;
+
+  // Steps: 1: Contato, 2: Endereço, 3: Envio, 4: Pagamento & Revisão, 5: Sucesso / Confirmação
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(
+    returnedOrderNsu ? 5 : 1
+  );
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card'>('pix');
 
   // Step 1: Customer Contact Form
   const [name, setName] = useState(customerProfile.name || '');
@@ -53,7 +65,12 @@ export const CheckoutPage: React.FC = () => {
   const [isEditingContact, setIsEditingContact] = useState(false);
 
   // If customer is already logged in with saved data, default to abbreviated view
-  const hasSavedContact = Boolean(!customerProfile.isGuest && customerProfile.name && customerProfile.email && customerProfile.phone);
+  const hasSavedContact = Boolean(
+    !customerProfile.isGuest &&
+      customerProfile.name &&
+      customerProfile.email &&
+      customerProfile.phone
+  );
 
   // Step 2: Address Form
   const [cep, setCep] = useState('');
@@ -65,24 +82,19 @@ export const CheckoutPage: React.FC = () => {
   const [state, setState] = useState('');
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
 
-  // Step 4: Credit Card Form
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardName, setCardName] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
-  const [installments, setInstallments] = useState(1);
-
   // Results & Outputs
   const [orderNotes, setOrderNotes] = useState('');
-  const [pixResult, setPixResult] = useState<PixPaymentResult | null>(null);
-  const [boletoResult, setBoletoResult] = useState<any>(null);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
-  const [isCopied, setIsCopied] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Timer for Pix expiration (30 mins)
-  const [pixTimeRemaining, setPixTimeRemaining] = useState(1800);
+  // Configurable Pix discount and Installments from Admin Panel
+  const pixDiscountPercent = Number(settings.pixDiscountPercent ?? 0);
+  const maxInstallmentsNoInterest = Math.max(1, Number(settings.maxInstallmentsNoInterest ?? 3));
+  const infinitePayHandle = (settings.infinitePayTag || 'isabela-munhoz-4sb')
+    .trim()
+    .replace(/^[$@]+/, '');
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -95,6 +107,107 @@ export const CheckoutPage: React.FC = () => {
     if (customerProfile.phone && !phone) setPhone(customerProfile.phone);
     if (customerProfile.cpf && !cpf) setCpf(customerProfile.cpf);
   }, [customerProfile]);
+
+  // Handle Return from InfinitePay Redirect URL
+  useEffect(() => {
+    if (!returnedOrderNsu) return;
+
+    let unsubscribeOrder: (() => void) | null = null;
+
+    const handleReturnFromInfinitePay = async () => {
+      setCurrentStep(5);
+      setIsVerifyingPayment(true);
+      clearCart();
+
+      try {
+        // 1. Load existing order from Firestore or localStorage
+        let existingOrder = await getOrderById(returnedOrderNsu);
+
+        // 2. Check if URL has payment confirmation parameters from InfinitePay
+        const hasPaymentParams = Boolean(
+          returnedTransactionNsu || returnedReceiptUrl || returnedCaptureMethod
+        );
+
+        // Verify with backend /api/payment-check as well
+        const verifyRes = await checkInfinitePayPayment({
+          handle: infinitePayHandle,
+          orderNsu: returnedOrderNsu,
+          transactionNsu: returnedTransactionNsu,
+          slug: returnedSlug,
+          captureMethod: returnedCaptureMethod,
+          receiptUrl: returnedReceiptUrl
+        });
+
+        if (hasPaymentParams || verifyRes.paid) {
+          const updatedOrder = await confirmOrderPayment(returnedOrderNsu, {
+            captureMethod: returnedCaptureMethod,
+            receiptUrl: returnedReceiptUrl,
+            transactionNsu: returnedTransactionNsu,
+            slug: returnedSlug
+          });
+
+          if (updatedOrder) {
+            existingOrder = updatedOrder;
+          } else if (existingOrder) {
+            existingOrder = {
+              ...existingOrder,
+              paymentStatus: 'approved',
+              orderStatus: 'paid',
+              paymentMethod:
+                returnedCaptureMethod === 'pix'
+                  ? 'pix'
+                  : returnedCaptureMethod === 'credit_card'
+                  ? 'credit_card'
+                  : existingOrder.paymentMethod,
+              receiptUrl: returnedReceiptUrl || existingOrder.receiptUrl,
+              transactionNsu: returnedTransactionNsu || existingOrder.transactionNsu,
+              infinitePaySlug: returnedSlug || existingOrder.infinitePaySlug
+            };
+          }
+
+          // Confetti celebration on confirmed payment
+          confetti({
+            particleCount: 90,
+            spread: 75,
+            origin: { y: 0.6 },
+            colors: ['#e95f71', '#83bc5c', '#f58091', '#4ade80']
+          });
+        }
+
+        if (existingOrder) {
+          setCompletedOrder(existingOrder);
+          if (existingOrder.customer?.name) setName(existingOrder.customer.name);
+        }
+
+        // Subscribe to real-time updates in case webhook arrives moments later
+        unsubscribeOrder = subscribeToOrder(returnedOrderNsu, (liveOrder) => {
+          setCompletedOrder((prev) => {
+            const wasPaid = prev?.orderStatus === 'paid' || prev?.paymentStatus === 'approved';
+            const isNowPaid = liveOrder.orderStatus === 'paid' || liveOrder.paymentStatus === 'approved';
+            if (!wasPaid && isNowPaid) {
+              confetti({
+                particleCount: 90,
+                spread: 75,
+                origin: { y: 0.6 },
+                colors: ['#e95f71', '#83bc5c', '#f58091', '#4ade80']
+              });
+            }
+            return liveOrder;
+          });
+        });
+      } catch (err) {
+        console.error('Erro ao verificar retorno do pedido:', err);
+      } finally {
+        setIsVerifyingPayment(false);
+      }
+    };
+
+    handleReturnFromInfinitePay();
+
+    return () => {
+      if (unsubscribeOrder) unsubscribeOrder();
+    };
+  }, [returnedOrderNsu, returnedTransactionNsu, returnedSlug, returnedCaptureMethod, returnedReceiptUrl]);
 
   // Auto-create account upon reaching Step 4 (Payment stage) and keep user connected
   useEffect(() => {
@@ -124,15 +237,6 @@ export const CheckoutPage: React.FC = () => {
     handleAutoRegister();
   }, [currentStep, customerProfile.isGuest, password, name, email, phone, cpf, isAccountCreated, isCreatingAccount, registerWithEmail]);
 
-  useEffect(() => {
-    if (currentStep === 5 && pixResult) {
-      const interval = setInterval(() => {
-        setPixTimeRemaining((prev) => (prev > 0 ? prev - 1 : 0));
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [currentStep, pixResult]);
-
   // Handle CEP Lookup
   const handleCepChange = async (val: string) => {
     const clean = val.replace(/\D/g, '').slice(0, 8);
@@ -157,9 +261,11 @@ export const CheckoutPage: React.FC = () => {
   };
 
   const shippingCost = selectedShipping ? selectedShipping.price : 0;
-  const pixDiscount = paymentMethod === 'pix' ? subtotal * 0.05 : 0;
+  const pixDiscount =
+    paymentMethod === 'pix' && pixDiscountPercent > 0
+      ? subtotal * (pixDiscountPercent / 100)
+      : 0;
   const grandTotal = Math.max(0, subtotal - pixDiscount + shippingCost);
-  const installmentOptions = calculateInstallments(grandTotal);
 
   // Step 1 Validation & Save
   const validateStep1 = () => {
@@ -235,30 +341,9 @@ export const CheckoutPage: React.FC = () => {
     return true;
   };
 
-  // Step 4: Finalize & Process Payment
+  // Step 4: Finalize Order & Redirect to InfinitePay Checkout
   const handleFinalizeOrder = async () => {
     setErrorMessage(null);
-
-    if (paymentMethod === 'credit_card') {
-      const cleanNum = cardNumber.replace(/\D/g, '');
-      if (cleanNum.length < 13) {
-        setErrorMessage('Por favor informe um número de cartão de crédito válido.');
-        return;
-      }
-      if (!cardName.trim()) {
-        setErrorMessage('Por favor informe o nome impresso no cartão.');
-        return;
-      }
-      if (!cardExpiry.includes('/') || cardExpiry.replace(/\D/g, '').length < 4) {
-        setErrorMessage('Por favor informe a validade do cartão (MM/AA).');
-        return;
-      }
-      if (cardCvv.replace(/\D/g, '').length < 3) {
-        setErrorMessage('Por favor informe o código de segurança (CVV).');
-        return;
-      }
-    }
-
     setIsProcessing(true);
 
     try {
@@ -275,19 +360,30 @@ export const CheckoutPage: React.FC = () => {
       }
 
       const orderId = `BC-${Date.now().toString().slice(-6)}`;
-      
+      const trimmedNotes = orderNotes.trim();
+
+      const customerData = {
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        cpf: cpf.trim(),
+        ...(trimmedNotes ? { notes: trimmedNotes } : {})
+      };
+
+      const addressData = {
+        cep: cep.replace(/\D/g, ''),
+        street: street.trim(),
+        number: number.trim(),
+        ...(complement.trim() ? { complement: complement.trim() } : {}),
+        neighborhood: neighborhood.trim(),
+        city: city.trim(),
+        state: state.trim().toUpperCase()
+      };
+
       const newOrder: Order = {
         id: orderId,
-        customer: { name, email, phone, cpf, notes: orderNotes.trim() || undefined },
-        address: {
-          cep: cep.replace(/\D/g, ''),
-          street,
-          number,
-          complement,
-          neighborhood,
-          city,
-          state
-        },
+        customer: customerData,
+        address: addressData,
         items: [...items],
         shipping: selectedShipping!,
         subtotal,
@@ -295,72 +391,101 @@ export const CheckoutPage: React.FC = () => {
         shippingCost,
         total: grandTotal,
         paymentMethod,
-        paymentStatus: paymentMethod === 'credit_card' ? 'approved' : 'pending',
-        orderStatus: paymentMethod === 'credit_card' ? 'paid' : 'pending',
-        notes: orderNotes.trim() || undefined,
+        paymentStatus: 'pending',
+        orderStatus: 'pending',
+        ...(trimmedNotes ? { notes: trimmedNotes } : {}),
         createdAt: new Date().toISOString()
       };
 
-      if (paymentMethod === 'pix') {
-        const pixData = generatePixPayment(orderId, grandTotal, name);
-        setPixResult(pixData);
-      } else if (paymentMethod === 'boleto') {
-        const boletoData = generateBoletoPayment(orderId, grandTotal);
-        setBoletoResult(boletoData);
-      }
-
-      // Persist in Firebase Firestore
+      // 1. Persist order in Firebase Firestore & LocalStorage BEFORE redirecting
       await saveOrder(newOrder);
 
-      // Track metric
+      // 2. Generate InfinitePay Checkout Link via Serverless API
+      const checkoutRes = await createInfinitePayCheckout({
+        handle: infinitePayHandle,
+        orderId,
+        customer: customerData,
+        address: addressData,
+        items,
+        shipping: selectedShipping!,
+        discount: pixDiscount,
+        grandTotal
+      });
+
+      // 3. Save checkoutUrl on the order so customer or admin can access it
+      const orderWithUrl: Order = {
+        ...newOrder,
+        checkoutUrl: checkoutRes.checkoutUrl
+      };
+      await saveOrder(orderWithUrl);
+
+      // 4. Track checkout event
       await trackEvent('checkout_completed', {
         orderId,
         total: grandTotal,
-        paymentMethod
+        paymentMethod,
+        gateway: 'infinitepay'
       });
 
-      // Save to local storage for "Meus Pedidos"
-      try {
-        const existing = JSON.parse(localStorage.getItem('bellclay_orders') || '[]');
-        localStorage.setItem('bellclay_orders', JSON.stringify([newOrder, ...existing]));
-      } catch {}
+      setCompletedOrder(orderWithUrl);
 
-      setCompletedOrder(newOrder);
-      setCurrentStep(5);
-      clearCart();
-
-      // Confetti celebration
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#e95f71', '#83bc5c', '#f58091', '#4ade80']
-      });
-
-    } catch (err) {
+      // 5. Redirect customer to official InfinitePay Checkout page
+      window.location.href = checkoutRes.checkoutUrl;
+    } catch (err: any) {
       console.error('Erro ao finalizar pedido:', err);
-      setErrorMessage('Houve um erro ao processar seu pedido. Por favor tente novamente.');
-    } finally {
+      setErrorMessage(
+        err?.message || 'Houve um erro ao gerar o link de pagamento na InfinitePay. Tente novamente.'
+      );
       setIsProcessing(false);
     }
   };
 
-  const copyPixCode = () => {
-    if (pixResult?.pixCopiaECola) {
-      navigator.clipboard.writeText(pixResult.pixCopiaECola);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2500);
+  // Manual re-check on Step 5 if still pending
+  const handleManualPaymentCheck = async () => {
+    if (!completedOrder) return;
+    setIsVerifyingPayment(true);
+    try {
+      const freshOrder = await getOrderById(completedOrder.id);
+      if (freshOrder && (freshOrder.orderStatus === 'paid' || freshOrder.paymentStatus === 'approved')) {
+        setCompletedOrder(freshOrder);
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#e95f71', '#83bc5c', '#f58091', '#4ade80']
+        });
+        return;
+      }
+
+      const verifyRes = await checkInfinitePayPayment({
+        handle: infinitePayHandle,
+        orderNsu: completedOrder.id,
+        transactionNsu: completedOrder.transactionNsu || returnedTransactionNsu,
+        slug: completedOrder.infinitePaySlug || returnedSlug
+      });
+
+      if (verifyRes.paid) {
+        const updated = await confirmOrderPayment(completedOrder.id, {
+          captureMethod: returnedCaptureMethod,
+          receiptUrl: returnedReceiptUrl,
+          transactionNsu: returnedTransactionNsu,
+          slug: returnedSlug
+        });
+        if (updated) setCompletedOrder(updated);
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#e95f71', '#83bc5c', '#f58091', '#4ade80']
+        });
+      }
+    } finally {
+      setIsVerifyingPayment(false);
     }
   };
 
-  const formatPixMinutes = () => {
-    const mins = Math.floor(pixTimeRemaining / 60);
-    const secs = pixTimeRemaining % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Empty Cart State
-  if (items.length === 0 && currentStep !== 5) {
+  // Empty Cart State (only when not on Step 5 confirmation screen)
+  if (items.length === 0 && currentStep !== 5 && !returnedOrderNsu) {
     return (
       <div className="min-h-screen bg-[#FDFBF7] flex flex-col justify-center items-center px-4 py-16 text-center space-y-4">
         <div className="w-16 h-16 rounded-full bg-brand-pink-subtle flex items-center justify-center text-brand-pink mx-auto">
@@ -381,6 +506,12 @@ export const CheckoutPage: React.FC = () => {
     );
   }
 
+  const isOrderPaid =
+    completedOrder?.paymentStatus === 'approved' || completedOrder?.orderStatus === 'paid';
+
+  const displayTotal = completedOrder ? completedOrder.total : grandTotal;
+  const displayCustomerName = completedOrder?.customer?.name || name || 'Cliente';
+
   return (
     <div className="min-h-screen bg-[#FDFBF7] flex flex-col">
       {/* Clean, Proportionate Checkout Header */}
@@ -392,7 +523,7 @@ export const CheckoutPage: React.FC = () => {
 
           <div className="flex items-center gap-2 text-xs font-semibold text-brand-charcoal/80 bg-[#FAF8F5] px-3 py-1.5 rounded-full border border-brand-border/60">
             <ShieldCheck className="w-4 h-4 text-brand-green" />
-            <span>Checkout Seguro</span>
+            <span>Checkout Seguro InfinitePay</span>
             <span className="text-[10px] text-brand-muted hidden sm:inline">• SSL 256-Bit</span>
           </div>
         </div>
@@ -915,15 +1046,15 @@ export const CheckoutPage: React.FC = () => {
                 </div>
               )}
 
-              {/* STEP 4: Pagamento & Revisão */}
+              {/* STEP 4: Pagamento & Revisão via InfinitePay */}
               {currentStep === 4 && (
                 <div className="space-y-6">
                   <div>
                     <h2 className="font-serif text-2xl font-bold text-brand-charcoal">
-                      4. Forma de Pagamento
+                      4. Pagamento Seguro
                     </h2>
                     <p className="text-xs sm:text-sm text-brand-muted mt-0.5">
-                      Transação 100% protegida via Mercado Pago.
+                      Transação 100% protegida via <strong>InfinitePay</strong> (Pix ou Cartão de Crédito).
                     </p>
                   </div>
 
@@ -950,162 +1081,78 @@ export const CheckoutPage: React.FC = () => {
                     </div>
                   ) : null}
 
-                  {/* Payment Method Selector */}
-                  <div className="grid grid-cols-3 gap-2.5">
+                  {/* Address Summary Check before Paying */}
+                  <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-brand-border/70 flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="w-4 h-4 text-brand-pink shrink-0 mt-0.5" />
+                      <div className="text-xs space-y-0.5">
+                        <span className="font-bold text-brand-charcoal block">
+                          Endereço de Entrega Confirmado:
+                        </span>
+                        <p className="text-brand-muted">
+                          {street}, {number} {complement ? `(${complement})` : ''} — {neighborhood}
+                        </p>
+                        <p className="text-brand-muted">
+                          {city} - {state} • CEP: {cep} • Envio: <strong>{selectedShipping?.name}</strong>
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(2)}
+                      className="text-xs font-bold text-brand-pink hover:underline shrink-0 cursor-pointer"
+                    >
+                      Editar
+                    </button>
+                  </div>
+
+                  {/* Payment Method Preference Selector */}
+                  <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('pix')}
-                      className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
+                      className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer ${
                         paymentMethod === 'pix'
                           ? 'border-brand-green bg-brand-green-subtle/50 text-brand-green shadow-xs'
                           : 'border-brand-border/60 hover:border-gray-300 bg-white text-brand-muted'
                       }`}
                     >
                       <QrCode className="w-6 h-6 mb-1.5" />
-                      <span className="text-xs font-bold text-brand-charcoal">Pix</span>
-                      <span className="text-[10px] text-brand-green font-bold">5% OFF</span>
+                      <span className="text-xs sm:text-sm font-bold text-brand-charcoal">Pix Instantâneo</span>
+                      <span className="text-[10px] text-brand-green font-bold">
+                        {pixDiscountPercent > 0 ? `${pixDiscountPercent}% OFF` : 'Aprovação na hora'}
+                      </span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('credit_card')}
-                      className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
+                      className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer ${
                         paymentMethod === 'credit_card'
                           ? 'border-brand-pink bg-brand-pink-subtle/50 text-brand-pink shadow-xs'
                           : 'border-brand-border/60 hover:border-gray-300 bg-white text-brand-muted'
                       }`}
                     >
                       <CreditCard className="w-6 h-6 mb-1.5" />
-                      <span className="text-xs font-bold text-brand-charcoal">Cartão</span>
-                      <span className="text-[10px] text-brand-muted">Até 12x</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('boleto')}
-                      className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
-                        paymentMethod === 'boleto'
-                          ? 'border-brand-pink bg-brand-pink-subtle/50 text-brand-pink shadow-xs'
-                          : 'border-brand-border/60 hover:border-gray-300 bg-white text-brand-muted'
-                      }`}
-                    >
-                      <FileText className="w-6 h-6 mb-1.5" />
-                      <span className="text-xs font-bold text-brand-charcoal">Boleto</span>
-                      <span className="text-[10px] text-brand-muted">1-3 dias</span>
+                      <span className="text-xs sm:text-sm font-bold text-brand-charcoal">Cartão de Crédito</span>
+                      <span className="text-[10px] text-brand-muted">
+                        {maxInstallmentsNoInterest > 1
+                          ? `Até ${maxInstallmentsNoInterest}x sem juros`
+                          : 'Parcelamento em até 12x'}
+                      </span>
                     </button>
                   </div>
 
-                  {/* Pix Info Box */}
-                  {paymentMethod === 'pix' && (
-                    <div className="p-4 rounded-2xl bg-brand-green-subtle/40 border border-brand-green/30 space-y-2">
-                      <div className="flex items-center gap-2 text-xs font-bold text-brand-green">
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>Aprovação Imediata + Desconto de 5%</span>
-                      </div>
-                      <p className="text-xs text-brand-charcoal/80 leading-relaxed">
-                        Ao clicar em Concluir Pedido, você receberá o QR Code e o código Pix Copia e Cola para pagar no app do seu banco com validade de 30 minutos.
-                      </p>
+                  {/* InfinitePay Explanation Box */}
+                  <div className="p-4 rounded-2xl bg-brand-green-subtle/40 border border-brand-green/30 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs font-bold text-brand-green">
+                      <ShieldCheck className="w-4 h-4 shrink-0" />
+                      <span>Ambiente Criptografado InfinitePay</span>
                     </div>
-                  )}
-
-                  {/* Credit Card Form */}
-                  {paymentMethod === 'credit_card' && (
-                    <div className="space-y-4 p-4 rounded-2xl bg-[#FAF8F5] border border-brand-border/60">
-                      <div>
-                        <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                          Número do Cartão *
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            placeholder="0000 0000 0000 0000"
-                            maxLength={19}
-                            value={cardNumber}
-                            onChange={(e) => {
-                              const v = e.target.value.replace(/\D/g, '').slice(0, 16);
-                              setCardNumber(v.replace(/(\d{4})(?=\d)/g, '$1 '));
-                            }}
-                            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase text-brand-muted bg-gray-100 px-2 py-0.5 rounded">
-                            {detectCardBrand(cardNumber)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                          Nome impresso no Cartão *
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Como está gravado no cartão"
-                          value={cardName}
-                          onChange={(e) => setCardName(e.target.value.toUpperCase())}
-                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                            Validade (MM/AA) *
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="MM/AA"
-                            maxLength={5}
-                            value={cardExpiry}
-                            onChange={(e) => {
-                              const v = e.target.value.replace(/\D/g, '').slice(0, 4);
-                              setCardExpiry(v.length > 2 ? `${v.slice(0, 2)}/${v.slice(2)}` : v);
-                            }}
-                            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                            CVV *
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="123"
-                            maxLength={4}
-                            value={cardCvv}
-                            onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                            className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-brand-charcoal mb-1">
-                          Parcelas *
-                        </label>
-                        <select
-                          value={installments}
-                          onChange={(e) => setInstallments(Number(e.target.value))}
-                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
-                        >
-                          {installmentOptions.map((opt) => (
-                            <option key={opt.installments} value={opt.installments}>
-                              {opt.text}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Boleto Info Box */}
-                  {paymentMethod === 'boleto' && (
-                    <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 space-y-2">
-                      <p className="text-xs text-brand-charcoal/80 leading-relaxed">
-                        Ao finalizar, você receberá a linha digitável do boleto para pagamento em qualquer banco ou lotérica com vencimento em até 3 dias úteis.
-                      </p>
-                    </div>
-                  )}
+                    <p className="text-xs text-brand-charcoal/85 leading-relaxed">
+                      Ao clicar em <strong>Ir para o Pagamento</strong>, seu pedido e seu endereço já ficam salvos e você será direcionado para a tela oficial da <strong>InfinitePay</strong> para concluir via <strong>Pix (QR Code / Copia e Cola)</strong> ou <strong>Cartão de Crédito (Visa, Mastercard, Elo, Apple Pay e Google Pay)</strong>.
+                    </p>
+                  </div>
 
                   {/* Observação Geral do Pedido / Recado para a Artesã */}
                   <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 space-y-1.5">
@@ -1137,11 +1184,14 @@ export const CheckoutPage: React.FC = () => {
                       className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-brand-green hover:bg-brand-green-hover text-white font-bold text-sm shadow-green-soft cursor-pointer transition-all disabled:opacity-50"
                     >
                       {isProcessing ? (
-                        <span>Processando...</span>
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <span>Abrindo InfinitePay...</span>
+                        </>
                       ) : (
                         <>
-                          <span>Concluir Pedido</span>
-                          <Check className="w-4 h-4 stroke-[3]" />
+                          <span>Ir para o Pagamento</span>
+                          <ArrowRight className="w-4 h-4" />
                         </>
                       )}
                     </button>
@@ -1198,7 +1248,7 @@ export const CheckoutPage: React.FC = () => {
 
                 {paymentMethod === 'pix' && pixDiscount > 0 && (
                   <div className="flex justify-between text-brand-green font-semibold">
-                    <span>Desconto Pix (5%)</span>
+                    <span>Desconto Pix ({pixDiscountPercent}%)</span>
                     <span>- R$ {pixDiscount.toFixed(2).replace('.', ',')}</span>
                   </div>
                 )}
@@ -1224,11 +1274,11 @@ export const CheckoutPage: React.FC = () => {
                     <span className="text-2xl font-black text-brand-pink tracking-tight">
                       R$ {grandTotal.toFixed(2).replace('.', ',')}
                     </span>
-                    {paymentMethod === 'credit_card' && (
-                      <span className="text-[10px] text-brand-muted block">
-                        ou até 12x no cartão
-                      </span>
-                    )}
+                    <span className="text-[10px] text-brand-muted block">
+                      {maxInstallmentsNoInterest > 1
+                        ? `em até ${maxInstallmentsNoInterest}x de R$ ${(grandTotal / maxInstallmentsNoInterest).toFixed(2).replace('.', ',')} sem juros`
+                        : 'no Pix ou Cartão em até 12x'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1248,108 +1298,171 @@ export const CheckoutPage: React.FC = () => {
 
           </div>
         ) : (
-          /* STEP 5: Sucesso / Pedido Confirmado */
-          <div className="max-w-xl mx-auto py-8 space-y-6 text-center">
-            <div className="w-16 h-16 rounded-full bg-brand-green/15 text-brand-green flex items-center justify-center mx-auto">
-              <Check className="w-8 h-8 stroke-[3]" />
-            </div>
-
-            <div className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-widest text-brand-green">
-                Pedido Realizado com Sucesso!
-              </span>
-              <h2 className="font-serif text-2xl sm:text-3xl font-extrabold text-brand-charcoal">
-                Obrigado pelo seu carinho, {name.split(' ')[0]}!
-              </h2>
-              <p className="text-xs sm:text-sm text-brand-muted max-w-md mx-auto">
-                Seu pedido foi registrado com o identificador:
-              </p>
-              <div className="inline-block px-4 py-1.5 rounded-full bg-brand-pink-subtle text-brand-pink font-mono font-bold text-sm">
-                #{completedOrder?.id}
+          /* STEP 5: Tela de Confirmação de Pagamento & Resumo do Pedido */
+          <div className="max-w-xl mx-auto py-6 sm:py-10 space-y-6 text-center">
+            {isVerifyingPayment ? (
+              <div className="py-12 space-y-4">
+                <div className="w-16 h-16 rounded-full bg-brand-pink/15 text-brand-pink flex items-center justify-center mx-auto">
+                  <RefreshCw className="w-8 h-8 animate-spin" />
+                </div>
+                <h2 className="font-serif text-2xl font-bold text-brand-charcoal">
+                  Confirmando seu pagamento com a InfinitePay...
+                </h2>
+                <p className="text-xs sm:text-sm text-brand-muted">
+                  Aguarde um instante enquanto atualizamos o status do seu pedido.
+                </p>
               </div>
-            </div>
-
-            {/* Pix Output Display */}
-            {paymentMethod === 'pix' && pixResult && (
-              <div className="p-5 rounded-2xl bg-[#F6F2E9] space-y-4 max-w-md mx-auto text-left">
-                <div className="flex items-center justify-between text-xs font-bold text-brand-charcoal">
-                  <span>Pague via Pix em até {formatPixMinutes()}</span>
-                  <span className="text-brand-green">R$ {grandTotal.toFixed(2).replace('.', ',')}</span>
+            ) : (
+              <>
+                <div
+                  className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${
+                    isOrderPaid
+                      ? 'bg-brand-green/15 text-brand-green'
+                      : 'bg-amber-100 text-amber-700'
+                  }`}
+                >
+                  {isOrderPaid ? (
+                    <Check className="w-8 h-8 stroke-[3]" />
+                  ) : (
+                    <Clock className="w-8 h-8" />
+                  )}
                 </div>
 
-                <div className="flex justify-center py-2">
-                  <img
-                    src={pixResult.qrCodeUrl}
-                    alt="QR Code Pix"
-                    className="w-48 h-48 rounded-2xl border-2 border-brand-border bg-white p-2 shadow-2xs"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <span className="text-[11px] font-bold text-brand-muted block">
-                    Código Pix Copia e Cola:
+                <div className="space-y-2">
+                  <span
+                    className={`text-xs font-bold uppercase tracking-widest ${
+                      isOrderPaid ? 'text-brand-green' : 'text-amber-700'
+                    }`}
+                  >
+                    {isOrderPaid
+                      ? 'Pagamento Confirmado & Pedido Aprovado!'
+                      : 'Pedido Registrado • Aguardando Confirmação de Pagamento'}
                   </span>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={pixResult.pixCopiaECola}
-                      className="flex-1 text-[11px] font-mono p-2.5 rounded-xl border border-brand-border bg-white select-all"
-                    />
-                    <button
-                      onClick={copyPixCode}
-                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-pink to-brand-green hover:opacity-95 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
-                    >
-                      {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{isCopied ? 'Copiado!' : 'Copiar'}</span>
-                    </button>
+                  <h2 className="font-serif text-2xl sm:text-3xl font-extrabold text-brand-charcoal">
+                    Obrigado pelo seu carinho, {displayCustomerName.split(' ')[0]}!
+                  </h2>
+                  <p className="text-xs sm:text-sm text-brand-muted max-w-md mx-auto">
+                    Seu pedido foi registrado no ateliê com o código:
+                  </p>
+                  <div className="inline-block px-4 py-1.5 rounded-full bg-brand-pink-subtle text-brand-pink font-mono font-bold text-sm">
+                    #{completedOrder?.id || returnedOrderNsu}
                   </div>
                 </div>
-              </div>
-            )}
 
-            {/* Boleto Output */}
-            {paymentMethod === 'boleto' && boletoResult && (
-              <div className="p-5 rounded-2xl bg-[#F6F2E9] space-y-3 max-w-md mx-auto text-left">
-                <span className="text-xs font-bold text-brand-charcoal block">
-                  Linha Digitável do Boleto:
-                </span>
-                <div className="p-2.5 rounded-xl bg-white border border-brand-border text-xs font-mono break-all">
-                  {boletoResult.digitableLine}
+                {/* Order & Delivery Summary Card */}
+                {completedOrder && (
+                  <div className="p-5 rounded-2xl bg-[#F6F2E9] border border-brand-border/60 space-y-4 max-w-md mx-auto text-left text-xs">
+                    <div className="flex items-center justify-between border-b border-brand-border/60 pb-3">
+                      <span className="font-bold text-brand-charcoal">Status do Pagamento:</span>
+                      {isOrderPaid ? (
+                        <span className="px-2.5 py-1 rounded-full bg-green-100 text-green-800 font-bold text-[11px] flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Pago via InfinitePay</span>
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-bold text-[11px]">
+                          Aguardando Pagamento
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Address recorded */}
+                    {completedOrder.address && (
+                      <div className="space-y-1">
+                        <span className="font-bold text-brand-charcoal flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-brand-pink" />
+                          <span>Endereço de Entrega Anotado:</span>
+                        </span>
+                        <p className="text-brand-muted leading-relaxed pl-5">
+                          {completedOrder.address.street}, {completedOrder.address.number}
+                          {completedOrder.address.complement ? ` (${completedOrder.address.complement})` : ''}
+                          <br />
+                          {completedOrder.address.neighborhood} • {completedOrder.address.city} - {completedOrder.address.state}
+                          <br />
+                          CEP: {completedOrder.address.cep} • Frete: <strong>{completedOrder.shipping?.name}</strong>
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="border-t border-brand-border/60 pt-3 flex items-center justify-between">
+                      <span className="font-bold text-brand-charcoal">Valor Total:</span>
+                      <span className="text-base font-extrabold text-brand-pink">
+                        R$ {displayTotal.toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
+
+                    {/* Receipt Link if provided by InfinitePay */}
+                    {(completedOrder.receiptUrl || returnedReceiptUrl) && (
+                      <a
+                        href={completedOrder.receiptUrl || returnedReceiptUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white border border-brand-border text-brand-charcoal hover:border-brand-pink font-bold transition-all"
+                      >
+                        <ExternalLink className="w-4 h-4 text-brand-pink" />
+                        <span>Ver Comprovante Oficial InfinitePay</span>
+                      </a>
+                    )}
+
+                    {/* Action buttons if payment is still pending */}
+                    {!isOrderPaid && (
+                      <div className="space-y-2 pt-2">
+                        {completedOrder.checkoutUrl && (
+                          <a
+                            href={completedOrder.checkoutUrl}
+                            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-brand-pink hover:bg-brand-pink-hover text-white font-bold transition-all shadow-xs"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                            <span>Abrir Pagamento na InfinitePay</span>
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleManualPaymentCheck}
+                          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white border border-brand-border text-brand-charcoal hover:bg-gray-50 font-semibold transition-all cursor-pointer"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>Já paguei! Atualizar status</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* WhatsApp Confirmation CTA */}
+                <div className="pt-2 max-w-md mx-auto space-y-3">
+                  <a
+                    href={`https://wa.me/${(settings.whatsapp || '5544991074932').replace(/\D/g, '') || '5544991074932'}?text=${encodeURIComponent(
+                      `Olá Bellclay! Acabei de fazer o pedido #${completedOrder?.id || returnedOrderNsu} no site (${
+                        isOrderPaid ? 'Pagamento Aprovado' : 'Aguardando confirmação'
+                      }) no valor de R$ ${displayTotal.toFixed(2).replace('.', ',')} e gostaria de acompanhar a produção!`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-brand-green hover:bg-brand-green-hover text-white font-bold text-xs sm:text-sm shadow-green-soft transition-all"
+                  >
+                    <WhatsAppIcon className="w-5 h-5 fill-white text-white shrink-0" />
+                    <span>Acompanhar Pedido pelo WhatsApp</span>
+                  </a>
+
+                  <div className="flex items-center justify-center gap-4 pt-1">
+                    <Link
+                      to="/minha-conta"
+                      className="text-xs font-bold text-brand-pink hover:underline py-1"
+                    >
+                      Ver em Meus Pedidos
+                    </Link>
+                    <span className="text-brand-border">•</span>
+                    <Link
+                      to="/"
+                      className="text-xs font-bold text-brand-charcoal hover:text-brand-pink transition-colors py-1"
+                    >
+                      Voltar à Página Inicial
+                    </Link>
+                  </div>
                 </div>
-                <a
-                  href={boletoResult.pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-brand-charcoal text-white text-xs font-bold hover:bg-black transition-all"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>Imprimir Boleto Bancário</span>
-                </a>
-              </div>
+              </>
             )}
-
-            {/* WhatsApp Confirmation CTA - WITHOUT phone number in button */}
-            <div className="pt-2 max-w-md mx-auto space-y-3">
-              <a
-                href={`https://wa.me/${(settings.whatsapp || '5544991074932').replace(/\D/g, '') || '5544991074932'}?text=${encodeURIComponent(
-                  `Olá Bellclay! Acabei de fazer o pedido #${completedOrder?.id} no site no valor de R$ ${grandTotal.toFixed(2).replace('.', ',')} e gostaria de acompanhar a produção!`
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-brand-green hover:bg-brand-green-hover text-white font-bold text-xs sm:text-sm shadow-green-soft transition-all"
-              >
-                <WhatsAppIcon className="w-5 h-5 fill-white text-white shrink-0" />
-                <span>Confirmar Pedido no WhatsApp</span>
-              </a>
-
-              <Link
-                to="/"
-                className="inline-block text-xs font-bold text-brand-charcoal hover:text-brand-pink transition-colors py-1"
-              >
-                Voltar à Página Inicial
-              </Link>
-            </div>
           </div>
         )}
 

@@ -67,11 +67,15 @@ export interface Order {
   discount: number;
   shippingCost: number;
   total: number;
-  paymentMethod: 'pix' | 'credit_card' | 'boleto';
+  paymentMethod: 'pix' | 'credit_card' | 'boleto' | 'infinitepay';
   paymentStatus: 'pending' | 'approved' | 'rejected';
   orderStatus: 'pending' | 'paid' | 'production' | 'shipped' | 'delivered' | 'cancelled';
   trackingCode?: string;
   notes?: string;
+  checkoutUrl?: string;
+  receiptUrl?: string;
+  transactionNsu?: string;
+  infinitePaySlug?: string;
   createdAt: string;
 }
 
@@ -130,6 +134,9 @@ export interface SiteSettings {
   whatsapp: string;
   city: string;
   state: string;
+  infinitePayTag?: string;
+  pixDiscountPercent?: number;
+  maxInstallmentsNoInterest?: number;
   mercadoPagoPublicKey?: string;
   mercadoPagoAccessToken?: string;
   melhorEnvioToken?: string;
