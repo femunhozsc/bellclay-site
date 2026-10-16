@@ -78,19 +78,16 @@
   animation: shimmer 2s infinite;
 }
 
-/* Dancing Aurora Gradient Animation for CTA button */
+/* Rotating Half Pink / Half Green Gradient Animation for CTA button */
 @keyframes gradientRotate {
   0% {
-    transform: rotate(0deg) scale(1.5);
-  }
-  50% {
-    transform: rotate(180deg) scale(1.8);
+    transform: rotate(0deg);
   }
   100% {
-    transform: rotate(360deg) scale(1.5);
+    transform: rotate(360deg);
   }
 }
 
 .animate-gradient-dance {
-  animation: gradientRotate 7s linear infinite;
+  animation: gradientRotate 4s linear infinite;
 }

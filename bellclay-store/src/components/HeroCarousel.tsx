@@ -233,12 +233,12 @@ export const HeroCarousel: React.FC = () => {
                   onPointerDown={(e) => e.stopPropagation()}
                   className="relative group inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-4.5 rounded-full overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer touch-auto"
                 >
-                  {/* Internal rotating dancing color gradient (button stays fixed, colors dance inside) */}
+                  {/* Internal rotating half-pink half-green gradient (one side pink, one side green, spinning in one direction) */}
                   <div
-                    className="absolute inset-[-100%] animate-gradient-dance pointer-events-none"
+                    className="absolute -inset-x-20 -inset-y-20 animate-gradient-dance pointer-events-none"
                     style={{
-                      background: 'conic-gradient(from 0deg at 50% 50%, #FD7687 0deg, #83BC5C 90deg, #FD7687 180deg, #83BC5C 270deg, #FD7687 360deg)',
-                      filter: 'blur(10px)'
+                      background: 'conic-gradient(from 0deg at 50% 50%, #FD7687 0deg, #FD7687 150deg, #83BC5C 180deg, #83BC5C 330deg, #FD7687 360deg)',
+                      filter: 'blur(8px)'
                     }}
                   />
 
