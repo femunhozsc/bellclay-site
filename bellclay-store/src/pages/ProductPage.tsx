@@ -591,7 +591,7 @@ export const ProductPage: React.FC = () => {
                 )}
 
                 <p className="text-[11px] text-brand-muted pt-1">
-                  ✨ Frete Grátis em pedidos a partir de R$ {(settings.freeShippingThreshold || 149).toFixed(0)} (para o Paraná ou envios até R$ 15).
+                  ✨ Frete Grátis em pedidos a partir de R$ {(settings.freeShippingThreshold || 150).toFixed(0)} (para o Paraná ou envios até R$ 15).
                 </p>
               </div>
 

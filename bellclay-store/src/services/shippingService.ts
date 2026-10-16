@@ -13,7 +13,7 @@ export const calculateShipping = async ({
   destinationCep,
   items,
   originCep = '87302060',
-  freeShippingThreshold = 149,
+  freeShippingThreshold = 150,
   melhorEnvioToken
 }: ShippingCalculationParams): Promise<ShippingOption[]> => {
   const cleanDestCep = destinationCep.replace(/\D/g, '');
@@ -38,7 +38,7 @@ export const calculateShipping = async ({
   );
 
   const rawThreshold = Number(freeShippingThreshold);
-  const minOrderValue = !isNaN(rawThreshold) && rawThreshold > 0 ? rawThreshold : 149;
+  const minOrderValue = !isNaN(rawThreshold) && rawThreshold > 0 ? rawThreshold : 150;
   const reachedThreshold = subtotal >= minOrderValue;
 
   // If live Melhor Envio token is configured, try direct API first

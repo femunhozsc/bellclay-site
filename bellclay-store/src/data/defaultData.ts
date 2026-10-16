@@ -6,7 +6,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   announcementText: "",
   announcementActive: false,
   announcementLink: "#produtos",
-  freeShippingThreshold: 149,
+  freeShippingThreshold: 150,
   originCep: "87302060",
   instagram: "@bellclayart",
   tiktok: "@bellclayart",

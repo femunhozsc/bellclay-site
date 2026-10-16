@@ -35,7 +35,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode; freeShippingThr
 }) => {
   const { settings } = useSettings();
   const rawThreshold = Number(propThreshold ?? settings?.freeShippingThreshold);
-  const freeShippingThreshold = !isNaN(rawThreshold) && rawThreshold > 0 ? rawThreshold : 149;
+  const freeShippingThreshold = !isNaN(rawThreshold) && rawThreshold > 0 ? rawThreshold : 150;
 
   const [items, setItems] = useState<CartItem[]>(() => {
     try {
