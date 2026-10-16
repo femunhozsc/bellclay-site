@@ -195,68 +195,64 @@ export const HeroCarousel: React.FC = () => {
 
           {/* Vibrant Pink & Green Ambient Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-tr from-brand-pink/40 via-transparent to-brand-green/35 mix-blend-soft-light pointer-events-none" />
-
-          {/* Content Overlay directly over the bottom fade */}
-          <div className="absolute inset-x-0 bottom-0 z-10">
-            <div className="max-w-7xl mx-auto px-4 sm:px-8 pb-12 sm:pb-16 pt-20 flex flex-col items-start text-left space-y-4 sm:space-y-6">
-              
-              {/* Large, High-Impact Title */}
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15, duration: 0.5 }}
-                className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1] drop-shadow-lg max-w-4xl"
-              >
-                {current.title}
-              </motion.h1>
-
-              {/* Large, Readable Subtitle */}
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25, duration: 0.5 }}
-                className="text-white/95 text-sm sm:text-lg md:text-xl font-normal leading-relaxed max-w-2xl drop-shadow-md"
-              >
-                {current.subtitle}
-              </motion.p>
-
-              {/* Big "Ver Coleção" CTA Button with dancing rotating pink and green gradient */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35, duration: 0.5 }}
-                className="pt-2 sm:pt-4"
-              >
-                <a
-                  href={current.buttonLink || "#produtos"}
-                  onClick={(e) => handleBannerButtonClick(e, current.buttonLink)}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  className="relative group inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-4.5 rounded-full overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer touch-auto"
-                >
-                  {/* Internal rotating half-pink half-green gradient (one side pink, one side green, spinning in one direction) */}
-                  <div
-                    className="absolute -inset-x-24 -inset-y-24 animate-gradient-dance pointer-events-none"
-                    style={{
-                      background: 'conic-gradient(from 0deg at 50% 50%, #FD7687 0deg, #FD7687 130deg, #83BC5C 190deg, #83BC5C 310deg, #FD7687 360deg)',
-                      filter: 'blur(16px)'
-                    }}
-                  />
-
-                  {/* Subtle glass reflection highlight */}
-                  <div className="absolute inset-0 bg-white/10 pointer-events-none rounded-full" />
-
-                  {/* Foreground Content */}
-                  <span className="relative z-10 text-white font-extrabold text-sm sm:text-base drop-shadow-sm tracking-wide">
-                    {current.buttonText || "Ver Coleção"}
-                  </span>
-                  <ArrowRight className="relative z-10 w-5 h-5 stroke-[2.5] text-white drop-shadow-sm transition-transform duration-200 group-hover:translate-x-1" />
-                </a>
-              </motion.div>
-
-            </div>
-          </div>
         </motion.div>
       </AnimatePresence>
+
+      {/* Content Overlay directly over the bottom fade - Persistent container so button rotation never resets */}
+      <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 pb-12 sm:pb-16 pt-20 flex flex-col items-start text-left space-y-4 sm:space-y-6">
+          
+          {/* Animated Title & Subtitle tied to current slide */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={current.id || currentIndex}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+              className="space-y-4 sm:space-y-6"
+            >
+              {/* Large, High-Impact Title */}
+              <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1] drop-shadow-lg max-w-4xl">
+                {current.title}
+              </h1>
+
+              {/* Large, Readable Subtitle */}
+              <p className="text-white/95 text-sm sm:text-lg md:text-xl font-normal leading-relaxed max-w-2xl drop-shadow-md">
+                {current.subtitle}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Persistent CTA Button with uninterrupted continuous rotating pink & green gradient */}
+          <div className="pt-2 sm:pt-4 pointer-events-auto">
+            <a
+              href={current.buttonLink || "#produtos"}
+              onClick={(e) => handleBannerButtonClick(e, current.buttonLink)}
+              className="relative group inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-4.5 rounded-full overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer touch-auto"
+            >
+              {/* Internal rotating half-pink half-green gradient: Rosa na esquerda, Verde na direita, giro contínuo ininterrupto */}
+              <div
+                className="absolute -inset-x-24 -inset-y-24 animate-gradient-dance pointer-events-none"
+                style={{
+                  background: 'conic-gradient(from 180deg at 50% 50%, #FD7687 0deg, #FD7687 130deg, #83BC5C 190deg, #83BC5C 310deg, #FD7687 360deg)',
+                  filter: 'blur(16px)'
+                }}
+              />
+
+              {/* Subtle glass reflection highlight */}
+              <div className="absolute inset-0 bg-white/10 pointer-events-none rounded-full" />
+
+              {/* Foreground Content */}
+              <span className="relative z-10 text-white font-extrabold text-sm sm:text-base drop-shadow-sm tracking-wide">
+                {current.buttonText || "Ver Coleção"}
+              </span>
+              <ArrowRight className="relative z-10 w-5 h-5 stroke-[2.5] text-white drop-shadow-sm transition-transform duration-200 group-hover:translate-x-1" />
+            </a>
+          </div>
+
+        </div>
+      </div>
 
       {/* Pagination Dots at Bottom Center */}
       {activeBanners.length > 1 && (
