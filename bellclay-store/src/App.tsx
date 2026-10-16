@@ -4,6 +4,7 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { CartDrawer } from './components/CartDrawer';
 import { HomePage } from './pages/HomePage';
+import { ProductsPage } from './pages/ProductsPage';
 import { ProductPage } from './pages/ProductPage';
 import { EventPage } from './pages/EventPage';
 import { CheckoutPage } from './pages/CheckoutPage';
@@ -37,6 +38,8 @@ export const App: React.FC = () => {
       <div className="flex-1 flex flex-col">
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/produtos" element={<ProductsPage />} />
+          <Route path="/produtos/:categorySlug" element={<ProductsPage />} />
           <Route path="/produto/:slug" element={<ProductPage />} />
           <Route path="/evento/:slug" element={<EventPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />

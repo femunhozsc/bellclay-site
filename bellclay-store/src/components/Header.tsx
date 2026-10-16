@@ -76,15 +76,9 @@ export const Header: React.FC = () => {
 
   const handleViewAllResults = () => {
     setIsMobileSearchOpen(false);
-    if (location.pathname !== '/') {
-      navigate('/');
+    if (location.pathname !== '/produtos') {
+      navigate('/produtos');
     }
-    setTimeout(() => {
-      const elem = document.getElementById('produtos');
-      if (elem) {
-        elem.scrollIntoView({ behavior: 'smooth' });
-      }
-    }, 150);
   };
 
   // Close preview dropdown if clicked outside

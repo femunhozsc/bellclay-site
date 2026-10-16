@@ -6,7 +6,7 @@ import { CategoryPills } from '../components/CategoryPills';
 import { ProductCard } from '../components/ProductCard';
 import { EventsCarousel } from '../components/EventsCarousel';
 import { useSettings } from '../context/SettingsContext';
-import { ChevronDown } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { DEFAULT_SETTINGS } from '../data/defaultData';
 import { resolveCategorySlug, scrollToCatalogSection, isEventTag, scrollToEventsSection } from '../utils/categoryResolver';
 
@@ -28,23 +28,14 @@ export const HomePage: React.FC = () => {
     return false;
   });
 
-  const [showAllProducts, setShowAllProducts] = useState(false);
-
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 640);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Reset pagination when category or search changes
-  useEffect(() => {
-    setShowAllProducts(false);
-  }, [selectedCategory, searchQuery]);
-
   const initialLimit = isMobile ? 6 : 8;
-  const displayedProducts = showAllProducts
-    ? filteredProducts
-    : filteredProducts.slice(0, initialLimit);
+  const displayedProducts = filteredProducts.slice(0, initialLimit);
   const hasMoreProducts = filteredProducts.length > initialLimit;
   const remainingCount = filteredProducts.length - initialLimit;
 
@@ -270,8 +261,8 @@ export const HomePage: React.FC = () => {
                 ))}
               </div>
 
-              {/* "Ver mais" Button (6 on mobile, 8 on computer initial limit) */}
-              {hasMoreProducts && !showAllProducts && (
+              {/* "Ver mais" Button (6 on mobile, 8 on computer initial limit) - Opens full Products Page */}
+              {hasMoreProducts && (
                 <motion.div
                   initial={{ opacity: 0, y: 16 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -281,14 +272,14 @@ export const HomePage: React.FC = () => {
                 >
                   <button
                     type="button"
-                    onClick={() => setShowAllProducts(true)}
+                    onClick={() => navigate('/produtos')}
                     className="group inline-flex items-center gap-2.5 px-8 sm:px-10 py-3.5 sm:py-4 rounded-full bg-white hover:bg-brand-pink-subtle border-2 border-brand-pink/35 hover:border-brand-pink text-brand-charcoal hover:text-brand-pink font-extrabold text-xs sm:text-sm shadow-xs hover:shadow-md transition-all duration-200 transform hover:scale-102 active:scale-98 cursor-pointer"
                   >
                     <span>Ver mais anúncios</span>
                     <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-brand-pink/15 text-brand-pink font-extrabold group-hover:bg-brand-pink group-hover:text-white transition-colors">
                       +{remainingCount}
                     </span>
-                    <ChevronDown className="w-4 h-4 text-brand-pink group-hover:translate-y-0.5 transition-transform" />
+                    <ArrowRight className="w-4 h-4 text-brand-pink group-hover:translate-x-1 transition-transform" />
                   </button>
                   <span className="text-[11px] text-brand-muted mt-2">
                     Exibindo {displayedProducts.length} de {filteredProducts.length} peças
