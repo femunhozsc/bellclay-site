@@ -41,18 +41,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) 
   // No celular: os 2 da mesma linha animam juntos (stagger por linha de 2 em 2)
   // No computador: mantém stagger individual por coluna
   const staggerDelay = isMobile
-    ? Math.min(Math.floor(index / 2) * 0.08, 0.24)
-    : Math.min((index % 4) * 0.07, 0.22);
+    ? Math.min(Math.floor(index / 2) * 0.12, 0.36)
+    : Math.min((index % 4) * 0.1, 0.3);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 18 }}
+      initial={{ opacity: 0, y: 22 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.08 }}
       transition={{
-        duration: 0.62,
+        duration: 0.85,
         delay: staggerDelay,
-        ease: [0.22, 1, 0.36, 1]
+        ease: [0.16, 1, 0.3, 1]
       }}
       whileHover={{
         y: -5,

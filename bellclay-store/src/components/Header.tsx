@@ -201,46 +201,36 @@ export const Header: React.FC = () => {
 
           {/* Right Action Icons */}
           <div className="flex items-center gap-1.5 sm:gap-3 pr-1">
-            {/* Mobile Search Toggle */}
-            <button
-              onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-              className="md:hidden p-2.5 rounded-full text-brand-charcoal hover:bg-brand-pink-subtle/50 transition-colors cursor-pointer"
-              aria-label="Buscar"
-            >
-              <Search className="w-5 h-5" />
-            </button>
-
             {/* WhatsApp Contact with predefined message to 44991074932 */}
             <a
               href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs font-bold px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full bg-brand-green-subtle text-brand-green hover:bg-brand-green hover:text-white transition-all duration-200 cursor-pointer shadow-xs"
+              className="flex items-center gap-1.5 text-xs font-bold p-2 sm:px-4 sm:py-2.5 rounded-full bg-brand-green-subtle text-brand-green hover:bg-brand-green hover:text-white transition-all duration-200 cursor-pointer shadow-xs"
               title="Fale conosco no WhatsApp"
             >
-              <WhatsAppIcon className="w-4 h-4 shrink-0 fill-current" />
+              <WhatsAppIcon className="w-[21px] h-[21px] sm:w-4 sm:h-4 shrink-0 fill-current" />
               <span className="hidden sm:inline">WhatsApp</span>
             </a>
 
-            {/* Account Profile */}
-            <Link
-              to="/minha-conta"
-              className="p-2 sm:p-2.5 rounded-full text-brand-charcoal hover:bg-brand-pink-subtle/50 transition-colors cursor-pointer relative"
-              aria-label="Minha Conta"
-              title={customerProfile.name ? `Minha Conta (${customerProfile.name})` : "Minha Conta"}
+            {/* Mobile Search Toggle */}
+            <button
+              onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+              className="md:hidden p-2 rounded-full text-brand-charcoal hover:bg-brand-pink-subtle/50 transition-colors cursor-pointer"
+              aria-label="Buscar"
             >
-              <User className="w-5 h-5 text-brand-charcoal" />
-            </Link>
+              <Search className="w-5 h-5" />
+            </button>
 
             {/* Shopping Cart Button */}
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsCartOpen(true)}
-              className="relative flex items-center gap-2 bg-gradient-to-r from-brand-pink to-[#f56377] text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-full shadow-pink-soft hover:shadow-soft-hover transition-all duration-200 cursor-pointer"
+              className="relative flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-brand-pink to-[#f56377] text-white px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-full shadow-pink-soft hover:shadow-soft-hover transition-all duration-200 cursor-pointer"
               aria-label="Carrinho de Compras"
             >
               <div className="relative">
-                <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
+                <ShoppingBag className="w-[21px] h-[21px] sm:w-5 sm:h-5" />
                 {totalItems > 0 && (
                   <span className="absolute -top-2 -right-2 bg-brand-green text-white text-[10px] font-bold w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center border-2 border-white shadow-xs">
                     {totalItems}
@@ -251,6 +241,16 @@ export const Header: React.FC = () => {
                 {subtotal > 0 ? `R$ ${subtotal.toFixed(2).replace('.', ',')}` : <span className="hidden sm:inline">Carrinho</span>}
               </span>
             </motion.button>
+
+            {/* Account Profile */}
+            <Link
+              to="/minha-conta"
+              className="p-1.5 sm:p-2.5 rounded-full text-brand-charcoal hover:bg-brand-pink-subtle/50 transition-colors cursor-pointer relative flex items-center justify-center"
+              aria-label="Minha Conta"
+              title={customerProfile.name ? `Minha Conta (${customerProfile.name})` : "Minha Conta"}
+            >
+              <User className="w-[22px] h-[22px] sm:w-5 sm:h-5 text-brand-charcoal" />
+            </Link>
           </div>
         </div>
 

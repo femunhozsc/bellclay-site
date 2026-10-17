@@ -213,10 +213,10 @@ export const HomePage: React.FC = () => {
         {/* Categories & Catalog Section */}
         <section id="produtos" className="space-y-4 sm:space-y-6 scroll-mt-24 sm:scroll-mt-28">
           <motion.div
-            initial={{ opacity: 0, y: 18 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            viewport={{ once: true, amount: 0.15 }}
+            transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
             className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-1 px-1"
           >
             <div>
@@ -236,10 +236,10 @@ export const HomePage: React.FC = () => {
 
           {/* Category Filter Pills */}
           <motion.div
-            initial={{ opacity: 0, y: 14 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.65, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+            viewport={{ once: true, amount: 0.15 }}
+            transition={{ duration: 0.85, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           >
             <CategoryPills />
           </motion.div>
@@ -273,10 +273,10 @@ export const HomePage: React.FC = () => {
               {/* "Ver mais" Button (6 on mobile, 8 on computer initial limit) - Opens full Products Page */}
               {hasMoreProducts && (
                 <motion.div
-                  initial={{ opacity: 0, y: 16 }}
+                  initial={{ opacity: 0, y: 18 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.3 }}
-                  transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+                  viewport={{ once: true, amount: 0.2 }}
+                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                   className="pt-8 sm:pt-10 flex flex-col items-center justify-center"
                 >
                   <button

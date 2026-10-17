@@ -86,9 +86,9 @@ export const ProductsPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-5 sm:pt-8 space-y-6 sm:space-y-8">
         {/* Page Hero Header */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-1"
         >
           <div>
@@ -108,9 +108,9 @@ export const ProductsPage: React.FC = () => {
 
         {/* Real-time Search Input Section */}
         <motion.div
-          initial={{ opacity: 0, y: 14 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.8, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}
           className="relative w-full"
         >
           <div className="relative w-full">
@@ -156,9 +156,9 @@ export const ProductsPage: React.FC = () => {
 
         {/* Category Sections Tab Bar (No rounded badges, side-drag support) */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.8, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
         >
           <CategoryPills layoutId="productsPageCategoryActiveTab" updateHash={false} />
         </motion.div>
