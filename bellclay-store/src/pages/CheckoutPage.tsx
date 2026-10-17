@@ -6,7 +6,7 @@ import {
   ShieldCheck, ArrowLeft, ArrowRight, Check, CheckCircle2,
   Truck, User, MapPin, CreditCard, QrCode,
   ExternalLink, AlertCircle, ShoppingBag, Edit3,
-  Lock, Eye, EyeOff, UserCheck, Clock, RefreshCw, Sparkles
+  Lock, Eye, EyeOff, UserCheck, Clock, RefreshCw, Sparkles, Tag
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -25,7 +25,7 @@ import {
   trackEvent
 } from '../services/firebase';
 import { isCampoMouraoCep } from '../services/shippingService';
-import { Order } from '../types';
+import { Order, Coupon } from '../types';
 
 export const CheckoutPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -90,6 +90,12 @@ export const CheckoutPage: React.FC = () => {
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Coupon state
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
+
   // Configurable Pix discount and Installments from Admin Panel
   const pixDiscountPercent = Number(settings.pixDiscountPercent ?? 0);
   const maxInstallmentsNoInterest = Math.max(1, Number(settings.maxInstallmentsNoInterest ?? 3));
@@ -140,6 +146,13 @@ export const CheckoutPage: React.FC = () => {
       }
     }
   }, [cep, city, selectedShipping, shippingOptions, setSelectedShipping]);
+
+  // Track checkout funnel step: begin_checkout
+  useEffect(() => {
+    if (items.length > 0 && !returnedOrderNsu) {
+      trackEvent('begin_checkout', { itemsCount: items.length, subtotal });
+    }
+  }, []);
 
   // Handle Return from InfinitePay Redirect URL
   useEffect(() => {
@@ -294,11 +307,89 @@ export const CheckoutPage: React.FC = () => {
   };
 
   const shippingCost = selectedShipping ? selectedShipping.price : 0;
+
+  // Coupon calculation (% or fixed amount, subject to min and max rules)
+  let couponDiscount = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.type === 'percentage') {
+      couponDiscount = subtotal * (appliedCoupon.value / 100);
+      if (appliedCoupon.maxDiscountAmount && appliedCoupon.maxDiscountAmount > 0) {
+        couponDiscount = Math.min(couponDiscount, appliedCoupon.maxDiscountAmount);
+      }
+    } else {
+      couponDiscount = appliedCoupon.value;
+      if (appliedCoupon.maxDiscountAmount && appliedCoupon.maxDiscountAmount > 0) {
+        couponDiscount = Math.min(couponDiscount, appliedCoupon.maxDiscountAmount);
+      }
+    }
+    couponDiscount = Math.min(couponDiscount, subtotal);
+  }
+
+  const subtotalAfterCoupon = Math.max(0, subtotal - couponDiscount);
   const pixDiscount =
     paymentMethod === 'pix' && pixDiscountPercent > 0
-      ? subtotal * (pixDiscountPercent / 100)
+      ? subtotalAfterCoupon * (pixDiscountPercent / 100)
       : 0;
-  const grandTotal = Math.max(0, subtotal - pixDiscount + shippingCost);
+  const grandTotal = Math.max(0, subtotalAfterCoupon - pixDiscount + shippingCost);
+
+  // Auto-validate applied coupon if subtotal changes below required minimum order
+  useEffect(() => {
+    if (appliedCoupon && appliedCoupon.minOrderValue && appliedCoupon.minOrderValue > 0) {
+      if (subtotal < appliedCoupon.minOrderValue) {
+        const code = appliedCoupon.code;
+        const minVal = appliedCoupon.minOrderValue;
+        setAppliedCoupon(null);
+        setCouponError(
+          `O cupom ${code} foi removido pois o valor mínimo de R$ ${minVal.toFixed(2).replace('.', ',')} não foi atingido.`
+        );
+      }
+    }
+  }, [subtotal, appliedCoupon]);
+
+  const handleApplyCoupon = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setCouponError(null);
+    setCouponSuccess(null);
+
+    const cleanCode = couponInput.trim().toUpperCase();
+    if (!cleanCode) {
+      setCouponError('Digite o código do cupom.');
+      return;
+    }
+
+    const availableCoupons = settings.coupons || [];
+    const found = availableCoupons.find(
+      (c) => c.code.trim().toUpperCase() === cleanCode
+    );
+
+    if (!found) {
+      setCouponError('Cupom inválido ou não encontrado.');
+      return;
+    }
+
+    if (!found.active) {
+      setCouponError('Este cupom não está mais ativo.');
+      return;
+    }
+
+    if (found.minOrderValue && found.minOrderValue > 0 && subtotal < found.minOrderValue) {
+      setCouponError(
+        `Este cupom é válido apenas para compras a partir de R$ ${found.minOrderValue.toFixed(2).replace('.', ',')}.`
+      );
+      return;
+    }
+
+    setAppliedCoupon(found);
+    setCouponError(null);
+    setCouponSuccess(`Cupom ${found.code} aplicado com sucesso!`);
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponError(null);
+    setCouponSuccess(null);
+  };
 
   // Step 1 Validation & Save
   const validateStep1 = () => {
@@ -413,6 +504,8 @@ export const CheckoutPage: React.FC = () => {
         state: state.trim().toUpperCase()
       };
 
+      const totalDiscount = pixDiscount + couponDiscount;
+
       const newOrder: Order = {
         id: orderId,
         customer: customerData,
@@ -420,7 +513,9 @@ export const CheckoutPage: React.FC = () => {
         items: [...items],
         shipping: selectedShipping!,
         subtotal,
-        discount: pixDiscount,
+        discount: totalDiscount,
+        couponCode: appliedCoupon?.code,
+        couponDiscount: couponDiscount > 0 ? couponDiscount : undefined,
         shippingCost,
         total: grandTotal,
         paymentMethod,
@@ -441,7 +536,7 @@ export const CheckoutPage: React.FC = () => {
         address: addressData,
         items,
         shipping: selectedShipping!,
-        discount: pixDiscount,
+        discount: totalDiscount,
         grandTotal
       });
 
@@ -890,12 +985,6 @@ export const CheckoutPage: React.FC = () => {
                     <p className="text-xs sm:text-sm text-brand-muted mt-0.5">
                       Informe seu CEP para preencher o endereço automaticamente.
                     </p>
-                    {customerProfile.address?.cep && (
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 mt-2.5 rounded-full bg-brand-green/10 border border-brand-green/20 text-brand-green text-xs font-semibold">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Endereço preenchido com base no seu perfil (você pode editar livremente abaixo)</span>
-                      </div>
-                    )}
                   </div>
 
                   <div className="space-y-4">
@@ -1052,12 +1141,12 @@ export const CheckoutPage: React.FC = () => {
 
                   <div className="space-y-3">
                     {shippingOptions.length === 0 ? (
-                      <div className="p-6 text-center bg-[#FAF8F5] rounded-2xl border border-brand-border space-y-2">
+                      <div className="p-6 text-center bg-gradient-to-r from-brand-pink-light/40 via-white to-brand-green-light/40 rounded-2xl shadow-2xs space-y-2">
                         <Truck className="w-8 h-8 text-brand-pink mx-auto" />
                         <p className="text-xs font-bold text-brand-charcoal">Calculando as opções de frete...</p>
                         <button
                           onClick={() => calculateFreight(cep.replace(/\D/g, ''))}
-                          className="text-xs text-brand-pink font-semibold underline"
+                          className="text-xs text-brand-pink font-semibold underline cursor-pointer"
                         >
                           Recalcular frete
                         </button>
@@ -1068,10 +1157,10 @@ export const CheckoutPage: React.FC = () => {
                         return (
                           <label
                             key={opt.id}
-                            className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                            className={`flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all shadow-2xs ${
                               isSelected
-                                ? 'border-brand-pink bg-brand-pink-subtle/40 shadow-xs'
-                                : 'border-brand-border/70 hover:border-brand-pink/40 bg-white'
+                                ? 'bg-gradient-to-r from-brand-pink-light via-white/30 to-brand-green-light font-semibold shadow-xs'
+                                : 'bg-gradient-to-r from-brand-pink-light/75 via-white/40 to-brand-green-light/75 hover:opacity-95'
                             }`}
                           >
                             <div className="flex items-center gap-3">
@@ -1149,7 +1238,7 @@ export const CheckoutPage: React.FC = () => {
                   </div>
 
                   {/* Address Summary Check before Paying */}
-                  <div className="p-4 rounded-2xl bg-white border border-brand-border/70 flex items-start justify-between gap-3 shadow-2xs">
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-brand-pink-light/50 via-white/80 to-brand-green-light/50 flex items-start justify-between gap-3 shadow-2xs">
                     <div className="flex items-start gap-3">
                       <MapPin className="w-4 h-4 text-brand-pink shrink-0 mt-0.5" />
                       <div className="text-xs space-y-0.5">
@@ -1178,15 +1267,15 @@ export const CheckoutPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('pix')}
-                      className={`flex flex-col items-center justify-center py-6 px-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                      className={`flex flex-col items-center justify-center py-6 px-4 rounded-2xl transition-all cursor-pointer shadow-2xs ${
                         paymentMethod === 'pix'
-                          ? 'border-brand-green bg-brand-green-subtle/50 text-brand-green shadow-xs'
-                          : 'border-brand-border/70 hover:border-brand-pink/40 bg-white text-brand-muted'
+                          ? 'bg-gradient-to-r from-brand-green-light via-white/40 to-brand-green-subtle font-bold text-brand-green shadow-xs'
+                          : 'bg-gradient-to-r from-brand-pink-light/60 via-white/50 to-brand-green-light/60 hover:opacity-95 text-brand-muted'
                       }`}
                     >
-                      <QrCode className="w-6 h-6 mb-1.5" />
+                      <QrCode className={`w-6 h-6 mb-1.5 transition-colors ${paymentMethod === 'pix' ? 'text-brand-green' : 'text-brand-muted'}`} />
                       <span className="text-xs sm:text-sm font-bold text-brand-charcoal">Pix Instantâneo</span>
-                      <span className="text-[10px] sm:text-xs text-brand-green font-bold mt-0.5">
+                      <span className={`text-[10px] sm:text-xs font-bold mt-0.5 ${paymentMethod === 'pix' ? 'text-brand-green' : 'text-brand-muted'}`}>
                         {pixDiscountPercent > 0 ? `${pixDiscountPercent}% de desconto` : 'Aprovação imediata'}
                       </span>
                     </button>
@@ -1194,15 +1283,15 @@ export const CheckoutPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('credit_card')}
-                      className={`flex flex-col items-center justify-center py-6 px-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                      className={`flex flex-col items-center justify-center py-6 px-4 rounded-2xl transition-all cursor-pointer shadow-2xs ${
                         paymentMethod === 'credit_card'
-                          ? 'border-brand-pink bg-brand-pink-subtle/50 text-brand-pink shadow-xs'
-                          : 'border-brand-border/70 hover:border-brand-pink/40 bg-white text-brand-muted'
+                          ? 'bg-gradient-to-r from-[#ffd4e4] via-white/50 to-[#ffbcd5] font-bold text-[#e91e63] shadow-xs'
+                          : 'bg-gradient-to-r from-brand-pink-light/60 via-white/50 to-brand-green-light/60 hover:opacity-95 text-brand-muted'
                       }`}
                     >
-                      <CreditCard className="w-6 h-6 mb-1.5" />
+                      <CreditCard className={`w-6 h-6 mb-1.5 transition-colors ${paymentMethod === 'credit_card' ? 'text-[#e91e63]' : 'text-brand-muted'}`} />
                       <span className="text-xs sm:text-sm font-bold text-brand-charcoal">Cartão de Crédito</span>
-                      <span className="text-[10px] sm:text-xs text-brand-muted mt-0.5">
+                      <span className={`text-[10px] sm:text-xs mt-0.5 ${paymentMethod === 'credit_card' ? 'text-[#e91e63] font-bold' : 'text-brand-muted'}`}>
                         {maxInstallmentsNoInterest > 1
                           ? `Até ${maxInstallmentsNoInterest}x sem juros`
                           : 'Em até 12x'}
@@ -1210,14 +1299,86 @@ export const CheckoutPage: React.FC = () => {
                     </button>
                   </div>
 
+                  {/* Cupom de Desconto */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-brand-pink-light/45 via-white/80 to-brand-green-light/45 space-y-2.5 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs sm:text-sm font-bold text-brand-charcoal flex items-center gap-1.5">
+                        <Tag className="w-4 h-4 text-brand-pink" />
+                        <span>Cupom de Desconto</span>
+                      </label>
+                      {appliedCoupon && (
+                        <span className="text-[11px] font-bold text-brand-green bg-brand-green-light/60 px-2.5 py-0.5 rounded-full">
+                          Cupom Ativo
+                        </span>
+                      )}
+                    </div>
+
+                    {appliedCoupon ? (
+                      <div className="flex items-center justify-between bg-white/90 px-3.5 py-2.5 rounded-xl shadow-2xs">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs sm:text-sm font-black tracking-wider text-brand-pink uppercase">
+                            {appliedCoupon.code}
+                          </span>
+                          <span className="text-xs text-brand-charcoal font-semibold">
+                            (- R$ {couponDiscount.toFixed(2).replace('.', ',')})
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveCoupon}
+                          className="text-xs text-red-500 hover:text-red-700 font-bold cursor-pointer transition-colors"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={couponInput}
+                          onChange={(e) => {
+                            setCouponInput(e.target.value.toUpperCase());
+                            setCouponError(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleApplyCoupon();
+                            }
+                          }}
+                          placeholder="Digite seu cupom"
+                          className="flex-1 uppercase font-semibold text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border-none outline-none bg-white/90 focus:bg-white transition-all shadow-2xs placeholder:normal-case placeholder:font-normal placeholder:text-brand-muted"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleApplyCoupon}
+                          className="px-4 py-2.5 rounded-xl bg-brand-pink hover:bg-brand-pink-hover text-white text-xs sm:text-sm font-bold transition-all shadow-2xs cursor-pointer active:scale-95 shrink-0"
+                        >
+                          Aplicar
+                        </button>
+                      </div>
+                    )}
+
+                    {couponError && (
+                      <p className="text-xs text-red-500 font-medium pl-1">
+                        {couponError}
+                      </p>
+                    )}
+                    {couponSuccess && !couponError && (
+                      <p className="text-xs text-brand-green font-medium pl-1">
+                        {couponSuccess}
+                      </p>
+                    )}
+                  </div>
+
                   {/* Security Assurance Notice */}
-                  <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-white border border-brand-border/70 text-xs text-brand-muted shadow-2xs">
+                  <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-gradient-to-r from-brand-pink-light/50 via-white/80 to-brand-green-light/50 text-xs text-brand-muted shadow-2xs">
                     <ShieldCheck className="w-4 h-4 text-brand-green shrink-0" />
                     <span>Ambiente protegido com criptografia de ponta a ponta. Seus dados nunca são armazenados.</span>
                   </div>
 
                   {/* Observação Geral do Pedido / Recado para a Artesã */}
-                  <div className="p-4 rounded-2xl bg-white border border-brand-border/70 space-y-2 shadow-2xs">
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-brand-pink-light/40 via-white/80 to-brand-green-light/40 space-y-2 shadow-2xs">
                     <label className="block font-bold text-brand-charcoal text-sm sm:text-base flex items-center justify-between">
                       <span>Alguma observação para seu pedido? (opcional)</span>
                       <span className="text-xs text-brand-muted font-normal">Ex: embalagem de presente, instruções</span>
@@ -1227,7 +1388,7 @@ export const CheckoutPage: React.FC = () => {
                       value={orderNotes}
                       onChange={(e) => setOrderNotes(e.target.value)}
                       placeholder="Deixe aqui algum recado especial para a artesã Bellclay..."
-                      className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-[#FAF8F5] focus:bg-white transition-all shadow-2xs"
+                      className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border-none outline-none bg-white/90 focus:bg-white transition-all shadow-2xs"
                     />
                   </div>
 
@@ -1264,7 +1425,7 @@ export const CheckoutPage: React.FC = () => {
             </div>
 
             {/* Right Order Summary Column - Sticky on desktop with refined porcelain styling */}
-            <div className="lg:col-span-5 bg-[#FAF7F2] p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-brand-border/70 space-y-4 lg:sticky lg:top-28 shadow-2xs">
+            <div className="lg:col-span-5 bg-[#FAF7F2] p-5 sm:p-7 rounded-2xl sm:rounded-3xl space-y-4 lg:sticky lg:top-28 shadow-xs">
               <h3 className="font-serif text-lg font-bold text-brand-charcoal border-b border-brand-border/60 pb-3">
                 Resumo da Compra ({items.length} {items.length === 1 ? 'item' : 'itens'})
               </h3>
@@ -1307,6 +1468,16 @@ export const CheckoutPage: React.FC = () => {
                   <span>Subtotal</span>
                   <span>R$ {subtotal.toFixed(2).replace('.', ',')}</span>
                 </div>
+
+                {appliedCoupon && couponDiscount > 0 && (
+                  <div className="flex justify-between text-brand-pink font-semibold">
+                    <span className="flex items-center gap-1">
+                      <Tag className="w-3.5 h-3.5" />
+                      Cupom ({appliedCoupon.code})
+                    </span>
+                    <span>- R$ {couponDiscount.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                )}
 
                 {paymentMethod === 'pix' && pixDiscount > 0 && (
                   <div className="flex justify-between text-brand-green font-semibold">

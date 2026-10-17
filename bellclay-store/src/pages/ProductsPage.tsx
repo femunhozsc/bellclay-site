@@ -202,11 +202,22 @@ export const ProductsPage: React.FC = () => {
             </div>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6 lg:gap-8 pt-2">
-            {filteredProducts.map((product, idx) => (
-              <ProductCard key={product.id} product={product} index={idx} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6 lg:gap-8 pt-2">
+              {filteredProducts.map((product, idx) => (
+                <ProductCard key={product.id} product={product} index={idx} />
+              ))}
+            </div>
+
+            {/* Texto abaixo de todos os artesanatos, lá no final */}
+            {settings.catalogBottomText && (
+              <div className="pt-12 pb-4 text-center">
+                <p className="text-xs sm:text-sm text-brand-muted max-w-lg mx-auto font-medium leading-relaxed">
+                  {settings.catalogBottomText}
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

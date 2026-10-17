@@ -627,6 +627,11 @@ export const trackEvent = async (eventName: string, data: Record<string, any> = 
     const metrics = JSON.parse(localStorage.getItem(STORAGE_KEYS.METRICS) || '{}');
     metrics[eventName] = (metrics[eventName] || 0) + 1;
     localStorage.setItem(STORAGE_KEYS.METRICS, JSON.stringify(metrics));
+
+    const eventsList: any[] = JSON.parse(localStorage.getItem('bellclay_events_list') || '[]');
+    eventsList.push(eventPayload);
+    if (eventsList.length > 500) eventsList.splice(0, eventsList.length - 500);
+    localStorage.setItem('bellclay_events_list', JSON.stringify(eventsList));
   } catch {}
 };
 

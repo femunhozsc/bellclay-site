@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore, collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { getAuth, Auth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { getStorage, FirebaseStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Product, SiteSettings, Order, MetricsSummary, BellclayEvent } from '../types';
+import { Product, SiteSettings, Order, MetricsSummary, BellclayEvent, DateFilterType, ChartDataPoint, AnalyticsEvent } from '../types';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBzTUrdoJnl7A1zkHNzoAB7P39uM8LNvIA",
@@ -78,6 +78,19 @@ export const DEFAULT_PANEL_SETTINGS: SiteSettings = {
   mercadoPagoPublicKey: "",
   mercadoPagoAccessToken: "",
   melhorEnvioToken: "",
+  catalogBottomText: "✨ Todas as nossas peças são modeladas à mão com amor, paciência e acabamento vitrificado exclusivo Bellclay.",
+  coupons: [
+    {
+      id: "cupom-primeira-compra",
+      code: "PRIMEIRACOMPRA",
+      type: "percentage",
+      value: 10,
+      minOrderValue: 50,
+      maxDiscountAmount: 30,
+      active: true,
+      usageCount: 0
+    }
+  ],
   promoBannerUrl: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=2100&q=80",
   promoBannerLink: "#produtos",
   promoBannerActive: true,
@@ -725,52 +738,320 @@ export const updateOrderStatus = async (
   }
 };
 
-// Analytics & Metrics Computation
-export const fetchMetrics = async (preloadedOrders?: Order[]): Promise<MetricsSummary> => {
-  const orders = preloadedOrders || (await fetchPanelOrders());
-  
-  let rawEvents: any = {};
-  try {
-    rawEvents = JSON.parse(localStorage.getItem(STORAGE_KEYS.METRICS) || '{}');
-  } catch {}
-
+// Analytics & Metrics Computation with Real Data & Dynamic Date Filtering
+export const fetchAnalyticsEvents = async (): Promise<AnalyticsEvent[]> => {
   if (db) {
     try {
       const snap = await getDocs(collection(db, 'analytics_events'));
       if (!snap.empty) {
-        const remoteCounts: Record<string, number> = {};
-        snap.docs.forEach(d => {
-          const evName = d.data()?.event;
-          if (evName) remoteCounts[evName] = (remoteCounts[evName] || 0) + 1;
-        });
-        rawEvents = {
-          page_view: Math.max(rawEvents.page_view || 0, remoteCounts.page_view || 0),
-          add_to_cart: Math.max(rawEvents.add_to_cart || 0, remoteCounts.add_to_cart || 0),
-          begin_checkout: Math.max(rawEvents.begin_checkout || 0, remoteCounts.begin_checkout || 0),
-        };
+        return snap.docs.map(d => ({
+          id: d.id,
+          event: d.data().event,
+          timestamp: d.data().timestamp || new Date().toISOString(),
+          data: d.data().data || {},
+          userAgent: d.data().userAgent
+        } as AnalyticsEvent));
       }
-    } catch {}
+    } catch (err) {
+      console.warn('Erro ao carregar analytics_events do Firestore:', err);
+    }
   }
 
-  const pageViews = (rawEvents.page_view || 0) + 1420;
-  const uniqueVisitors = Math.round(pageViews * 0.72);
-  const addToCartClicks = (rawEvents.add_to_cart || 0) + 184;
-  const checkoutStarts = (rawEvents.begin_checkout || 0) + 67;
-  const validOrders = orders.filter(o => o.orderStatus !== 'cancelled');
-  const totalOrders = validOrders.length;
+  // Fallback to localStorage list
+  try {
+    const list = JSON.parse(localStorage.getItem('bellclay_events_list') || '[]');
+    if (Array.isArray(list) && list.length > 0) {
+      return list as AnalyticsEvent[];
+    }
+  } catch {}
 
-  const totalRevenue = validOrders.reduce((acc, o) => {
-    return o.paymentStatus === 'approved' || o.orderStatus === 'paid' || o.orderStatus === 'shipped' || o.orderStatus === 'production' || o.orderStatus === 'delivered'
-      ? acc + o.total
-      : acc;
-  }, 0);
+  return [];
+};
 
-  const paidOrdersCount = validOrders.filter(
+export const calculatePercentageChange = (
+  current: number,
+  previous: number
+): { text: string; isPositive: boolean } => {
+  if (previous === 0) {
+    if (current > 0) return { text: '+100%', isPositive: true };
+    return { text: '0%', isPositive: true };
+  }
+  const diff = ((current - previous) / previous) * 100;
+  if (Math.abs(diff) < 0.1) return { text: '0%', isPositive: true };
+  const sign = diff > 0 ? '+' : '';
+  return {
+    text: `${sign}${diff.toFixed(1)}%`,
+    isPositive: diff >= 0
+  };
+};
+
+export const computeMetrics = (
+  orders: Order[],
+  events: AnalyticsEvent[],
+  filter: DateFilterType = '7d',
+  customStart?: string,
+  customEnd?: string
+): MetricsSummary => {
+  const now = new Date();
+
+  // 1. Determine Window [startDate, endDate] and Previous Window [prevStartDate, prevEndDate]
+  let startDate: Date;
+  let endDate: Date = new Date();
+  let prevStartDate: Date;
+  let prevEndDate: Date;
+  let comparisonLabel = 'vs período anterior';
+  let filterLabel = 'Últimos 7 dias';
+
+  if (filter === 'today') {
+    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    prevStartDate = new Date(startDate);
+    prevStartDate.setDate(prevStartDate.getDate() - 1);
+    prevEndDate = new Date(startDate.getTime() - 1);
+    comparisonLabel = 'vs ontem';
+    filterLabel = 'Hoje';
+  } else if (filter === '7d') {
+    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    startDate.setHours(0, 0, 0, 0);
+
+    const duration = now.getTime() - startDate.getTime();
+    prevEndDate = new Date(startDate.getTime() - 1);
+    prevStartDate = new Date(prevEndDate.getTime() - duration);
+    comparisonLabel = 'vs 7 dias anteriores';
+    filterLabel = 'Últimos 7 dias';
+  } else if (filter === '30d') {
+    startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    startDate.setHours(0, 0, 0, 0);
+
+    const duration = now.getTime() - startDate.getTime();
+    prevEndDate = new Date(startDate.getTime() - 1);
+    prevStartDate = new Date(prevEndDate.getTime() - duration);
+    comparisonLabel = 'vs 30 dias anteriores';
+    filterLabel = 'Últimos 30 dias';
+  } else if (filter === 'custom' && customStart) {
+    startDate = new Date(customStart + 'T00:00:00');
+    endDate = customEnd ? new Date(customEnd + 'T23:59:59.999') : new Date(customStart + 'T23:59:59.999');
+
+    const duration = Math.max(24 * 60 * 60 * 1000, endDate.getTime() - startDate.getTime());
+    prevEndDate = new Date(startDate.getTime() - 1);
+    prevStartDate = new Date(prevEndDate.getTime() - duration);
+    comparisonLabel = 'vs período anterior';
+    filterLabel = customEnd && customEnd !== customStart
+      ? `${new Date(customStart + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} a ${new Date(customEnd + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`
+      : new Date(customStart + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  } else {
+    // 'all'
+    startDate = new Date(0);
+    endDate = new Date();
+    prevStartDate = new Date(0);
+    prevEndDate = new Date(0);
+    comparisonLabel = 'histórico total';
+    filterLabel = 'Todo o histórico';
+  }
+
+  // Date check helper
+  const isWithin = (dateStr: string | undefined, start: Date, end: Date) => {
+    if (!dateStr) return false;
+    const t = new Date(dateStr).getTime();
+    return t >= start.getTime() && t <= end.getTime();
+  };
+
+  // Filter current period
+  const curOrders = orders.filter(o => isWithin(o.createdAt, startDate, endDate));
+  const curValidOrders = curOrders.filter(o => o.orderStatus !== 'cancelled');
+  const curPaidOrders = curValidOrders.filter(
     o => o.paymentStatus === 'approved' || o.orderStatus === 'paid' || o.orderStatus === 'shipped' || o.orderStatus === 'production' || o.orderStatus === 'delivered'
-  ).length;
+  );
+  const curEvents = events.filter(e => isWithin(e.timestamp, startDate, endDate));
 
-  const averageTicket = paidOrdersCount > 0 ? totalRevenue / paidOrdersCount : 0;
-  const conversionRate = uniqueVisitors > 0 ? (totalOrders / uniqueVisitors) * 100 : 0;
+  // Filter previous period for true comparative changes
+  const prevOrders = filter === 'all' ? [] : orders.filter(o => isWithin(o.createdAt, prevStartDate, prevEndDate));
+  const prevValidOrders = prevOrders.filter(o => o.orderStatus !== 'cancelled');
+  const prevPaidOrders = prevValidOrders.filter(
+    o => o.paymentStatus === 'approved' || o.orderStatus === 'paid' || o.orderStatus === 'shipped' || o.orderStatus === 'production' || o.orderStatus === 'delivered'
+  );
+  const prevEvents = filter === 'all' ? [] : events.filter(e => isWithin(e.timestamp, prevStartDate, prevEndDate));
+
+  // Real calculations
+  const totalRevenue = curPaidOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  const totalOrders = curValidOrders.length;
+  const averageTicket = curPaidOrders.length > 0 ? totalRevenue / curPaidOrders.length : 0;
+
+  const pageViewsCount = curEvents.filter(e => e.event === 'page_view').length;
+  const curUAs = new Set(curEvents.filter(e => e.event === 'page_view' && e.userAgent).map(e => e.userAgent));
+  // Unique visitors reflect real page_view visitors or distinct orders
+  const uniqueVisitors = Math.max(
+    curUAs.size,
+    Math.round(pageViewsCount * 0.75),
+    curOrders.length > 0 ? curOrders.length : (pageViewsCount > 0 ? 1 : 0)
+  );
+  const pageViews = Math.max(pageViewsCount, uniqueVisitors);
+
+  const addToCartClicks = curEvents.filter(e => e.event === 'add_to_cart').length;
+  const checkoutStarts = curEvents.filter(e => e.event === 'begin_checkout').length || curOrders.length;
+  const conversionRate = uniqueVisitors > 0 ? (totalOrders / uniqueVisitors) * 100 : (totalOrders > 0 ? 100 : 0);
+
+  // Previous comparisons
+  const prevRevenue = prevPaidOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  const prevOrdersCount = prevValidOrders.length;
+  const prevCartClicks = prevEvents.filter(e => e.event === 'add_to_cart').length;
+  const prevViews = prevEvents.filter(e => e.event === 'page_view').length;
+  const prevVisitors = Math.max(prevViews, prevValidOrders.length);
+
+  const revChange = calculatePercentageChange(totalRevenue, prevRevenue);
+  const ordChange = calculatePercentageChange(totalOrders, prevOrdersCount);
+  const cartChange = calculatePercentageChange(addToCartClicks, prevCartClicks);
+  const visChange = calculatePercentageChange(uniqueVisitors, prevVisitors);
+
+  // 2. Generate Chart Data Points
+  const chartData: ChartDataPoint[] = [];
+
+  if (filter === 'today') {
+    const blocks = [
+      { label: '00h-06h', startH: 0, endH: 6 },
+      { label: '06h-12h', startH: 6, endH: 12 },
+      { label: '12h-18h', startH: 12, endH: 18 },
+      { label: '18h-24h', startH: 18, endH: 24 }
+    ];
+    blocks.forEach(b => {
+      const bEvents = curEvents.filter(e => {
+        const d = new Date(e.timestamp);
+        return d.getHours() >= b.startH && d.getHours() < b.endH;
+      });
+      const bOrders = curValidOrders.filter(o => {
+        const d = new Date(o.createdAt);
+        return d.getHours() >= b.startH && d.getHours() < b.endH;
+      });
+      chartData.push({
+        label: b.label,
+        visitors: bEvents.filter(e => e.event === 'page_view').length || bOrders.length,
+        orders: bOrders.length,
+        revenue: bOrders.reduce((s, o) => s + (Number(o.total) || 0), 0)
+      });
+    });
+  } else if (filter === '7d') {
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+      const dayEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+      const dayEvents = curEvents.filter(e => isWithin(e.timestamp, dayStart, dayEnd));
+      const dayOrders = curValidOrders.filter(o => isWithin(o.createdAt, dayStart, dayEnd));
+      const dayRev = dayOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+
+      const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      const dayName = i === 0 ? 'Hoje' : dayNames[d.getDay()];
+
+      chartData.push({
+        label: dayName,
+        fullDate: `${d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`,
+        visitors: dayEvents.filter(e => e.event === 'page_view').length || dayOrders.length,
+        orders: dayOrders.length,
+        revenue: dayRev
+      });
+    }
+  } else if (filter === '30d') {
+    const intervalDays = 6;
+    for (let i = 4; i >= 0; i--) {
+      const endD = new Date(now.getTime() - i * intervalDays * 24 * 60 * 60 * 1000);
+      const startD = new Date(endD.getTime() - (intervalDays - 1) * 24 * 60 * 60 * 1000);
+      startD.setHours(0, 0, 0, 0);
+      endD.setHours(23, 59, 59, 999);
+
+      const periodEvents = curEvents.filter(e => isWithin(e.timestamp, startD, endD));
+      const periodOrders = curValidOrders.filter(o => isWithin(o.createdAt, startD, endD));
+      const periodRev = periodOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+
+      const lbl = `${startD.getDate()}/${startD.getMonth() + 1}`;
+      chartData.push({
+        label: i === 0 ? 'Atual' : lbl,
+        fullDate: `${startD.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} a ${endD.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`,
+        visitors: periodEvents.filter(e => e.event === 'page_view').length || periodOrders.length,
+        orders: periodOrders.length,
+        revenue: periodRev
+      });
+    }
+  } else if (filter === 'custom' && customStart) {
+    const diffDays = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000)));
+    if (diffDays <= 1) {
+      const blocks = [
+        { label: '00h-06h', startH: 0, endH: 6 },
+        { label: '06h-12h', startH: 6, endH: 12 },
+        { label: '12h-18h', startH: 12, endH: 18 },
+        { label: '18h-24h', startH: 18, endH: 24 }
+      ];
+      blocks.forEach(b => {
+        const bEvents = curEvents.filter(e => {
+          const d = new Date(e.timestamp);
+          return d.getHours() >= b.startH && d.getHours() < b.endH;
+        });
+        const bOrders = curValidOrders.filter(o => {
+          const d = new Date(o.createdAt);
+          return d.getHours() >= b.startH && d.getHours() < b.endH;
+        });
+        chartData.push({
+          label: b.label,
+          visitors: bEvents.filter(e => e.event === 'page_view').length || bOrders.length,
+          orders: bOrders.length,
+          revenue: bOrders.reduce((s, o) => s + (Number(o.total) || 0), 0)
+        });
+      });
+    } else {
+      const daysCount = Math.min(10, diffDays);
+      const step = diffDays / daysCount;
+      for (let i = 0; i < daysCount; i++) {
+        const segStart = new Date(startDate.getTime() + i * step * 24 * 60 * 60 * 1000);
+        const segEnd = new Date(segStart.getTime() + step * 24 * 60 * 60 * 1000);
+        const pEvents = curEvents.filter(e => isWithin(e.timestamp, segStart, segEnd));
+        const pOrders = curValidOrders.filter(o => isWithin(o.createdAt, segStart, segEnd));
+        chartData.push({
+          label: `${segStart.getDate()}/${segStart.getMonth() + 1}`,
+          fullDate: `${segStart.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`,
+          visitors: pEvents.filter(e => e.event === 'page_view').length || pOrders.length,
+          orders: pOrders.length,
+          revenue: pOrders.reduce((s, o) => s + (Number(o.total) || 0), 0)
+        });
+      }
+    }
+  } else {
+    // 'all'
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const mStart = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0);
+      const mEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+
+      const mEvents = curEvents.filter(e => isWithin(e.timestamp, mStart, mEnd));
+      const mOrders = curValidOrders.filter(o => isWithin(o.createdAt, mStart, mEnd));
+      const mRev = mOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+
+      const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      chartData.push({
+        label: monthNames[d.getMonth()],
+        fullDate: `${monthNames[d.getMonth()]}/${d.getFullYear()}`,
+        visitors: mEvents.filter(e => e.event === 'page_view').length || mOrders.length,
+        orders: mOrders.length,
+        revenue: mRev
+      });
+    }
+  }
+
+  // Peak Point
+  let peakLabel = 'Sem movimentação no período';
+  if (chartData.length > 0) {
+    let maxPoint = chartData[0];
+    for (const pt of chartData) {
+      if (pt.orders > maxPoint.orders || (pt.orders === maxPoint.orders && pt.visitors > maxPoint.visitors)) {
+        maxPoint = pt;
+      }
+    }
+    if (maxPoint.visitors > 0 || maxPoint.orders > 0) {
+      const dateText = maxPoint.fullDate ? `${maxPoint.label} (${maxPoint.fullDate})` : maxPoint.label;
+      const revText = maxPoint.revenue > 0 ? ` • R$ ${maxPoint.revenue.toFixed(2).replace('.', ',')}` : '';
+      peakLabel = `${dateText}: ${maxPoint.visitors} ${maxPoint.visitors === 1 ? 'visita' : 'visitas'} • ${maxPoint.orders} ${maxPoint.orders === 1 ? 'pedido' : 'pedidos'}${revText}`;
+    }
+  }
 
   return {
     pageViews,
@@ -780,8 +1061,31 @@ export const fetchMetrics = async (preloadedOrders?: Order[]): Promise<MetricsSu
     totalOrders,
     totalRevenue,
     averageTicket,
-    conversionRate
+    conversionRate,
+    revenueChange: revChange.text,
+    isRevenuePositive: revChange.isPositive,
+    ordersChange: ordChange.text,
+    isOrdersPositive: ordChange.isPositive,
+    cartChange: cartChange.text,
+    isCartPositive: cartChange.isPositive,
+    visitorsChange: visChange.text,
+    isVisitorsPositive: visChange.isPositive,
+    comparisonLabel,
+    filterLabel,
+    chartData,
+    peakLabel
   };
+};
+
+export const fetchMetrics = async (
+  preloadedOrders?: Order[],
+  filter: DateFilterType = '7d',
+  customStart?: string,
+  customEnd?: string
+): Promise<MetricsSummary> => {
+  const orders = preloadedOrders || (await fetchPanelOrders());
+  const events = await fetchAnalyticsEvents();
+  return computeMetrics(orders, events, filter, customStart, customEnd);
 };
 
 export { app, db, auth, storage, hasValidFirebaseConfig };

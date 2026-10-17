@@ -4,11 +4,12 @@ import { motion } from 'framer-motion';
 import {
   User, Package, Mail, Lock, Phone, FileText, CheckCircle2,
   ChevronRight, AlertCircle, LogOut, ArrowRight, Truck,
-  MapPin, Building, Home, Edit3
+  MapPin, Building, Home, Edit3, RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { getCustomerOrders, subscribeToCustomerOrders } from '../services/firebase';
-import { generatePixPayment } from '../services/mercadoPagoService';
+import { useSettings } from '../context/SettingsContext';
+import { getCustomerOrders, subscribeToCustomerOrders, saveOrder } from '../services/firebase';
+import { createInfinitePayCheckout } from '../services/infinitePayService';
 import { fetchAddressByCep } from '../services/viaCepService';
 import { Order, Address } from '../types';
 
@@ -21,6 +22,7 @@ export const AccountPage: React.FC = () => {
     registerWithEmail,
     logout
   } = useAuth();
+  const { settings } = useSettings();
 
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [activeTab, setActiveTab] = useState<'orders' | 'profile'>('orders');
@@ -57,7 +59,42 @@ export const AccountPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
+  const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
+
+  const handleConcludePayment = async (order: Order) => {
+    if (order.checkoutUrl) {
+      window.location.href = order.checkoutUrl;
+      return;
+    }
+
+    try {
+      setProcessingOrderId(order.id);
+      const infinitePayHandle = settings.infinitePayTag || 'isabela-munhoz-4sb';
+      const checkoutRes = await createInfinitePayCheckout({
+        handle: infinitePayHandle,
+        orderId: order.id,
+        customer: order.customer,
+        address: order.address,
+        items: order.items,
+        shipping: order.shipping,
+        discount: order.discount || 0,
+        grandTotal: order.total
+      });
+
+      if (checkoutRes.checkoutUrl) {
+        await saveOrder({
+          ...order,
+          checkoutUrl: checkoutRes.checkoutUrl
+        });
+        window.location.href = checkoutRes.checkoutUrl;
+      }
+    } catch (err: any) {
+      console.error('Erro ao gerar link de pagamento:', err);
+      alert('Não foi possível conectar ao ambiente seguro da InfinitePay. Por favor, tente novamente ou entre em contato pelo WhatsApp.');
+    } finally {
+      setProcessingOrderId(null);
+    }
+  };
 
   const isLoggedIn = Boolean(customerProfile.email && !customerProfile.isGuest);
 
@@ -576,9 +613,7 @@ export const AccountPage: React.FC = () => {
                   <div className="-mx-4 sm:mx-0 space-y-3 sm:space-y-4">
                     {orders.map((order) => {
                       const effectiveStatus = order.orderStatus === 'pending' && order.paymentStatus === 'approved' ? 'paid' : order.orderStatus;
-                      const isPendingInfinitePay = effectiveStatus === 'pending' && Boolean(order.checkoutUrl);
-                      const isPendingPix = effectiveStatus === 'pending' && !order.checkoutUrl && order.paymentMethod === 'pix';
-                      const pixInfo = isPendingPix ? generatePixPayment(order.id, order.total, order.customer?.name || customerProfile.name || 'Cliente') : null;
+                      const isPendingPayment = effectiveStatus === 'pending';
 
                       return (
                         <div
@@ -631,37 +666,26 @@ export const AccountPage: React.FC = () => {
                           </div>
 
                           {/* Pending Payment Callout */}
-                          {isPendingInfinitePay && order.checkoutUrl && (
+                          {isPendingPayment && (
                             <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-brand-border/60 flex flex-col sm:flex-row items-center justify-between gap-3">
                               <div className="text-xs space-y-0.5 text-center sm:text-left">
                                 <span className="font-bold text-brand-charcoal block">Aguardando confirmação do pagamento</span>
                                 <span className="text-[11px] text-brand-muted block">Pague com Pix ou Cartão para iniciar a produção artesanal</span>
                               </div>
-                              <a
-                                href={order.checkoutUrl}
-                                className="w-full sm:w-auto text-center px-5 py-2.5 rounded-full bg-brand-green hover:bg-brand-green-hover text-white text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs"
-                              >
-                                Concluir Pagamento
-                              </a>
-                            </div>
-                          )}
-
-                          {isPendingPix && pixInfo && (
-                            <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-brand-border/60 flex flex-col sm:flex-row items-center justify-between gap-3">
-                              <div className="text-xs space-y-0.5 text-center sm:text-left">
-                                <span className="font-bold text-brand-charcoal block">Aguardando pagamento via Pix</span>
-                                <span className="text-[11px] text-brand-muted block">Copie o código Pix abaixo para pagar no app do seu banco</span>
-                              </div>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(pixInfo.pixCopiaECola);
-                                  setCopiedOrderId(order.id);
-                                  setTimeout(() => setCopiedOrderId(null), 2500);
-                                }}
-                                className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-brand-green hover:bg-brand-green-hover text-white text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs"
+                                onClick={() => handleConcludePayment(order)}
+                                disabled={processingOrderId === order.id}
+                                className="w-full sm:w-auto text-center px-5 py-2.5 rounded-full bg-brand-green hover:bg-brand-green-hover text-white text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs flex items-center justify-center gap-2 disabled:opacity-60"
                               >
-                                {copiedOrderId === order.id ? 'Código Pix Copiado!' : 'Copiar Pix Copia e Cola'}
+                                {processingOrderId === order.id ? (
+                                  <>
+                                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                    <span>Conectando...</span>
+                                  </>
+                                ) : (
+                                  <span>Concluir Pagamento</span>
+                                )}
                               </button>
                             </div>
                           )}

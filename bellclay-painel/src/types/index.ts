@@ -72,6 +72,8 @@ export interface Order {
   orderStatus: 'pending' | 'paid' | 'production' | 'shipped' | 'delivered' | 'cancelled';
   trackingCode?: string;
   notes?: string;
+  couponCode?: string;
+  couponDiscount?: number;
   checkoutUrl?: string;
   receiptUrl?: string;
   transactionNsu?: string;
@@ -140,6 +142,38 @@ export interface SiteSettings {
   mercadoPagoPublicKey?: string;
   mercadoPagoAccessToken?: string;
   melhorEnvioToken?: string;
+  catalogBottomText?: string;
+  coupons?: Coupon[];
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  minOrderValue?: number;
+  maxDiscountAmount?: number;
+  active: boolean;
+  usageCount?: number;
+  createdAt?: string;
+}
+
+export type DateFilterType = 'today' | '7d' | '30d' | 'all' | 'custom';
+
+export interface ChartDataPoint {
+  label: string;
+  fullDate?: string;
+  visitors: number;
+  orders: number;
+  revenue: number;
+}
+
+export interface AnalyticsEvent {
+  id?: string;
+  event: string;
+  timestamp: string;
+  data?: Record<string, any>;
+  userAgent?: string;
 }
 
 export interface MetricsSummary {
@@ -151,4 +185,17 @@ export interface MetricsSummary {
   totalRevenue: number;
   averageTicket: number;
   conversionRate: number;
+  // Dynamic comparison indicators
+  revenueChange?: string;
+  isRevenuePositive?: boolean;
+  ordersChange?: string;
+  isOrdersPositive?: boolean;
+  cartChange?: string;
+  isCartPositive?: boolean;
+  visitorsChange?: string;
+  isVisitorsPositive?: boolean;
+  comparisonLabel?: string;
+  filterLabel?: string;
+  chartData?: ChartDataPoint[];
+  peakLabel?: string;
 }

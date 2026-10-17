@@ -73,6 +73,8 @@ export interface Order {
   orderStatus: 'pending' | 'paid' | 'production' | 'shipped' | 'delivered' | 'cancelled';
   trackingCode?: string;
   notes?: string;
+  couponCode?: string;
+  couponDiscount?: number;
   checkoutUrl?: string;
   receiptUrl?: string;
   transactionNsu?: string;
@@ -141,4 +143,18 @@ export interface SiteSettings {
   maxInstallmentsNoInterest?: number;
   mercadoPagoPublicKey?: string;
   melhorEnvioToken?: string;
+  catalogBottomText?: string;
+  coupons?: Coupon[];
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  minOrderValue?: number;
+  maxDiscountAmount?: number;
+  active: boolean;
+  usageCount?: number;
+  createdAt?: string;
 }

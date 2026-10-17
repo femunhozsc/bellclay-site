@@ -24,11 +24,12 @@ import {
   fetchPanelOrders,
   subscribeToPanelOrders,
   updateOrderStatus,
+  fetchAnalyticsEvents,
   fetchMetrics,
   DEFAULT_PANEL_SETTINGS,
   DEFAULT_PANEL_PRODUCTS
 } from './services/firebase';
-import { Product, SiteSettings, Order, MetricsSummary, BannerSlide, CategoryItem, BellclayEvent } from './types';
+import { Product, SiteSettings, Order, MetricsSummary, BannerSlide, CategoryItem, BellclayEvent, AnalyticsEvent } from './types';
 
 export const App: React.FC = () => {
   const { isAuthenticated } = useAdminAuth();
@@ -37,16 +38,7 @@ export const App: React.FC = () => {
   const [products, setProducts] = useState<Product[]>(DEFAULT_PANEL_PRODUCTS);
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_PANEL_SETTINGS);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [metrics, setMetrics] = useState<MetricsSummary>({
-    pageViews: 1420,
-    uniqueVisitors: 1024,
-    addToCartClicks: 184,
-    checkoutStarts: 67,
-    totalOrders: 2,
-    totalRevenue: 194.60,
-    averageTicket: 97.30,
-    conversionRate: 3.8
-  });
+  const [analyticsEvents, setAnalyticsEvents] = useState<AnalyticsEvent[]>([]);
 
   // Modal states
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -66,16 +58,16 @@ export const App: React.FC = () => {
 
   const loadData = async () => {
     try {
-      const [fetchedProducts, fetchedSettings, fetchedOrders, fetchedMetrics] = await Promise.all([
+      const [fetchedProducts, fetchedSettings, fetchedOrders, fetchedEvents] = await Promise.all([
         fetchPanelProducts(),
         fetchPanelSettings(),
         fetchPanelOrders(),
-        fetchMetrics()
+        fetchAnalyticsEvents()
       ]);
       setProducts(fetchedProducts);
       setSettings(fetchedSettings);
       setOrders(fetchedOrders);
-      setMetrics(fetchedMetrics);
+      setAnalyticsEvents(fetchedEvents);
     } catch (err) {
       console.warn('Erro ao carregar dados do painel:', err);
     }
@@ -88,8 +80,8 @@ export const App: React.FC = () => {
       // Subscribe to real-time order updates from Firestore
       const unsubOrders = subscribeToPanelOrders(async (liveOrders) => {
         setOrders(liveOrders);
-        const updatedMetrics = await fetchMetrics();
-        setMetrics(updatedMetrics);
+        const updatedEvents = await fetchAnalyticsEvents();
+        setAnalyticsEvents(updatedEvents);
       });
 
       const handleUpdate = () => loadData();
@@ -221,8 +213,8 @@ export const App: React.FC = () => {
         <main className="flex-1 pb-16">
           {currentTab === 'dashboard' && (
             <DashboardPage
-              metrics={metrics}
               orders={orders}
+              events={analyticsEvents}
               products={products}
               onSelectOrder={(ord) => {
                 setSelectedOrder(ord);

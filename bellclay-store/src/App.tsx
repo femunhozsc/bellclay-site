@@ -9,6 +9,7 @@ import { ProductPage } from './pages/ProductPage';
 import { EventPage } from './pages/EventPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { AccountPage } from './pages/AccountPage';
+import { trackEvent } from './services/firebase';
 
 const ScrollToTop: React.FC = () => {
   const { pathname, hash } = useLocation();
@@ -37,6 +38,10 @@ const ScrollToTop: React.FC = () => {
 export const App: React.FC = () => {
   const location = useLocation();
   const isCheckout = location.pathname.startsWith('/checkout');
+
+  useEffect(() => {
+    trackEvent('page_view', { path: location.pathname });
+  }, [location.pathname]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FDFBF7] text-brand-charcoal font-sans selection:bg-brand-pink/20 selection:text-brand-pink">

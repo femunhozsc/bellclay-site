@@ -503,7 +503,7 @@ export const ProductPage: React.FC = () => {
               </div>
 
               {/* Freight Calculator Box */}
-              <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 space-y-3">
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-brand-pink-light/75 via-white/50 to-brand-green-light/75 shadow-2xs space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs sm:text-sm font-bold text-brand-charcoal flex items-center gap-1.5">
                     <Truck className="w-4 h-4 text-brand-pink" />
@@ -524,7 +524,7 @@ export const ProductPage: React.FC = () => {
                       const v = e.target.value.replace(/\D/g, '').slice(0, 8);
                       setSimulatedCep(v.length > 5 ? `${v.slice(0, 5)}-${v.slice(5)}` : v);
                     }}
-                    className="flex-1 text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-brand-border focus:border-brand-pink outline-none bg-white"
+                    className="flex-1 text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border-none outline-none bg-white/90 focus:bg-white transition-all shadow-2xs focus:ring-1 focus:ring-brand-pink"
                   />
                   <button
                     type="submit"
@@ -540,11 +540,11 @@ export const ProductPage: React.FC = () => {
                 )}
 
                 {shippingOptions.length > 0 && (
-                  <div className="space-y-1.5 pt-2 border-t border-brand-border/60">
+                  <div className="space-y-1.5 pt-2 border-t border-brand-border/40">
                     {shippingOptions.map((opt) => (
                       <div
                         key={opt.id}
-                        className="flex items-center justify-between text-xs sm:text-sm p-2.5 rounded-xl bg-white border border-brand-border/60"
+                        className="flex items-center justify-between text-xs sm:text-sm p-2.5 rounded-xl bg-white/80 shadow-2xs"
                       >
                         <div className="flex flex-col">
                           <span className="font-bold text-brand-charcoal">{opt.name}</span>
@@ -588,7 +588,7 @@ export const ProductPage: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.15 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-12 sm:mt-16 pt-8 border-t border-brand-border/60 px-4 md:px-0"
+          className="mt-6 sm:mt-8 pt-5 border-t border-brand-border/60 px-4 md:px-0"
         >
           {/* Tab Headers */}
           <div className="flex gap-4 sm:gap-6 border-b border-brand-border/60 pb-3">

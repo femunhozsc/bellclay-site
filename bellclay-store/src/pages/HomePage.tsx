@@ -311,6 +311,15 @@ export const HomePage: React.FC = () => {
                   </span>
                 </motion.div>
               )}
+
+              {/* Texto abaixo de todos os artesanatos, lá no final */}
+              {settings.catalogBottomText && (
+                <div className="pt-6 sm:pt-8 text-center">
+                  <p className="text-xs sm:text-sm text-brand-muted max-w-lg mx-auto font-medium leading-relaxed">
+                    {settings.catalogBottomText}
+                  </p>
+                </div>
+              )}
             </>
           )}
         </section>

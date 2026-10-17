@@ -28,6 +28,7 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
   const [welcomeSubtitle, setWelcomeSubtitle] = useState(settings.welcomeSubtitle);
   const [announcementText, setAnnouncementText] = useState(settings.announcementText);
   const [announcementActive, setAnnouncementActive] = useState(settings.announcementActive);
+  const [catalogBottomText, setCatalogBottomText] = useState(settings.catalogBottomText || '');
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(String(settings.freeShippingThreshold || 149));
 
   // 21:9 Promotional Banner State
@@ -40,7 +41,10 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
     if (settings.freeShippingThreshold) {
       setFreeShippingThreshold(String(settings.freeShippingThreshold));
     }
-  }, [settings.freeShippingThreshold]);
+    if (settings.catalogBottomText !== undefined) {
+      setCatalogBottomText(settings.catalogBottomText);
+    }
+  }, [settings.freeShippingThreshold, settings.catalogBottomText]);
 
   useEffect(() => {
     if (settings.promoBannerUrl !== undefined) {
@@ -167,6 +171,7 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
         welcomeSubtitle,
         announcementText,
         announcementActive,
+        catalogBottomText,
         promoBannerUrl,
         promoBannerLink,
         promoBannerActive,
@@ -195,6 +200,7 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
         welcomeSubtitle,
         announcementText,
         announcementActive,
+        catalogBottomText,
         promoBannerUrl,
         promoBannerLink,
         promoBannerActive,
@@ -412,6 +418,25 @@ export const CustomizerPage: React.FC<CustomizerPageProps> = ({
             placeholder="Ex: ✨ Frete Grátis para todo o Paraná acima de R$ 149..."
             value={announcementText}
             onChange={(e) => setAnnouncementText(e.target.value)}
+            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink"
+          />
+        </div>
+
+        {/* Texto Abaixo de Todos os Artesanatos (Lá no final) */}
+        <div className="pt-4 border-t border-brand-border/60 space-y-2">
+          <div>
+            <label className="block text-xs font-bold text-brand-charcoal mb-0.5">
+              Texto Abaixo de Todos os Artesanatos (Lá no final)
+            </label>
+            <p className="text-[11px] text-brand-muted">
+              Frase ou recado exibido no final da página/catálogo, logo abaixo de todas as peças de artesanato.
+            </p>
+          </div>
+          <textarea
+            rows={2}
+            placeholder="Ex: ✨ Todas as nossas peças são modeladas à mão com amor, paciência e acabamento vitrificado exclusivo Bellclay."
+            value={catalogBottomText}
+            onChange={(e) => setCatalogBottomText(e.target.value)}
             className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink"
           />
         </div>

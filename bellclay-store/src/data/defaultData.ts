@@ -18,6 +18,19 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   maxInstallmentsNoInterest: 3,
   mercadoPagoPublicKey: "",
   melhorEnvioToken: "",
+  catalogBottomText: "✨ Todas as nossas peças são modeladas à mão com amor, paciência e acabamento vitrificado exclusivo Bellclay.",
+  coupons: [
+    {
+      id: "cupom-primeira-compra",
+      code: "PRIMEIRACOMPRA",
+      type: "percentage",
+      value: 10,
+      minOrderValue: 50,
+      maxDiscountAmount: 30,
+      active: true,
+      usageCount: 0
+    }
+  ],
   promoBannerUrl: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=2100&q=80",
   promoBannerLink: "#produtos",
   promoBannerActive: true,

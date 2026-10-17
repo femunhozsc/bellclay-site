@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Truck, CheckCircle2, Key, CreditCard, Percent } from 'lucide-react';
-import { SiteSettings } from '../types';
+import { ShieldCheck, Truck, CheckCircle2, Key, CreditCard, Percent, Tag, Plus, Trash2, Edit3, X, AlertCircle } from 'lucide-react';
+import { SiteSettings, Coupon } from '../types';
 import { WhatsAppIcon, InstagramIcon, TikTokIcon } from '../components/SocialIcons';
 
 interface SettingsPageProps {
@@ -27,6 +27,18 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
     String(settings.pixDiscountPercent ?? 0)
   );
 
+  // Coupons Management
+  const [coupons, setCoupons] = useState<Coupon[]>(settings.coupons || []);
+  const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+  const [editingCouponId, setEditingCouponId] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponType, setCouponType] = useState<'percentage' | 'fixed'>('percentage');
+  const [couponValue, setCouponValue] = useState('');
+  const [couponMinOrder, setCouponMinOrder] = useState('');
+  const [couponMaxDiscount, setCouponMaxDiscount] = useState('');
+  const [couponActive, setCouponActive] = useState(true);
+  const [couponFormError, setCouponFormError] = useState<string | null>(null);
+
   // Shipping API
   const [melhorEnvioToken, setMelhorEnvioToken] = useState(settings.melhorEnvioToken || '');
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(String(settings.freeShippingThreshold || 149));
@@ -47,6 +59,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
     if (settings.pixDiscountPercent !== undefined) {
       setPixDiscountPercent(String(settings.pixDiscountPercent));
     }
+    if (settings.coupons) {
+      setCoupons(settings.coupons);
+    }
   }, [
     settings.freeShippingThreshold,
     settings.tiktok,
@@ -54,11 +69,114 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
     settings.whatsapp,
     settings.infinitePayTag,
     settings.maxInstallmentsNoInterest,
-    settings.pixDiscountPercent
+    settings.pixDiscountPercent,
+    settings.coupons
   ]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Coupon Handlers
+  const handleOpenAddCoupon = () => {
+    setEditingCouponId(null);
+    setCouponCode('');
+    setCouponType('percentage');
+    setCouponValue('');
+    setCouponMinOrder('');
+    setCouponMaxDiscount('');
+    setCouponActive(true);
+    setCouponFormError(null);
+    setIsCouponModalOpen(true);
+  };
+
+  const handleOpenEditCoupon = (c: Coupon) => {
+    setEditingCouponId(c.id);
+    setCouponCode(c.code);
+    setCouponType(c.type);
+    setCouponValue(String(c.value));
+    setCouponMinOrder(c.minOrderValue ? String(c.minOrderValue) : '');
+    setCouponMaxDiscount(c.maxDiscountAmount ? String(c.maxDiscountAmount) : '');
+    setCouponActive(c.active);
+    setCouponFormError(null);
+    setIsCouponModalOpen(true);
+  };
+
+  const handleSaveCoupon = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCouponFormError(null);
+
+    const cleanCode = couponCode.trim().toUpperCase().replace(/\s+/g, '');
+    if (!cleanCode) {
+      setCouponFormError('Informe o código do cupom.');
+      return;
+    }
+
+    const val = parseFloat(couponValue.replace(',', '.'));
+    if (isNaN(val) || val <= 0) {
+      setCouponFormError('Informe um valor de desconto válido maior que zero.');
+      return;
+    }
+
+    if (couponType === 'percentage' && val > 100) {
+      setCouponFormError('A porcentagem de desconto não pode ultrapassar 100%.');
+      return;
+    }
+
+    const minOrder = parseFloat(couponMinOrder.replace(',', '.'));
+    const maxDiscount = parseFloat(couponMaxDiscount.replace(',', '.'));
+
+    const newCoupon: Coupon = {
+      id: editingCouponId || `cupom-${Date.now()}`,
+      code: cleanCode,
+      type: couponType,
+      value: val,
+      minOrderValue: !isNaN(minOrder) && minOrder > 0 ? minOrder : undefined,
+      maxDiscountAmount: !isNaN(maxDiscount) && maxDiscount > 0 ? maxDiscount : undefined,
+      active: couponActive,
+      usageCount: editingCouponId ? (coupons.find(c => c.id === editingCouponId)?.usageCount || 0) : 0,
+      createdAt: editingCouponId ? (coupons.find(c => c.id === editingCouponId)?.createdAt || new Date().toISOString()) : new Date().toISOString()
+    };
+
+    let updatedCoupons: Coupon[];
+    if (editingCouponId) {
+      updatedCoupons = coupons.map(c => c.id === editingCouponId ? newCoupon : c);
+    } else {
+      if (coupons.some(c => c.code.toUpperCase() === cleanCode)) {
+        setCouponFormError(`Já existe um cupom cadastrado com o código "${cleanCode}".`);
+        return;
+      }
+      updatedCoupons = [newCoupon, ...coupons];
+    }
+
+    setCoupons(updatedCoupons);
+    setIsCouponModalOpen(false);
+
+    // Auto-save coupons to backend
+    onSaveSettings({
+      ...settings,
+      coupons: updatedCoupons
+    }).catch(console.error);
+  };
+
+  const handleDeleteCoupon = (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este cupom de desconto?')) {
+      const updatedCoupons = coupons.filter(c => c.id !== id);
+      setCoupons(updatedCoupons);
+      onSaveSettings({
+        ...settings,
+        coupons: updatedCoupons
+      }).catch(console.error);
+    }
+  };
+
+  const handleToggleCouponActive = (id: string) => {
+    const updatedCoupons = coupons.map(c => c.id === id ? { ...c, active: !c.active } : c);
+    setCoupons(updatedCoupons);
+    onSaveSettings({
+      ...settings,
+      coupons: updatedCoupons
+    }).catch(console.error);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +199,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
         maxInstallmentsNoInterest: parsedInstallments,
         pixDiscountPercent: parsedPixDiscount,
         melhorEnvioToken,
-        freeShippingThreshold: !isNaN(parsedThreshold) && parsedThreshold > 0 ? parsedThreshold : 149
+        freeShippingThreshold: !isNaN(parsedThreshold) && parsedThreshold > 0 ? parsedThreshold : 149,
+        coupons
       };
       await onSaveSettings(updated);
       setSaveSuccess(true);
@@ -195,6 +314,131 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
           <div className="p-3.5 rounded-2xl bg-[#FAF8F5] border border-brand-border/60 text-[11px] text-brand-muted leading-relaxed">
             💡 <strong>Dica:</strong> Como na tela da InfinitePay o cliente pode escolher pagar por Pix ou Cartão no mesmo link, deixar o Desconto no Pix em <strong>0%</strong> garante que o valor cheio seja sempre cobrado independentemente de o cliente escolher Pix ou Cartão lá na tela da InfinitePay.
           </div>
+        </div>
+
+        {/* Programação de Cupons de Desconto */}
+        <div className="bg-white p-6 rounded-3xl border border-brand-border/70 shadow-xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-brand-border/60 gap-3">
+            <div className="flex items-center gap-2">
+              <Tag className="w-5 h-5 text-brand-pink" />
+              <div>
+                <h3 className="font-bold text-sm text-brand-charcoal">
+                  Programação de Cupons de Desconto
+                </h3>
+                <p className="text-xs text-brand-muted">
+                  Crie cupons em % ou valor fixo (R$), com regra de valor mínimo de pedido e teto máximo de desconto.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleOpenAddCoupon}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-brand-pink text-white text-xs font-bold hover:bg-brand-pink-hover shadow-pink-soft transition-all cursor-pointer self-start sm:self-auto"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Novo Cupom</span>
+            </button>
+          </div>
+
+          {/* Lista de Cupons */}
+          {coupons.length === 0 ? (
+            <div className="text-center py-8 bg-[#FAF8F5] rounded-2xl p-4 space-y-2 border border-dashed border-brand-border">
+              <Tag className="w-8 h-8 text-brand-muted/40 mx-auto" />
+              <p className="text-xs font-bold text-brand-charcoal">Nenhum cupom cadastrado ainda</p>
+              <p className="text-[11px] text-brand-muted max-w-sm mx-auto">
+                Clique em "Novo Cupom" acima para criar sua primeira promoção de desconto para seus clientes.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {coupons.map((c) => (
+                <div
+                  key={c.id}
+                  className={`p-4 rounded-2xl border transition-all ${
+                    c.active
+                      ? 'bg-gradient-to-r from-brand-pink-light/40 via-white to-brand-green-light/40 border-brand-border/70 shadow-2xs'
+                      : 'bg-gray-50/70 border-gray-200 opacity-60'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-black text-sm text-brand-charcoal px-2.5 py-0.5 rounded-lg bg-white border border-brand-border/80 tracking-wider">
+                          {c.code}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            c.active
+                              ? 'bg-brand-green/20 text-brand-green'
+                              : 'bg-gray-200 text-gray-600'
+                          }`}
+                        >
+                          {c.active ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </div>
+
+                      <div className="text-xs font-bold text-brand-pink pt-0.5">
+                        {c.type === 'percentage' ? (
+                          <span>Desconto de {c.value}%</span>
+                        ) : (
+                          <span>Desconto de R$ {c.value.toFixed(2).replace('.', ',')}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleCouponActive(c.id)}
+                        title={c.active ? 'Desativar cupom' : 'Ativar cupom'}
+                        className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                          c.active ? 'text-brand-green hover:bg-brand-green/10' : 'text-gray-400 hover:bg-gray-200'
+                        }`}
+                      >
+                        {c.active ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditCoupon(c)}
+                        title="Editar cupom"
+                        className="p-1.5 rounded-lg text-brand-charcoal hover:bg-brand-pink-light hover:text-brand-pink transition-colors cursor-pointer"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCoupon(c.id)}
+                        title="Excluir cupom"
+                        className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-2.5 pt-2.5 border-t border-brand-border/50 text-[11px] text-brand-muted space-y-0.5">
+                    <p>
+                      • Pedido mínimo:{' '}
+                      <strong className="text-brand-charcoal">
+                        {c.minOrderValue && c.minOrderValue > 0
+                          ? `R$ ${c.minOrderValue.toFixed(2).replace('.', ',')}`
+                          : 'Sem valor mínimo'}
+                      </strong>
+                    </p>
+                    <p>
+                      • Teto máx. desconto:{' '}
+                      <strong className="text-brand-charcoal">
+                        {c.maxDiscountAmount && c.maxDiscountAmount > 0
+                          ? `R$ ${c.maxDiscountAmount.toFixed(2).replace('.', ',')}`
+                          : 'Sem teto máximo'}
+                      </strong>
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Origin CEP & Logistics */}
@@ -359,6 +603,168 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSaveSett
         </div>
 
       </form>
+
+      {/* Modal de Criação / Edição de Cupom */}
+      {isCouponModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-brand-border/60">
+              <div className="flex items-center gap-2">
+                <Tag className="w-5 h-5 text-brand-pink" />
+                <h3 className="font-bold text-base text-brand-charcoal">
+                  {editingCouponId ? 'Editar Cupom' : 'Criar Novo Cupom'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCouponModalOpen(false)}
+                className="text-brand-muted hover:text-brand-charcoal p-1 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCoupon} className="space-y-4 text-xs">
+              {couponFormError && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{couponFormError}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block font-bold text-brand-charcoal mb-1">
+                  Código do Cupom *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: PROMO10, BEMVINDO..."
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  className="w-full text-xs font-mono font-bold tracking-wider px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink uppercase"
+                />
+                <span className="text-[10px] text-brand-muted mt-1 block">
+                  O código que o cliente digitará no checkout (sem espaços).
+                </span>
+              </div>
+
+              <div>
+                <label className="block font-bold text-brand-charcoal mb-1.5">
+                  Tipo de Desconto *
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCouponType('percentage')}
+                    className={`py-2.5 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                      couponType === 'percentage'
+                        ? 'bg-brand-pink text-white shadow-xs'
+                        : 'bg-[#FAF7F2] text-brand-charcoal hover:bg-gray-100 border border-brand-border/70'
+                    }`}
+                  >
+                    <span>Porcentagem (%)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCouponType('fixed')}
+                    className={`py-2.5 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                      couponType === 'fixed'
+                        ? 'bg-brand-pink text-white shadow-xs'
+                        : 'bg-[#FAF7F2] text-brand-charcoal hover:bg-gray-100 border border-brand-border/70'
+                    }`}
+                  >
+                    <span>Valor Fixo (R$)</span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-brand-charcoal mb-1">
+                  {couponType === 'percentage' ? 'Porcentagem de Desconto (%) *' : 'Valor do Desconto (R$) *'}
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  max={couponType === 'percentage' ? '100' : '99999'}
+                  required
+                  placeholder={couponType === 'percentage' ? 'Ex: 10 para 10%' : 'Ex: 15.00 para R$ 15'}
+                  value={couponValue}
+                  onChange={(e) => setCouponValue(e.target.value)}
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink font-semibold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block font-bold text-brand-charcoal mb-1">
+                    Valor Mínimo do Pedido (R$)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Ex: 50.00 (ou 0)"
+                    value={couponMinOrder}
+                    onChange={(e) => setCouponMinOrder(e.target.value)}
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink"
+                  />
+                  <span className="text-[10px] text-brand-muted mt-1 block">
+                    Subtotal mín. para aceitar o cupom
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-brand-charcoal mb-1">
+                    Teto Máx. de Desconto (R$)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Ex: 30.00 (ou 0)"
+                    value={couponMaxDiscount}
+                    onChange={(e) => setCouponMaxDiscount(e.target.value)}
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink"
+                  />
+                  <span className="text-[10px] text-brand-muted mt-1 block">
+                    Desconto máx. permitido
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-between border-t border-brand-border/60">
+                <label className="flex items-center gap-2 cursor-pointer font-bold text-brand-charcoal">
+                  <input
+                    type="checkbox"
+                    checked={couponActive}
+                    onChange={(e) => setCouponActive(e.target.checked)}
+                    className="w-4 h-4 rounded text-brand-pink focus:ring-brand-pink"
+                  />
+                  <span>Cupom ativo para uso</span>
+                </label>
+              </div>
+
+              <div className="pt-3 flex justify-end gap-2 border-t border-brand-border/60">
+                <button
+                  type="button"
+                  onClick={() => setIsCouponModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-brand-charcoal hover:bg-gray-100 font-bold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-brand-pink hover:bg-brand-pink-hover text-white font-bold shadow-xs cursor-pointer"
+                >
+                  Salvar Cupom
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
