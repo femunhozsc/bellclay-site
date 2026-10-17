@@ -105,12 +105,12 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
       setBannerUrl(campaign.bannerUrl || '');
       setMobileBannerUrl(campaign.mobileBannerUrl || '');
       setOverlayOpacity(campaign.overlayOpacity ?? 50);
-      setBadgeText(campaign.badgeText || 'Edição Especial');
+      setBadgeText(campaign.badgeText !== undefined ? campaign.badgeText : 'Edição Especial');
       setHeadline(campaign.headline || '');
       setSubtitle(campaign.subtitle || '');
       setStoryText(campaign.storyText || '');
       setHighlights(
-        campaign.highlights && campaign.highlights.length > 0
+        Array.isArray(campaign.highlights)
           ? campaign.highlights
           : ['Modelagem 100% Manual', 'Frete Grátis acima de R$ 149', 'Embalagem para Presente']
       );
@@ -900,9 +900,9 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
 
                   {/* Top Bar (Grounded, non-floating) */}
                   <div className="relative z-10 flex items-center justify-between pb-2 border-b border-white/10">
-                    <div className="flex items-center gap-1.5">
-                      <img src="/bellclay_logo.png" alt="Logo" className="h-5 w-auto object-contain" />
-                      <span className="font-serif text-[10px] uppercase tracking-wider text-white font-medium">
+                    <div className="flex items-center gap-2">
+                      <img src="/bellclay_logo.png" alt="Logo" className="h-7 w-auto object-contain" />
+                      <span className="font-serif text-[11px] font-normal tracking-tight text-white">
                         BELLCLAY
                       </span>
                     </div>
@@ -933,6 +933,35 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
                         <p className="font-serif text-[8px] text-white/90 italic line-clamp-2">
                           "{storyText}"
                         </p>
+                      </div>
+                    )}
+
+                    {/* Action CTA: Placed directly below story quote and above badges */}
+                    <div className="w-full flex flex-col gap-1 my-1 mb-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewOpened(true)}
+                        className="w-full py-1.5 px-3 rounded-full bg-[#FD7687] text-white font-medium text-[10px] shadow-soft flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+                      >
+                        <span>
+                          {buttonText.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim() || 'Conhecer o site'}
+                        </span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    {/* Highlights Preview */}
+                    {highlights && highlights.length > 0 && (
+                      <div className="flex flex-wrap items-center justify-center gap-1 mb-2">
+                        {highlights.slice(0, 3).map((item, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 text-white/85 text-[7px] font-medium border border-white/15"
+                          >
+                            <span className="w-1 h-1 rounded-full bg-[#FD7687]" />
+                            {item.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim()}
+                          </span>
+                        ))}
                       </div>
                     )}
 
@@ -974,27 +1003,13 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
 
                     {/* Trust */}
                     {showTrustBadges && (
-                      <div className="flex items-center gap-1 text-[8px] text-white/80 font-medium mb-1">
+                      <div className="flex items-center gap-1 text-[8px] text-white/80 font-medium">
                         <ShieldCheck className="w-2.5 h-2.5 text-emerald-400" />
                         <span className="truncate max-w-[200px]">
                           {trustBadgeText.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim()}
                         </span>
                       </div>
                     )}
-                  </div>
-
-                  {/* Action CTA: Click triggers opening animation! */}
-                  <div className="relative z-10 w-full flex flex-col gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setPreviewOpened(true)}
-                      className="w-full py-2 px-3 rounded-full bg-[#FD7687] text-white font-medium text-[11px] shadow-soft flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
-                    >
-                      <span>
-                        {buttonText.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim() || 'Conhecer o site'}
-                      </span>
-                      <ArrowRight className="w-3 h-3" />
-                    </button>
                   </div>
                 </div>
               </div>

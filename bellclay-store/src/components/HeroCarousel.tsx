@@ -171,12 +171,14 @@ export const HeroCarousel: React.FC = () => {
           animate="center"
           exit="exit"
           drag="x"
+          dragDirectionLock
           dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.2}
+          dragElastic={0.15}
+          dragMomentum={false}
           onDragStart={() => setIsPaused(true)}
           onDragEnd={handleDragEnd}
-          style={{ willChange: 'transform' }}
-          className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing bg-white"
+          style={{ willChange: 'transform', touchAction: 'pan-y' }}
+          className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing bg-white touch-pan-y"
         >
           {/* Background Photo Occupying 100% of Width & Height */}
           <img

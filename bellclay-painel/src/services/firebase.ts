@@ -528,54 +528,34 @@ export const DEFAULT_PANEL_CAMPAIGNS: AdCampaign[] = [
 
 
 export const fetchPanelCampaigns = async (): Promise<AdCampaign[]> => {
-  // 1. Read local cached campaigns first
-  let localList: AdCampaign[] = [];
-  const saved = localStorage.getItem(STORAGE_KEYS.CAMPAIGNS);
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        localList = parsed;
-      }
-    } catch {}
-  }
-
-  // 2. Fetch fresh from Firestore if available
+  // 1. Fetch fresh from Firestore as the authoritative source
   if (db) {
     try {
       const snap = await getDocs(collection(db, 'campaigns'));
       if (!snap.empty) {
         const remoteList = snap.docs.map(d => ({ id: d.id, ...d.data() } as AdCampaign));
-
-        // Merge remote with local (keep all unique IDs)
-        const map = new Map<string, AdCampaign>();
-        remoteList.forEach(c => map.set(c.id, c));
-        localList.forEach(c => {
-          if (!map.has(c.id)) {
-            map.set(c.id, c);
-          }
-        });
-
-        const merged = Array.from(map.values());
         try {
-          localStorage.setItem(STORAGE_KEYS.CAMPAIGNS, JSON.stringify(merged));
+          localStorage.setItem(STORAGE_KEYS.CAMPAIGNS, JSON.stringify(remoteList));
         } catch {}
-        return merged;
-      } else if (localList.length > 0) {
-        // Firestore empty: seed it with local items so store can access across ports
-        try {
-          await Promise.all(
-            localList.map(c => setDoc(doc(db!, 'campaigns', c.id), stripUndefined(c)))
-          );
-        } catch {}
-        return localList;
+        return remoteList;
       }
     } catch (err) {
       console.warn('Erro ao carregar campanhas do Firestore, usando cache local:', err);
     }
   }
 
-  return localList.length > 0 ? localList : DEFAULT_PANEL_CAMPAIGNS;
+  // 2. Fallback to localStorage only if offline or empty
+  const saved = localStorage.getItem(STORAGE_KEYS.CAMPAIGNS);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    } catch {}
+  }
+
+  return DEFAULT_PANEL_CAMPAIGNS;
 };
 
 export const savePanelCampaign = async (campaign: AdCampaign): Promise<void> => {
@@ -584,7 +564,17 @@ export const savePanelCampaign = async (campaign: AdCampaign): Promise<void> => 
     updatedAt: new Date().toISOString()
   };
 
-  // 1. Update localStorage immediately (guarantees instantaneous local UI update)
+  // 1. Persist directly to Firestore first (authoritative cloud sync)
+  if (db) {
+    try {
+      const docRef = doc(db, 'campaigns', cleanCampaign.id);
+      await setDoc(docRef, stripUndefined(cleanCampaign));
+    } catch (err) {
+      console.warn('Erro ao salvar campanha no Firestore:', err);
+    }
+  }
+
+  // 2. Update localStorage mirror
   const saved = localStorage.getItem(STORAGE_KEYS.CAMPAIGNS);
   let current: AdCampaign[] = [];
   if (saved) {
@@ -606,16 +596,6 @@ export const savePanelCampaign = async (campaign: AdCampaign): Promise<void> => 
     localStorage.setItem(STORAGE_KEYS.CAMPAIGNS, JSON.stringify(current));
   } catch (err) {
     console.warn('Cota de LocalStorage ao salvar campanha:', err);
-  }
-
-  // 2. Persist to Firestore
-  if (db) {
-    try {
-      const docRef = doc(db, 'campaigns', cleanCampaign.id);
-      await setDoc(docRef, stripUndefined(cleanCampaign));
-    } catch (err) {
-      console.warn('Erro ao salvar campanha no Firestore:', err);
-    }
   }
 
   window.dispatchEvent(new Event('bellclay_campaigns_updated'));

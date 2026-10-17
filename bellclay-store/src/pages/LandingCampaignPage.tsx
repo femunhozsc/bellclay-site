@@ -90,6 +90,9 @@ export const LandingCampaignPage: React.FC = () => {
       }
     }
 
+    // Scroll window smoothly/instantly to top so user begins at top of the store
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
     // Trigger smooth upward curtain opening animation
     setIsOpeningUp(true);
 
@@ -150,7 +153,9 @@ export const LandingCampaignPage: React.FC = () => {
                 ease: [0.16, 1, 0.3, 1] // Smooth luxury spring curve
               }
             }}
-            className="fixed inset-0 z-50 flex flex-col justify-between overflow-y-auto overflow-x-hidden bg-[#1E191A]"
+            className={`fixed inset-0 z-50 flex flex-col justify-between overflow-y-auto overflow-x-hidden bg-[#1E191A] ${
+              isOpeningUp ? 'pointer-events-none' : ''
+            }`}
           >
             {/* Background Banner with Dynamic Contrast Gradient */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -179,14 +184,14 @@ export const LandingCampaignPage: React.FC = () => {
               Top Brand Bar (Grounded & Professional, not floating)
             */}
             <header className="relative z-10 w-full border-b border-white/10 bg-black/20 backdrop-blur-md">
-              <div className="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              <div className="max-w-5xl mx-auto px-5 py-3.5 sm:py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3.5">
                   <img
                     src="/bellclay_logo.png"
                     alt="Bellclay"
-                    className="h-8 sm:h-9 w-auto object-contain filter drop-shadow-sm"
+                    className="h-11 sm:h-12 w-auto object-contain filter drop-shadow-sm"
                   />
-                  <span className="font-serif text-sm tracking-[0.2em] uppercase text-white/90 font-medium">
+                  <span className="font-serif text-lg sm:text-xl font-normal text-white tracking-tight">
                     BELLCLAY
                   </span>
                 </div>
@@ -213,18 +218,58 @@ export const LandingCampaignPage: React.FC = () => {
               </h1>
 
               {/* Subtitle */}
-              <p className="font-sans text-sm sm:text-base text-white/85 font-normal max-w-lg mb-6 leading-relaxed">
+              <p className="font-sans text-sm sm:text-base text-white/85 font-normal max-w-lg mb-4 leading-relaxed">
                 {current.subtitle}
               </p>
 
               {/* Storytelling Block (Letter from the artisan, warm left border, no floating emoji box) */}
               {current.storyText && (
-                <div className="w-full max-w-lg border-l-2 border-[#FD7687]/80 pl-4 sm:pl-5 text-left mb-6 my-2">
+                <div className="w-full max-w-lg border-l-2 border-[#FD7687]/80 pl-4 sm:pl-5 text-left mb-5 my-2">
                   <p className="font-serif text-sm sm:text-base text-white/95 italic leading-relaxed">
                     "{current.storyText}"
                   </p>
                 </div>
               )}
+
+              {/* ACTION BUTTONS (Placed directly below story quote and ABOVE badges!) */}
+              <div className="w-full max-w-sm flex flex-col gap-2.5 my-2 mb-6">
+                <button
+                  onClick={handleConhecerSite}
+                  className="w-full py-3.5 px-6 rounded-full bg-[#FD7687] hover:bg-[#f06073] text-white font-semibold text-sm sm:text-base shadow-soft hover:shadow-soft-hover transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                >
+                  <span>
+                    {current.buttonText
+                      ? current.buttonText.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim()
+                      : 'Conhecer o site'}
+                  </span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
+                {/* Secondary Button: WhatsApp direct contact */}
+                {current.secondaryButtonUrl && (
+                  <a
+                    href={current.secondaryButtonUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2.5 px-5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-xs text-white font-medium text-xs sm:text-sm border border-white/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>
+                      {current.secondaryButtonText
+                        ? current.secondaryButtonText.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim()
+                        : 'Atendimento no WhatsApp'}
+                    </span>
+                  </a>
+                )}
+
+                {/* Subtle entry microcopy */}
+                <button
+                  onClick={handleConhecerSite}
+                  className="text-[11px] text-white/60 hover:text-white/90 transition-colors tracking-wide cursor-pointer font-medium pt-0.5"
+                >
+                  Toque para abrir a loja online
+                </button>
+              </div>
 
               {/* Highlights List (Clean typography without emojis) */}
               {current.highlights && current.highlights.length > 0 && (
@@ -336,45 +381,6 @@ export const LandingCampaignPage: React.FC = () => {
                 </div>
               )}
 
-              {/* ACTION BUTTONS (Smooth Upward Animation Trigger) */}
-              <div className="w-full max-w-sm flex flex-col gap-3">
-                <button
-                  onClick={handleConhecerSite}
-                  className="w-full py-3.5 px-6 rounded-full bg-[#FD7687] hover:bg-[#f06073] text-white font-semibold text-sm sm:text-base shadow-soft hover:shadow-soft-hover transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
-                >
-                  <span>
-                    {current.buttonText
-                      ? current.buttonText.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim()
-                      : 'Conhecer o site'}
-                  </span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-
-                {/* Secondary Button: WhatsApp direct contact */}
-                {current.secondaryButtonUrl && (
-                  <a
-                    href={current.secondaryButtonUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-2.5 px-5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-xs text-white font-medium text-xs sm:text-sm border border-white/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>
-                      {current.secondaryButtonText
-                        ? current.secondaryButtonText.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim()
-                        : 'Atendimento no WhatsApp'}
-                    </span>
-                  </a>
-                )}
-              </div>
-
-              {/* Subtle entry microcopy */}
-              <button
-                onClick={handleConhecerSite}
-                className="mt-5 text-[11px] text-white/60 hover:text-white/90 transition-colors tracking-wide cursor-pointer font-medium"
-              >
-                Toque para abrir a loja online
-              </button>
             </main>
 
             {/* Bottom Footer Details */}
