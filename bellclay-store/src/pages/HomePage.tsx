@@ -284,11 +284,15 @@ export const HomePage: React.FC = () => {
               {/* "Ver mais" Button (6 on mobile, 8 on computer initial limit) - Opens full Products Page */}
               {hasMoreProducts && (
                 <motion.div
-                  initial={hasAnimatedVerMais ? false : { opacity: 0, y: 18 }}
+                  initial={hasAnimatedVerMais ? false : { opacity: 0, y: 22 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.2 }}
+                  viewport={{ once: true, amount: 0.15 }}
                   onViewportEnter={() => { hasAnimatedVerMais = true; }}
-                  transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{
+                    duration: 0.95,
+                    delay: hasAnimatedVerMais ? 0 : 0.25,
+                    ease: [0.22, 1, 0.36, 1]
+                  }}
                   className="pt-8 sm:pt-10 flex flex-col items-center justify-center"
                 >
                   <button

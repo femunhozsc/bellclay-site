@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Search, User, X, ChevronRight } from 'lucide-react';
+import { ShoppingBag, Search, User, X, ChevronRight, ArrowRight } from 'lucide-react';
 import { WhatsAppIcon } from './SocialIcons';
 import { useCart } from '../context/CartContext';
 import { useSettings } from '../context/SettingsContext';
@@ -22,13 +22,21 @@ export const Header: React.FC = () => {
   } = useSettings();
   const { customerProfile } = useAuth();
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Automatically close mobile search bar and search popover whenever the page changes
+  useEffect(() => {
+    setIsMobileSearchOpen(false);
+    setIsSearchDropdownOpen(false);
+  }, [location.pathname]);
 
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
     setSearchQuery('');
     setSelectedCategory('all');
     setIsMobileSearchOpen(false);
+    setIsSearchDropdownOpen(false);
 
     if (location.pathname === '/' && !location.hash) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -66,16 +74,19 @@ export const Header: React.FC = () => {
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
+    setIsSearchDropdownOpen(Boolean(query.trim()));
   };
 
   const handleSelectProduct = (slug: string) => {
     setSearchQuery('');
     setIsMobileSearchOpen(false);
+    setIsSearchDropdownOpen(false);
     navigate(`/produto/${slug}`);
   };
 
   const handleViewAllResults = () => {
     setIsMobileSearchOpen(false);
+    setIsSearchDropdownOpen(false);
     if (location.pathname !== '/produtos') {
       navigate('/produtos');
     }
@@ -85,7 +96,7 @@ export const Header: React.FC = () => {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
-        // keep query but close if needed
+        setIsSearchDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -133,12 +144,24 @@ export const Header: React.FC = () => {
                 placeholder="Buscar chaveiros, bottons, esculturas..."
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
+                onFocus={() => {
+                  if (searchQuery.trim()) setIsSearchDropdownOpen(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleViewAllResults();
+                  }
+                }}
                 style={{ outline: 'none' }}
                 className="w-full bg-[#F5EFE6]/80 hover:bg-[#F5EFE6] focus:bg-white text-brand-charcoal text-xs sm:text-sm rounded-full pl-11 pr-10 py-3 border border-brand-border/80 focus:border-brand-pink outline-none transition-all duration-200 shadow-2xs"
               />
               {searchQuery && (
                 <button
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => {
+                    setSearchQuery('');
+                    setIsSearchDropdownOpen(false);
+                  }}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-charcoal cursor-pointer p-1"
                   aria-label="Limpar busca"
                 >
@@ -148,12 +171,13 @@ export const Header: React.FC = () => {
             </div>
 
             {/* Instant Live Search Results Popover */}
-            {queryNormalized && (
+            {isSearchDropdownOpen && queryNormalized && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-brand-border/80 shadow-2xl overflow-hidden z-50 p-2 space-y-1">
                 <div className="px-3 py-1.5 text-[11px] font-bold text-brand-muted border-b border-brand-border/50 flex justify-between">
                   <span>Resultados instantâneos ({matchedPreviewProducts.length})</span>
                   {matchedPreviewProducts.length > 0 && (
                     <button
+                      type="button"
                       onClick={handleViewAllResults}
                       className="text-brand-pink hover:underline cursor-pointer"
                     >
@@ -195,6 +219,18 @@ export const Header: React.FC = () => {
                     );
                   })
                 )}
+
+                {/* Direct Action Button to Products Page */}
+                <div className="pt-1.5 pb-0.5 border-t border-brand-border/40 px-1">
+                  <button
+                    type="button"
+                    onClick={handleViewAllResults}
+                    className="w-full py-2 px-3 text-center text-xs font-bold text-brand-pink hover:bg-brand-pink-subtle/50 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <span>Ir para a página de produtos</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -271,13 +307,22 @@ export const Header: React.FC = () => {
                   placeholder="Buscar chaveiros, bottons, esculturas..."
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleViewAllResults();
+                    }
+                  }}
                   style={{ outline: 'none' }}
                   className="w-full bg-[#F5EFE6] focus:bg-white text-brand-charcoal text-xs sm:text-sm rounded-full pl-11 pr-10 py-3 border border-brand-border/80 focus:border-brand-pink outline-none transition-all shadow-xs"
                   autoFocus
                 />
                 {searchQuery && (
                   <button
-                    onClick={() => setSearchQuery('')}
+                    onClick={() => {
+                      setSearchQuery('');
+                      setIsSearchDropdownOpen(false);
+                    }}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-charcoal cursor-pointer p-1"
                     aria-label="Limpar"
                   >
@@ -293,8 +338,9 @@ export const Header: React.FC = () => {
                     <span>Resultados ({matchedPreviewProducts.length})</span>
                     {matchedPreviewProducts.length > 0 && (
                       <button
+                        type="button"
                         onClick={handleViewAllResults}
-                        className="text-brand-pink font-semibold underline"
+                        className="text-brand-pink font-semibold underline cursor-pointer"
                       >
                         Ver no catálogo
                       </button>
@@ -332,6 +378,18 @@ export const Header: React.FC = () => {
                       );
                     })
                   )}
+
+                  {/* Direct Action Button to Products Page */}
+                  <div className="pt-1.5 pb-0.5 border-t border-brand-border/40 px-1">
+                    <button
+                      type="button"
+                      onClick={handleViewAllResults}
+                      className="w-full py-2 px-3 text-center text-xs font-bold text-brand-pink hover:bg-brand-pink-subtle/50 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <span>Ir para a página de produtos</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               )}
             </motion.div>

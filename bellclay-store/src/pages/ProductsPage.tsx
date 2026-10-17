@@ -121,7 +121,7 @@ export const ProductsPage: React.FC = () => {
               placeholder="Buscar por nome da peça, chaveiro, botton, escultura..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white text-brand-charcoal text-xs sm:text-sm sm:text-base rounded-2xl pl-12 pr-12 py-3.5 sm:py-4 border border-brand-border/80 focus:border-brand-pink focus:ring-2 focus:ring-brand-pink/20 outline-hidden transition-all duration-200 shadow-2xs hover:shadow-xs"
+              className="w-full bg-white text-brand-charcoal text-xs sm:text-sm sm:text-base rounded-2xl pl-12 pr-12 py-3.5 sm:py-4 border-none outline-none shadow-xs hover:shadow-sm focus:shadow-md transition-all duration-200"
             />
             {searchQuery && (
               <button
