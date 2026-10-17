@@ -33,26 +33,29 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) 
   });
 
   React.useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    const handleResize = () => {
+      const mobile = window.innerWidth < 640;
+      setIsMobile((prev) => (prev !== mobile ? mobile : prev));
+    };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // No celular: os 2 da mesma linha animam juntos (stagger por linha de 2 em 2)
+  // No celular: os 2 da mesma linha animam juntos (stagger por linha de 2 em 2 com base delay suave)
   // No computador: mantém stagger individual por coluna
   const staggerDelay = isMobile
-    ? Math.min(Math.floor(index / 2) * 0.12, 0.36)
-    : Math.min((index % 4) * 0.1, 0.3);
+    ? 0.08 + Math.min(Math.floor(index / 2) * 0.1, 0.3)
+    : 0.05 + Math.min((index % 4) * 0.08, 0.28);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 22 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.08 }}
+      viewport={{ once: true, amount: 0.12 }}
       transition={{
-        duration: 0.85,
+        duration: 0.75,
         delay: staggerDelay,
-        ease: [0.16, 1, 0.3, 1]
+        ease: [0.22, 1, 0.36, 1]
       }}
       whileHover={{
         y: -5,
@@ -74,7 +77,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) 
           src={product.images[0]}
           alt={product.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
+          loading={index < 4 ? "eager" : "lazy"}
+          decoding="async"
         />
 
         {/* Badges */}
