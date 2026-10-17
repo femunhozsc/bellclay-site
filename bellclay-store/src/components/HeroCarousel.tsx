@@ -86,21 +86,6 @@ export const HeroCarousel: React.FC = () => {
   };
 
   useEffect(() => {
-    let animId: number;
-    const durationMs = 7500;
-
-    const tick = () => {
-      const now = performance.now();
-      const angle = ((now % durationMs) / durationMs) * 360;
-      document.documentElement.style.setProperty('--banner-btn-angle', `${angle.toFixed(2)}deg`);
-      animId = requestAnimationFrame(tick);
-    };
-
-    animId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(animId);
-  }, []);
-
-  useEffect(() => {
     if (activeBanners.length <= 1 || isPaused) return;
 
     const timer = setInterval(() => {
@@ -146,31 +131,26 @@ export const HeroCarousel: React.FC = () => {
     }
   };
 
-  // Variantes de animação: arrasto para o lado com suave fade branco
+  // Variantes de animação: arrasto para o lado fluido e acelerado por hardware
   const slideVariants = {
     enter: (direction: 'left' | 'right') => ({
       x: direction === 'right' ? '100%' : '-100%',
-      opacity: 0,
-      scale: 1
+      opacity: 0
     }),
     center: {
       x: 0,
       opacity: 1,
-      scale: 1,
       transition: {
-        x: { type: 'spring' as const, stiffness: 280, damping: 32 },
-        opacity: { duration: 0.45, ease: 'easeOut' as const },
-        scale: { duration: 0.45 }
+        x: { duration: 0.4, ease: [0.25, 1, 0.5, 1] as const },
+        opacity: { duration: 0.32, ease: 'easeOut' as const }
       }
     },
     exit: (direction: 'left' | 'right') => ({
       x: direction === 'right' ? '-100%' : '100%',
       opacity: 0,
-      scale: 0.98,
       transition: {
-        x: { type: 'spring' as const, stiffness: 280, damping: 32 },
-        opacity: { duration: 0.35, ease: 'easeIn' as const },
-        scale: { duration: 0.35 }
+        x: { duration: 0.36, ease: [0.25, 1, 0.5, 1] as const },
+        opacity: { duration: 0.25, ease: 'easeIn' as const }
       }
     })
   };
@@ -197,27 +177,22 @@ export const HeroCarousel: React.FC = () => {
           dragElastic={0.2}
           onDragStart={() => setIsPaused(true)}
           onDragEnd={handleDragEnd}
+          style={{ willChange: 'transform' }}
           className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing bg-white"
         >
-          {/* Background Photo Occupying 100% of Width & Height with smooth settle */}
-          <motion.img
+          {/* Background Photo Occupying 100% of Width & Height */}
+          <img
             src={current.imageUrl}
             alt={current.title}
             draggable={false}
-            initial={{ scale: 1.08 }}
-            animate={{ scale: 1.03 }}
-            transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
             className="w-full h-full object-cover object-center"
           />
 
-          {/* Flash/Fade branco sutil nas transições */}
-          <div className="absolute inset-0 bg-white/10 pointer-events-none mix-blend-screen" />
-
           {/* Bottom-to-Top Fade Gradient transitioning into Title & Subtitle */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 via-55% to-black/10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 via-55% to-black/10 pointer-events-none" />
 
           {/* Vibrant Pink & Green Ambient Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-brand-pink/40 via-transparent to-brand-green/35 mix-blend-soft-light pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-brand-pink/25 via-transparent to-brand-green/20 pointer-events-none" />
 
           {/* Content Overlay - slides naturally with the banner */}
           <div className="absolute inset-x-0 bottom-0 z-10">

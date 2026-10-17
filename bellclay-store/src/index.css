@@ -78,9 +78,18 @@
   animation: shimmer 2s infinite;
 }
 
-/* Continuous Rotating Half Pink / Half Pastel Green Gradient for Banner Buttons */
+/* Continuous Rotating Half Pink / Half Pastel Green Gradient for Banner Buttons (GPU-Accelerated) */
+@keyframes banner-gradient-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .animate-gradient-dance {
-  transform: rotate(var(--banner-btn-angle, 0deg));
+  animation: banner-gradient-spin 7.5s linear infinite;
   will-change: transform;
 }
 

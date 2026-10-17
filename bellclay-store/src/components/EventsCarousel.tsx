@@ -4,10 +4,12 @@ import { ArrowRight, Calendar, MapPin, Sparkles, ChevronLeft, ChevronRight } fro
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 
+// Guarda se a seção de eventos já foi animada uma vez para nunca mais sumir ou reanimar ao rolar a página
+let hasAnimatedEventsSection = false;
+
 export const EventsCarousel: React.FC = () => {
   const { settings } = useSettings();
   const navigate = useNavigate();
-
   const activeEvents = (settings.events || []).filter((e) => e.active);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
@@ -19,7 +21,7 @@ export const EventsCarousel: React.FC = () => {
     const timer = setInterval(() => {
       setSlideDirection('right');
       setCurrentIndex((prev) => (prev + 1) % activeEvents.length);
-    }, 6500);
+    }, 6000);
 
     return () => clearInterval(timer);
   }, [activeEvents.length, isPaused]);
@@ -53,31 +55,26 @@ export const EventsCarousel: React.FC = () => {
     }
   };
 
-  // Variantes de animação: arrasto para o lado com transição idêntica ao banner principal
+  // Variantes de animação: arrasto para o lado fluido e acelerado por hardware
   const slideVariants = {
     enter: (direction: 'left' | 'right') => ({
       x: direction === 'right' ? '100%' : '-100%',
-      opacity: 0,
-      scale: 1
+      opacity: 0
     }),
     center: {
       x: 0,
       opacity: 1,
-      scale: 1,
       transition: {
-        x: { type: 'spring' as const, stiffness: 280, damping: 32 },
-        opacity: { duration: 0.45, ease: 'easeOut' as const },
-        scale: { duration: 0.45 }
+        x: { duration: 0.4, ease: [0.25, 1, 0.5, 1] as const },
+        opacity: { duration: 0.32, ease: 'easeOut' as const }
       }
     },
     exit: (direction: 'left' | 'right') => ({
       x: direction === 'right' ? '-100%' : '100%',
       opacity: 0,
-      scale: 0.98,
       transition: {
-        x: { type: 'spring' as const, stiffness: 280, damping: 32 },
-        opacity: { duration: 0.35, ease: 'easeIn' as const },
-        scale: { duration: 0.35 }
+        x: { duration: 0.36, ease: [0.25, 1, 0.5, 1] as const },
+        opacity: { duration: 0.25, ease: 'easeIn' as const }
       }
     })
   };
@@ -89,16 +86,17 @@ export const EventsCarousel: React.FC = () => {
   return (
     <motion.section
       id="eventos"
-      initial={{ opacity: 0, y: 24 }}
+      initial={hasAnimatedEventsSection ? false : { opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.1 }}
-      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      onViewportEnter={() => { hasAnimatedEventsSection = true; }}
+      transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
       className="space-y-4 sm:space-y-6 pt-4 sm:pt-6 scroll-mt-24 relative"
     >
       <div id="evento" className="absolute -top-24 pointer-events-none" />
       {/* Section Header */}
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
+        initial={hasAnimatedEventsSection ? false : { opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
@@ -122,7 +120,7 @@ export const EventsCarousel: React.FC = () => {
 
       {/* High-Impact Banner-style Event Carousel with Rounded Edges */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.99, y: 16 }}
+        initial={hasAnimatedEventsSection ? false : { opacity: 0, scale: 0.99, y: 16 }}
         whileInView={{ opacity: 1, scale: 1, y: 0 }}
         viewport={{ once: true, amount: 0.12 }}
         transition={{ duration: 0.8, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
@@ -143,6 +141,7 @@ export const EventsCarousel: React.FC = () => {
             dragElastic={0.2}
             onDragStart={() => setIsPaused(true)}
             onDragEnd={handleDragEnd}
+            style={{ willChange: 'transform' }}
             className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing bg-black"
           >
             {/* Background Cover Image */}
@@ -154,10 +153,10 @@ export const EventsCarousel: React.FC = () => {
             />
 
             {/* Gradient Darkening Overlay for maximum readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 via-50% to-black/20" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 via-50% to-black/20 pointer-events-none" />
 
             {/* Ambient Pink/Green Glow */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-brand-pink/35 via-transparent to-brand-green/30 mix-blend-soft-light pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-brand-pink/25 via-transparent to-brand-green/20 pointer-events-none" />
 
             {/* Content Details */}
             <div className="absolute inset-x-0 bottom-0 z-10">

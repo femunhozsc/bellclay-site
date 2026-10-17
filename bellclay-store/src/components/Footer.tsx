@@ -4,16 +4,20 @@ import { Heart, MapPin, Truck, ShieldCheck } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { WhatsAppIcon, InstagramIcon, TikTokIcon } from './SocialIcons';
 
+// Guarda se o rodapé já foi animado uma vez para nunca mais sumir ao rolar a página
+let hasAnimatedFooter = false;
+
 export const Footer: React.FC = () => {
   const { settings } = useSettings();
 
   return (
     <footer className="bg-[#FAF7F2] border-t border-brand-border/60 text-brand-charcoal pt-14 pb-8 transition-colors overflow-hidden">
       <motion.div
-        initial={{ opacity: 0, y: 22 }}
+        initial={hasAnimatedFooter ? false : { opacity: 0, y: 22 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.12 }}
-        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        onViewportEnter={() => { hasAnimatedFooter = true; }}
+        transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12"
       >
         

@@ -63,8 +63,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.22 }}
             onClick={() => setIsOpen(false)}
-            className="absolute inset-0 bg-brand-charcoal/40 backdrop-blur-xs transition-opacity"
+            className="absolute inset-0 bg-black/45"
           />
 
           <div className="fixed inset-y-0 right-0 max-w-full flex w-full sm:w-auto">
@@ -72,7 +73,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+              transition={{ duration: 0.28, ease: [0.25, 1, 0.5, 1] }}
+              style={{ willChange: 'transform' }}
               className="w-full sm:w-[440px] bg-white shadow-2xl border-l border-brand-border/60 flex flex-col h-full"
             >
               {/* Header */}

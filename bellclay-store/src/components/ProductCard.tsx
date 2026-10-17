@@ -10,9 +10,20 @@ interface ProductCardProps {
   index?: number;
 }
 
+// Cache de produtos que já foram exibidos na tela para que NUNCA mais sumam ou reanimem ao scrollar
+const animatedProductIds = new Set<string>();
+
 export const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) => {
   const { addItem } = useCart();
   const [isAdded, setIsAdded] = useState(false);
+  const [hasAnimated, setHasAnimated] = useState(() => animatedProductIds.has(product.id));
+
+  const markAnimated = () => {
+    if (!animatedProductIds.has(product.id)) {
+      animatedProductIds.add(product.id);
+      setHasAnimated(true);
+    }
+  };
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -49,14 +60,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) 
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.12 }}
-      transition={{
-        duration: 0.75,
-        delay: staggerDelay,
-        ease: [0.22, 1, 0.36, 1]
-      }}
+      initial={hasAnimated ? false : { opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileInView={hasAnimated ? undefined : { opacity: 1, y: 0 }}
+      viewport={hasAnimated ? undefined : { once: true, amount: 0.12 }}
+      onViewportEnter={markAnimated}
+      onAnimationComplete={markAnimated}
+      transition={
+        hasAnimated
+          ? { duration: 0 }
+          : {
+              duration: 0.75,
+              delay: staggerDelay,
+              ease: [0.22, 1, 0.36, 1]
+            }
+      }
       whileHover={{
         y: -5,
         transition: { duration: 0.25, ease: [0.25, 1, 0.5, 1], delay: 0 }
