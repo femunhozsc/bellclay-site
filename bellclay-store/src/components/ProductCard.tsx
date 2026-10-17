@@ -10,20 +10,9 @@ interface ProductCardProps {
   index?: number;
 }
 
-// Cache de produtos que já foram exibidos na tela para que NUNCA mais sumam ou reanimem ao scrollar
-const animatedProductIds = new Set<string>();
-
 export const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) => {
   const { addItem } = useCart();
   const [isAdded, setIsAdded] = useState(false);
-  const [hasAnimated, setHasAnimated] = useState(() => animatedProductIds.has(product.id));
-
-  const markAnimated = () => {
-    if (!animatedProductIds.has(product.id)) {
-      animatedProductIds.add(product.id);
-      setHasAnimated(true);
-    }
-  };
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -36,54 +25,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) 
   const hasDiscount = Boolean(product.promotionalPrice && product.promotionalPrice < product.price);
   const currentPrice = product.promotionalPrice || product.price;
 
-  const [isMobile, setIsMobile] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth < 640;
-    }
-    return false;
-  });
-
-  React.useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 640;
-      setIsMobile((prev) => (prev !== mobile ? mobile : prev));
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // No celular: os 2 da mesma linha animam juntos (stagger por linha de 2 em 2 com base delay suave)
-  // No computador: mantém stagger individual por coluna
-  const staggerDelay = isMobile
-    ? 0.08 + Math.min(Math.floor(index / 2) * 0.1, 0.3)
-    : 0.05 + Math.min((index % 4) * 0.08, 0.28);
+  // Stagger per-column in a row (0s, 0.06s, 0.12s, 0.18s) to keep it subtle, synchronized, and smooth
+  const staggerDelay = (index % 4) * 0.06;
 
   return (
     <motion.div
-      initial={hasAnimated ? false : { opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileInView={hasAnimated ? undefined : { opacity: 1, y: 0 }}
-      viewport={hasAnimated ? undefined : { once: true, amount: 0.12 }}
-      onViewportEnter={markAnimated}
-      onAnimationComplete={markAnimated}
-      transition={
-        hasAnimated
-          ? { duration: 0 }
-          : {
-              duration: 0.75,
-              delay: staggerDelay,
-              ease: [0.22, 1, 0.36, 1]
-            }
-      }
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1, margin: '0px 0px -30px 0px' }}
+      transition={{
+        duration: 0.65,
+        delay: staggerDelay,
+        ease: [0.22, 1, 0.36, 1]
+      }}
       whileHover={{
-        y: -5,
-        transition: { duration: 0.25, ease: [0.25, 1, 0.5, 1], delay: 0 }
+        y: -4,
+        transition: { duration: 0.25, ease: [0.25, 1, 0.5, 1] }
       }}
       whileTap={{
-        scale: 0.97,
-        transition: { duration: 0.15, delay: 0 }
+        scale: 0.98,
+        transition: { duration: 0.12 }
       }}
-      className="w-full flex flex-col"
+      className="w-full flex flex-col transform-gpu"
     >
       <Link
         to={`/produto/${product.slug}`}

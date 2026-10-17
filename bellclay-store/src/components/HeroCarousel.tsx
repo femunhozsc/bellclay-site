@@ -13,8 +13,6 @@ const normalizeText = (str: string) =>
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
 
-const pageStartTime = Date.now();
-
 export const HeroCarousel: React.FC = () => {
   const { settings, setSelectedCategory, setSearchQuery } = useSettings();
   const navigate = useNavigate();

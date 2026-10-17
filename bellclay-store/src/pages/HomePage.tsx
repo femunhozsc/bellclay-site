@@ -10,13 +10,6 @@ import { ArrowRight } from 'lucide-react';
 import { DEFAULT_SETTINGS } from '../data/defaultData';
 import { resolveCategorySlug, scrollToCatalogSection, isEventTag, scrollToEventsSection } from '../utils/categoryResolver';
 
-// Flags para que as seções permaneçam 100% carregadas e visíveis ao subir e descer a página (sem sumir nem reanimar)
-let hasAnimatedWelcome = false;
-let hasAnimatedPromo = false;
-let hasAnimatedCatalog = false;
-let hasAnimatedPills = false;
-let hasAnimatedVerMais = false;
-
 export const HomePage: React.FC = () => {
   const {
     settings,
@@ -164,11 +157,10 @@ export const HomePage: React.FC = () => {
 
       {/* Welcome Section - Balanced typography & elegant proportion */}
       <motion.section
-        initial={hasAnimatedWelcome ? false : { opacity: 0, y: 22 }}
+        initial={{ opacity: 0, y: 18 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.25 }}
-        onViewportEnter={() => { hasAnimatedWelcome = true; }}
-        transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-3 text-center space-y-3 w-full"
       >
         <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-extrabold text-brand-charcoal tracking-tight leading-snug max-w-2xl mx-auto">
@@ -183,12 +175,11 @@ export const HomePage: React.FC = () => {
       {/* Full-width Edge-to-Edge 21:9 Promotional Banner */}
       {promoImage && (
         <motion.section
-          initial={hasAnimatedPromo ? false : { opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.15 }}
-          onViewportEnter={() => { hasAnimatedPromo = true; }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full overflow-hidden select-none my-4 sm:my-8 bg-[#FAF8F5]"
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full overflow-hidden select-none my-4 sm:my-8 bg-[#FAF8F5] transform-gpu"
         >
           {settings.promoBannerLink ? (
             <a
@@ -222,11 +213,10 @@ export const HomePage: React.FC = () => {
         {/* Categories & Catalog Section */}
         <section id="produtos" className="space-y-4 sm:space-y-6 scroll-mt-24 sm:scroll-mt-28">
           <motion.div
-            initial={hasAnimatedCatalog ? false : { opacity: 0, y: 18 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.15 }}
-            onViewportEnter={() => { hasAnimatedCatalog = true; }}
-            transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
             className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-1 px-1"
           >
             <div>
@@ -246,11 +236,10 @@ export const HomePage: React.FC = () => {
 
           {/* Category Filter Pills */}
           <motion.div
-            initial={hasAnimatedPills ? false : { opacity: 0, y: 14 }}
+            initial={{ opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.15 }}
-            onViewportEnter={() => { hasAnimatedPills = true; }}
-            transition={{ duration: 0.75, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.65, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
           >
             <CategoryPills />
           </motion.div>
@@ -284,13 +273,11 @@ export const HomePage: React.FC = () => {
               {/* "Ver mais" Button (6 on mobile, 8 on computer initial limit) - Opens full Products Page */}
               {hasMoreProducts && (
                 <motion.div
-                  initial={hasAnimatedVerMais ? false : { opacity: 0, y: 22 }}
+                  initial={{ opacity: 0, y: 18 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.15 }}
-                  onViewportEnter={() => { hasAnimatedVerMais = true; }}
                   transition={{
-                    duration: 0.95,
-                    delay: hasAnimatedVerMais ? 0 : 0.25,
+                    duration: 0.65,
                     ease: [0.22, 1, 0.36, 1]
                   }}
                   className="pt-8 sm:pt-10 flex flex-col items-center justify-center"
