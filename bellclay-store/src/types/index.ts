@@ -158,3 +158,49 @@ export interface Coupon {
   usageCount?: number;
   createdAt?: string;
 }
+
+export interface AdCampaign {
+  id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+
+  // Visual & Banners
+  bannerUrl: string;
+  mobileBannerUrl?: string;
+  overlayOpacity: number;
+  badgeText: string;
+  themeStyle?: 'soft-pink' | 'warm-clay' | 'magic-dark' | 'mint-green';
+
+  // Storytelling & Textos Programáveis
+  headline: string;
+  subtitle: string;
+  storyText?: string;
+  highlights?: string[];
+
+  // Oferta & Conversão
+  showCoupon?: boolean;
+  couponCode?: string;
+  couponDiscountText?: string;
+
+  // Produto em Destaque do Anúncio
+  showFeaturedProduct?: boolean;
+  featuredProductId?: string;
+
+  // Prova Social / Selos de Confiança
+  showTrustBadges?: boolean;
+  trustBadgeText?: string;
+
+  // Ação & Animação de Abertura
+  buttonText: string;
+  targetUrl: string;
+  secondaryButtonText?: string;
+  secondaryButtonUrl?: string;
+
+  // Métricas
+  viewsCount?: number;
+  clicksCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+

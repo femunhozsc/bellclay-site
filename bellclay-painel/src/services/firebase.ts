@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore, collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { getAuth, Auth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { getStorage, FirebaseStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Product, SiteSettings, Order, MetricsSummary, BellclayEvent, DateFilterType, ChartDataPoint, AnalyticsEvent } from '../types';
+import { Product, SiteSettings, Order, MetricsSummary, BellclayEvent, DateFilterType, ChartDataPoint, AnalyticsEvent, AdCampaign } from '../types';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBzTUrdoJnl7A1zkHNzoAB7P39uM8LNvIA",
@@ -40,7 +40,9 @@ const STORAGE_KEYS = {
   ORDERS: 'bellclay_orders',
   METRICS: 'bellclay_metrics',
   EVENTS: 'bellclay_events',
+  CAMPAIGNS: 'bellclay_campaigns',
 };
+
 
 const stripUndefined = (obj: any): any => {
   if (Array.isArray(obj)) {
@@ -484,7 +486,118 @@ export const saveAllPanelEvents = async (events: BellclayEvent[]): Promise<void>
   window.dispatchEvent(new Event('bellclay_settings_updated'));
 };
 
+// ---------------------------------------------------------------------------
+// TELAS DE ANÚNCIOS & CAMPANHAS (Landing Pages para Tráfego Pago)
+// ---------------------------------------------------------------------------
+export const DEFAULT_PANEL_CAMPAIGNS: AdCampaign[] = [
+  {
+    id: "camp-gatinhos",
+    name: "Instagram Stories - Coleção Gatinhos & Moranguinho",
+    slug: "gatinhos-fofos",
+    active: true,
+    bannerUrl: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=1600&q=80",
+    mobileBannerUrl: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80",
+    overlayOpacity: 45,
+    badgeText: "🌸 Edição Especial Bellclay",
+    themeStyle: "soft-pink",
+    headline: "Peças Únicas em Cerâmica Fria Feitas com Amor",
+    subtitle: "Modeladas à mão em Campo Mourão - PR. Dê um toque de fofura e personalidade à sua rotina com chaveiros e bottons colecionáveis!",
+    storyText: "Oi! Ficamos super felizes em receber você. Cada criação da Bellclay nasce de um pedaço de cerâmica fria moldado pacientemente com as mãos, pintado em detalhes e selado com verniz vitrificado ultra resistente. Peças que contam histórias e carregam afeto.",
+    highlights: [
+      "100% Feito à Mão ✨",
+      "Frete Grátis acima de R$ 149 🚚",
+      "Embalagem Perfumada de Presente 🎁",
+      "Envio Seguro para todo o Brasil 🇧🇷"
+    ],
+    showCoupon: true,
+    couponCode: "BEMVINDO10",
+    couponDiscountText: "10% OFF no seu primeiro pedido",
+    showFeaturedProduct: true,
+    featuredProductId: "prod-1",
+    showTrustBadges: true,
+    trustBadgeText: "⭐ 5.0 estrelas (+500 clientes encantadas em todo o Brasil)",
+    buttonText: "Conhecer o site ✨",
+    targetUrl: "/",
+    secondaryButtonText: "Tirar Dúvidas no WhatsApp",
+    secondaryButtonUrl: "https://wa.me/5544999999999",
+    viewsCount: 142,
+    clicksCount: 89,
+    createdAt: new Date().toISOString()
+  }
+];
+
+export const fetchPanelCampaigns = async (): Promise<AdCampaign[]> => {
+  if (db) {
+    try {
+      const snap = await getDocs(collection(db, 'campaigns'));
+      if (!snap.empty) {
+        return snap.docs.map(d => ({ id: d.id, ...d.data() } as AdCampaign));
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar campanhas do Firestore:', err);
+    }
+  }
+
+  const saved = localStorage.getItem(STORAGE_KEYS.CAMPAIGNS);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch {}
+  }
+  return DEFAULT_PANEL_CAMPAIGNS;
+};
+
+export const savePanelCampaign = async (campaign: AdCampaign): Promise<void> => {
+  if (db) {
+    try {
+      const docRef = doc(db, 'campaigns', campaign.id);
+      await setDoc(docRef, { ...stripUndefined(campaign), updatedAt: serverTimestamp() });
+    } catch (err) {
+      console.warn('Erro ao salvar campanha no Firestore:', err);
+    }
+  }
+
+  const current = await fetchPanelCampaigns();
+  const exists = current.findIndex(c => c.id === campaign.id);
+  let updated: AdCampaign[];
+  if (exists >= 0) {
+    updated = [...current];
+    updated[exists] = campaign;
+  } else {
+    updated = [campaign, ...current];
+  }
+
+  try {
+    localStorage.setItem(STORAGE_KEYS.CAMPAIGNS, JSON.stringify(updated));
+  } catch (err) {
+    console.warn('Cota de LocalStorage ao salvar campanhas:', err);
+  }
+
+  window.dispatchEvent(new Event('bellclay_campaigns_updated'));
+};
+
+export const deletePanelCampaign = async (campaignId: string): Promise<void> => {
+  if (db) {
+    try {
+      await deleteDoc(doc(db, 'campaigns', campaignId));
+    } catch (err) {
+      console.warn('Erro ao deletar campanha no Firestore:', err);
+    }
+  }
+
+  const current = await fetchPanelCampaigns();
+  const updated = current.filter(c => c.id !== campaignId);
+
+  try {
+    localStorage.setItem(STORAGE_KEYS.CAMPAIGNS, JSON.stringify(updated));
+  } catch {}
+
+  window.dispatchEvent(new Event('bellclay_campaigns_updated'));
+};
+
 // Site Settings CRUD
+
 export const fetchPanelSettings = async (): Promise<SiteSettings> => {
   let settingsObj: SiteSettings = DEFAULT_PANEL_SETTINGS;
 

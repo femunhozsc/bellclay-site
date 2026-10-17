@@ -9,6 +9,7 @@ import { ProductPage } from './pages/ProductPage';
 import { EventPage } from './pages/EventPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { AccountPage } from './pages/AccountPage';
+import { LandingCampaignPage } from './pages/LandingCampaignPage';
 import { trackEvent } from './services/firebase';
 
 const ScrollToTop: React.FC = () => {
@@ -54,6 +55,8 @@ export const App: React.FC = () => {
       <div className="flex-1 flex flex-col">
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/lp/:slug" element={<LandingCampaignPage />} />
+          <Route path="/c/:slug" element={<LandingCampaignPage />} />
           <Route path="/produtos" element={<ProductsPage />} />
           <Route path="/produtos/:categorySlug" element={<ProductsPage />} />
           <Route path="/produto/:slug" element={<ProductPage />} />
@@ -63,6 +66,7 @@ export const App: React.FC = () => {
           <Route path="*" element={<HomePage />} />
         </Routes>
       </div>
+
 
       {/* Main Footer (Hidden during streamlined Checkout) */}
       {!isCheckout && <Footer />}

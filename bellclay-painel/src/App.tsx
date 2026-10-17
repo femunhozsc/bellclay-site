@@ -8,11 +8,13 @@ import { ProductsPage } from './pages/ProductsPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { CustomizerPage } from './pages/CustomizerPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { CampaignsPage } from './pages/CampaignsPage';
 import { ProductFormModal } from './components/ProductFormModal';
 import { OrderDetailModal } from './components/OrderDetailModal';
 import { BannerModal } from './components/BannerModal';
 import { CategoryModal } from './components/CategoryModal';
 import { EventModal } from './components/EventModal';
+import { CampaignModal } from './components/CampaignModal';
 import {
   fetchPanelProducts,
   savePanelProduct,
@@ -26,10 +28,15 @@ import {
   updateOrderStatus,
   fetchAnalyticsEvents,
   fetchMetrics,
+  fetchPanelCampaigns,
+  savePanelCampaign,
+  deletePanelCampaign,
   DEFAULT_PANEL_SETTINGS,
-  DEFAULT_PANEL_PRODUCTS
+  DEFAULT_PANEL_PRODUCTS,
+  DEFAULT_PANEL_CAMPAIGNS
 } from './services/firebase';
-import { Product, SiteSettings, Order, MetricsSummary, BannerSlide, CategoryItem, BellclayEvent, AnalyticsEvent } from './types';
+import { Product, SiteSettings, Order, MetricsSummary, BannerSlide, CategoryItem, BellclayEvent, AnalyticsEvent, AdCampaign } from './types';
+
 
 export const App: React.FC = () => {
   const { isAuthenticated } = useAdminAuth();
@@ -39,6 +46,7 @@ export const App: React.FC = () => {
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_PANEL_SETTINGS);
   const [orders, setOrders] = useState<Order[]>([]);
   const [analyticsEvents, setAnalyticsEvents] = useState<AnalyticsEvent[]>([]);
+  const [campaigns, setCampaigns] = useState<AdCampaign[]>(DEFAULT_PANEL_CAMPAIGNS);
 
   // Modal states
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -56,18 +64,23 @@ export const App: React.FC = () => {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<BellclayEvent | null>(null);
 
+  const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState<AdCampaign | null>(null);
+
   const loadData = async () => {
     try {
-      const [fetchedProducts, fetchedSettings, fetchedOrders, fetchedEvents] = await Promise.all([
+      const [fetchedProducts, fetchedSettings, fetchedOrders, fetchedEvents, fetchedCampaigns] = await Promise.all([
         fetchPanelProducts(),
         fetchPanelSettings(),
         fetchPanelOrders(),
-        fetchAnalyticsEvents()
+        fetchAnalyticsEvents(),
+        fetchPanelCampaigns()
       ]);
       setProducts(fetchedProducts);
       setSettings(fetchedSettings);
       setOrders(fetchedOrders);
       setAnalyticsEvents(fetchedEvents);
+      setCampaigns(fetchedCampaigns);
     } catch (err) {
       console.warn('Erro ao carregar dados do painel:', err);
     }
@@ -90,6 +103,7 @@ export const App: React.FC = () => {
       window.addEventListener('bellclay_settings_updated', handleUpdate);
       window.addEventListener('bellclay_events_updated', handleUpdate);
       window.addEventListener('bellclay_orders_updated', handleUpdate);
+      window.addEventListener('bellclay_campaigns_updated', handleUpdate);
       window.addEventListener('storage', handleUpdate);
 
       return () => {
@@ -99,10 +113,12 @@ export const App: React.FC = () => {
         window.removeEventListener('bellclay_settings_updated', handleUpdate);
         window.removeEventListener('bellclay_events_updated', handleUpdate);
         window.removeEventListener('bellclay_orders_updated', handleUpdate);
+        window.removeEventListener('bellclay_campaigns_updated', handleUpdate);
         window.removeEventListener('storage', handleUpdate);
       };
     }
   }, [isAuthenticated]);
+
 
   if (!isAuthenticated) {
     return <LoginPage />;
@@ -181,6 +197,23 @@ export const App: React.FC = () => {
     await loadData();
   };
 
+  // Handlers for campaigns
+  const handleSaveCampaign = async (campaign: AdCampaign) => {
+    await savePanelCampaign(campaign);
+    await loadData();
+  };
+
+  const handleDeleteCampaign = async (campaignId: string) => {
+    await deletePanelCampaign(campaignId);
+    await loadData();
+  };
+
+  const handleToggleCampaignActive = async (campaign: AdCampaign) => {
+    const updated = { ...campaign, active: campaign.active === false ? true : false };
+    await savePanelCampaign(updated);
+    await loadData();
+  };
+
   // Handlers for orders
   const handleUpdateOrderStatus = async (
     orderId: string,
@@ -195,6 +228,7 @@ export const App: React.FC = () => {
     dashboard: { title: 'Visão Geral & Métricas', subtitle: 'Acompanhe vendas, visitas, conversão e carrinho do site' },
     products: { title: 'Gestão de Produtos & Frete', subtitle: 'Cadastre peças com fotos, preços, peso e dimensões para o Melhor Envio' },
     orders: { title: 'Pedidos & Vendas', subtitle: 'Fulfillment de pedidos, códigos de rastreio e contato direto com clientes' },
+    campaigns: { title: 'Telas de Anúncios & Links', subtitle: 'Crie páginas com tela de boas-vindas, banner diferente e abertura para cima para anúncios' },
     customizer: { title: 'Personalização do Site', subtitle: 'Modifique banners, títulos de boas-vindas e categorias em tempo real' },
     settings: { title: 'Configurações & Integrações', subtitle: 'Configure CEP de origem (Campo Mourão), InfinitePay e Melhor Envio' }
   };
@@ -248,6 +282,23 @@ export const App: React.FC = () => {
                 setSelectedOrder(ord);
                 setIsOrderDetailOpen(true);
               }}
+            />
+          )}
+
+          {currentTab === 'campaigns' && (
+            <CampaignsPage
+              campaigns={campaigns}
+              products={products}
+              onOpenCreateModal={() => {
+                setEditingCampaign(null);
+                setIsCampaignModalOpen(true);
+              }}
+              onEditCampaign={(camp) => {
+                setEditingCampaign(camp);
+                setIsCampaignModalOpen(true);
+              }}
+              onDeleteCampaign={handleDeleteCampaign}
+              onToggleActive={handleToggleCampaignActive}
             />
           )}
 
@@ -318,6 +369,16 @@ export const App: React.FC = () => {
         onClose={() => setIsEventModalOpen(false)}
         onSave={handleSaveEvent}
       />
+
+      <CampaignModal
+        campaign={editingCampaign}
+        isOpen={isCampaignModalOpen}
+        onClose={() => setIsCampaignModalOpen(false)}
+        onSave={handleSaveCampaign}
+        products={products}
+        categories={settings.categories}
+      />
     </div>
   );
 };
+

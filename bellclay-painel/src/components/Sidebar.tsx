@@ -8,7 +8,8 @@ import {
   LogOut,
   ExternalLink,
   Heart,
-  BarChart3
+  BarChart3,
+  Megaphone
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 
@@ -24,9 +25,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
     { id: 'dashboard', label: 'Dashboard & Métricas', icon: <LayoutDashboard className="w-5 h-5" /> },
     { id: 'products', label: 'Produtos & Frete', icon: <Package className="w-5 h-5" /> },
     { id: 'orders', label: 'Pedidos & Vendas', icon: <ShoppingBag className="w-5 h-5" /> },
+    { id: 'campaigns', label: 'Telas de Anúncios', icon: <Megaphone className="w-5 h-5" /> },
     { id: 'customizer', label: 'Personalizar Site', icon: <Sliders className="w-5 h-5" /> },
     { id: 'settings', label: 'Configurações & APIs', icon: <Settings className="w-5 h-5" /> },
   ];
+
 
   return (
     <aside className="w-64 bg-white border-r border-brand-border/70 flex flex-col justify-between shrink-0 h-screen sticky top-0">

@@ -176,6 +176,51 @@ export interface AnalyticsEvent {
   userAgent?: string;
 }
 
+export interface AdCampaign {
+  id: string;
+  name: string; // Nome identificador interno (ex: "Instagram Stories - Coleção Gatinhos")
+  slug: string; // Slug da URL pública (ex: "gatinhos-fofos" -> loja/lp/gatinhos-fofos)
+  active: boolean;
+
+  // Visual & Banners
+  bannerUrl: string; // Imagem de banner principal (Desktop / Tablet)
+  mobileBannerUrl?: string; // Imagem opcional otimizada para celular vertical
+  overlayOpacity: number; // 0 a 90% (escurecimento para legibilidade)
+  badgeText: string; // Ex: "🌸 Edição Especial Instagram"
+  themeStyle?: 'soft-pink' | 'warm-clay' | 'magic-dark' | 'mint-green';
+
+  // Storytelling & Textos Programáveis
+  headline: string; // Título principal de boas-vindas
+  subtitle: string; // Subtítulo acolhedor
+  storyText?: string; // Mensagem com história da peça / marca ("fala alguma coisa")
+  highlights?: string[]; // Benefícios em pílulas (ex: "Peças 100% Artesanais", "Frete Grátis acima de R$149")
+
+  // Oferta & Conversão (Ideia de alta conversão para anúncios)
+  showCoupon?: boolean;
+  couponCode?: string; // Ex: "BEMVINDO10"
+  couponDiscountText?: string; // Ex: "10% OFF no primeiro pedido"
+
+  // Produto em Destaque do Anúncio
+  showFeaturedProduct?: boolean;
+  featuredProductId?: string; // ID do produto
+
+  // Prova Social / Selos de Confiança
+  showTrustBadges?: boolean;
+  trustBadgeText?: string; // Ex: "⭐ 5.0 estrelas (+500 clientes encantadas em todo o Brasil)"
+
+  // Ação & Animação de Abertura
+  buttonText: string; // Ex: "Conhecer o site ✨"
+  targetUrl: string; // Destino pós-animação (ex: "/", "/produtos", "/produtos/chaveiros", ou slug de produto)
+  secondaryButtonText?: string; // Ex: "Chamar no WhatsApp"
+  secondaryButtonUrl?: string; // Link direto WhatsApp
+
+  // Métricas
+  viewsCount?: number;
+  clicksCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface MetricsSummary {
   pageViews: number;
   uniqueVisitors: number;
@@ -199,3 +244,4 @@ export interface MetricsSummary {
   chartData?: ChartDataPoint[];
   peakLabel?: string;
 }
+
