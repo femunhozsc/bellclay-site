@@ -453,13 +453,13 @@ export const CampaignsPage: React.FC<CampaignsPageProps> = ({
                     setUtmSource('instagram');
                     setUtmMedium('stories');
                   }}
-                  className={`p-2.5 rounded-xl text-xs font-bold border transition-all text-center cursor-pointer ${
+                  className={`p-2.5 rounded-xl text-xs font-semibold border transition-all text-center cursor-pointer ${
                     utmSource === 'instagram' && utmMedium === 'stories'
                       ? 'border-brand-pink bg-brand-pink-light/40 text-brand-pink'
                       : 'border-brand-border bg-[#FAF8F5] text-brand-charcoal hover:bg-white'
                   }`}
                 >
-                  📸 Insta Stories
+                  Instagram Stories
                 </button>
                 <button
                   type="button"
@@ -467,13 +467,13 @@ export const CampaignsPage: React.FC<CampaignsPageProps> = ({
                     setUtmSource('instagram');
                     setUtmMedium('reels');
                   }}
-                  className={`p-2.5 rounded-xl text-xs font-bold border transition-all text-center cursor-pointer ${
+                  className={`p-2.5 rounded-xl text-xs font-semibold border transition-all text-center cursor-pointer ${
                     utmSource === 'instagram' && utmMedium === 'reels'
                       ? 'border-brand-pink bg-brand-pink-light/40 text-brand-pink'
                       : 'border-brand-border bg-[#FAF8F5] text-brand-charcoal hover:bg-white'
                   }`}
                 >
-                  🎬 Insta Reels
+                  Instagram Reels
                 </button>
                 <button
                   type="button"
@@ -481,13 +481,13 @@ export const CampaignsPage: React.FC<CampaignsPageProps> = ({
                     setUtmSource('tiktok');
                     setUtmMedium('ad');
                   }}
-                  className={`p-2.5 rounded-xl text-xs font-bold border transition-all text-center cursor-pointer ${
+                  className={`p-2.5 rounded-xl text-xs font-semibold border transition-all text-center cursor-pointer ${
                     utmSource === 'tiktok'
                       ? 'border-brand-pink bg-brand-pink-light/40 text-brand-pink'
                       : 'border-brand-border bg-[#FAF8F5] text-brand-charcoal hover:bg-white'
                   }`}
                 >
-                  🎵 TikTok Ad
+                  TikTok Ads
                 </button>
                 <button
                   type="button"
@@ -495,14 +495,15 @@ export const CampaignsPage: React.FC<CampaignsPageProps> = ({
                     setUtmSource('facebook');
                     setUtmMedium('feed');
                   }}
-                  className={`p-2.5 rounded-xl text-xs font-bold border transition-all text-center cursor-pointer ${
+                  className={`p-2.5 rounded-xl text-xs font-semibold border transition-all text-center cursor-pointer ${
                     utmSource === 'facebook'
                       ? 'border-brand-pink bg-brand-pink-light/40 text-brand-pink'
                       : 'border-brand-border bg-[#FAF8F5] text-brand-charcoal hover:bg-white'
                   }`}
                 >
-                  📘 Facebook
+                  Facebook Feed
                 </button>
+
               </div>
             </div>
 

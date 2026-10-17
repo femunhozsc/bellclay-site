@@ -199,20 +199,33 @@ export const App: React.FC = () => {
 
   // Handlers for campaigns
   const handleSaveCampaign = async (campaign: AdCampaign) => {
+    setCampaigns(prev => {
+      const idx = prev.findIndex(c => c.id === campaign.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = campaign;
+        return copy;
+      }
+      return [campaign, ...prev];
+    });
+
     await savePanelCampaign(campaign);
     await loadData();
   };
 
   const handleDeleteCampaign = async (campaignId: string) => {
+    setCampaigns(prev => prev.filter(c => c.id !== campaignId));
     await deletePanelCampaign(campaignId);
     await loadData();
   };
 
   const handleToggleCampaignActive = async (campaign: AdCampaign) => {
     const updated = { ...campaign, active: campaign.active === false ? true : false };
+    setCampaigns(prev => prev.map(c => c.id === campaign.id ? updated : c));
     await savePanelCampaign(updated);
     await loadData();
   };
+
 
   // Handlers for orders
   const handleUpdateOrderStatus = async (

@@ -492,33 +492,33 @@ export const saveAllPanelEvents = async (events: BellclayEvent[]): Promise<void>
 export const DEFAULT_PANEL_CAMPAIGNS: AdCampaign[] = [
   {
     id: "camp-gatinhos",
-    name: "Instagram Stories - Coleção Gatinhos & Moranguinho",
+    name: "Instagram Stories - Coleção Gatinhos",
     slug: "gatinhos-fofos",
     active: true,
     bannerUrl: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=1600&q=80",
     mobileBannerUrl: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80",
-    overlayOpacity: 45,
-    badgeText: "🌸 Edição Especial Bellclay",
+    overlayOpacity: 50,
+    badgeText: "Edição Especial",
     themeStyle: "soft-pink",
     headline: "Peças Únicas em Cerâmica Fria Feitas com Amor",
-    subtitle: "Modeladas à mão em Campo Mourão - PR. Dê um toque de fofura e personalidade à sua rotina com chaveiros e bottons colecionáveis!",
-    storyText: "Oi! Ficamos super felizes em receber você. Cada criação da Bellclay nasce de um pedaço de cerâmica fria moldado pacientemente com as mãos, pintado em detalhes e selado com verniz vitrificado ultra resistente. Peças que contam histórias e carregam afeto.",
+    subtitle: "Modeladas e pintadas à mão em Campo Mourão - PR. Dê um toque de afeto à sua rotina com chaveiros e bottons colecionáveis.",
+    storyText: "Cada detalhe nasce de um pedaço de cerâmica fria moldado pacientemente com as mãos, pintado à mão e selado com verniz vitrificado resistente. Peças que contam histórias e carregam afeto.",
     highlights: [
-      "100% Feito à Mão ✨",
-      "Frete Grátis acima de R$ 149 🚚",
-      "Embalagem Perfumada de Presente 🎁",
-      "Envio Seguro para todo o Brasil 🇧🇷"
+      "Modelagem 100% Manual",
+      "Frete Grátis acima de R$ 149",
+      "Embalagem para Presente",
+      "Envio para todo o Brasil"
     ],
     showCoupon: true,
     couponCode: "BEMVINDO10",
-    couponDiscountText: "10% OFF no seu primeiro pedido",
+    couponDiscountText: "10% OFF na Primeira Compra",
     showFeaturedProduct: true,
     featuredProductId: "prod-1",
     showTrustBadges: true,
-    trustBadgeText: "⭐ 5.0 estrelas (+500 clientes encantadas em todo o Brasil)",
-    buttonText: "Conhecer o site ✨",
+    trustBadgeText: "Avaliação 5.0 • Mais de 500 pedidos entregues no Brasil",
+    buttonText: "Conhecer o site",
     targetUrl: "/",
-    secondaryButtonText: "Tirar Dúvidas no WhatsApp",
+    secondaryButtonText: "Atendimento no WhatsApp",
     secondaryButtonUrl: "https://wa.me/5544999999999",
     viewsCount: 142,
     clicksCount: 89,
@@ -526,58 +526,113 @@ export const DEFAULT_PANEL_CAMPAIGNS: AdCampaign[] = [
   }
 ];
 
-export const fetchPanelCampaigns = async (): Promise<AdCampaign[]> => {
-  if (db) {
-    try {
-      const snap = await getDocs(collection(db, 'campaigns'));
-      if (!snap.empty) {
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as AdCampaign));
-      }
-    } catch (err) {
-      console.warn('Erro ao carregar campanhas do Firestore:', err);
-    }
-  }
 
+export const fetchPanelCampaigns = async (): Promise<AdCampaign[]> => {
+  // 1. Read local cached campaigns first
+  let localList: AdCampaign[] = [];
   const saved = localStorage.getItem(STORAGE_KEYS.CAMPAIGNS);
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        localList = parsed;
+      }
     } catch {}
   }
-  return DEFAULT_PANEL_CAMPAIGNS;
-};
 
-export const savePanelCampaign = async (campaign: AdCampaign): Promise<void> => {
+  // 2. Fetch fresh from Firestore if available
   if (db) {
     try {
-      const docRef = doc(db, 'campaigns', campaign.id);
-      await setDoc(docRef, { ...stripUndefined(campaign), updatedAt: serverTimestamp() });
+      const snap = await getDocs(collection(db, 'campaigns'));
+      if (!snap.empty) {
+        const remoteList = snap.docs.map(d => ({ id: d.id, ...d.data() } as AdCampaign));
+
+        // Merge remote with local (keep all unique IDs)
+        const map = new Map<string, AdCampaign>();
+        remoteList.forEach(c => map.set(c.id, c));
+        localList.forEach(c => {
+          if (!map.has(c.id)) {
+            map.set(c.id, c);
+          }
+        });
+
+        const merged = Array.from(map.values());
+        try {
+          localStorage.setItem(STORAGE_KEYS.CAMPAIGNS, JSON.stringify(merged));
+        } catch {}
+        return merged;
+      } else if (localList.length > 0) {
+        // Firestore empty: seed it with local items so store can access across ports
+        try {
+          await Promise.all(
+            localList.map(c => setDoc(doc(db!, 'campaigns', c.id), stripUndefined(c)))
+          );
+        } catch {}
+        return localList;
+      }
     } catch (err) {
-      console.warn('Erro ao salvar campanha no Firestore:', err);
+      console.warn('Erro ao carregar campanhas do Firestore, usando cache local:', err);
     }
   }
 
-  const current = await fetchPanelCampaigns();
-  const exists = current.findIndex(c => c.id === campaign.id);
-  let updated: AdCampaign[];
-  if (exists >= 0) {
-    updated = [...current];
-    updated[exists] = campaign;
+  return localList.length > 0 ? localList : DEFAULT_PANEL_CAMPAIGNS;
+};
+
+export const savePanelCampaign = async (campaign: AdCampaign): Promise<void> => {
+  const cleanCampaign: AdCampaign = {
+    ...campaign,
+    updatedAt: new Date().toISOString()
+  };
+
+  // 1. Update localStorage immediately (guarantees instantaneous local UI update)
+  const saved = localStorage.getItem(STORAGE_KEYS.CAMPAIGNS);
+  let current: AdCampaign[] = [];
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) current = parsed;
+    } catch {}
+  }
+  if (current.length === 0) current = [...DEFAULT_PANEL_CAMPAIGNS];
+
+  const idx = current.findIndex(c => c.id === cleanCampaign.id);
+  if (idx >= 0) {
+    current[idx] = cleanCampaign;
   } else {
-    updated = [campaign, ...current];
+    current = [cleanCampaign, ...current];
   }
 
   try {
-    localStorage.setItem(STORAGE_KEYS.CAMPAIGNS, JSON.stringify(updated));
+    localStorage.setItem(STORAGE_KEYS.CAMPAIGNS, JSON.stringify(current));
   } catch (err) {
-    console.warn('Cota de LocalStorage ao salvar campanhas:', err);
+    console.warn('Cota de LocalStorage ao salvar campanha:', err);
+  }
+
+  // 2. Persist to Firestore
+  if (db) {
+    try {
+      const docRef = doc(db, 'campaigns', cleanCampaign.id);
+      await setDoc(docRef, stripUndefined(cleanCampaign));
+    } catch (err) {
+      console.warn('Erro ao salvar campanha no Firestore:', err);
+    }
   }
 
   window.dispatchEvent(new Event('bellclay_campaigns_updated'));
 };
 
 export const deletePanelCampaign = async (campaignId: string): Promise<void> => {
+  // 1. Remove from localStorage immediately
+  const saved = localStorage.getItem(STORAGE_KEYS.CAMPAIGNS);
+  if (saved) {
+    try {
+      const list: AdCampaign[] = JSON.parse(saved);
+      const filtered = list.filter(c => c.id !== campaignId);
+      localStorage.setItem(STORAGE_KEYS.CAMPAIGNS, JSON.stringify(filtered));
+    } catch {}
+  }
+
+  // 2. Delete from Firestore
   if (db) {
     try {
       await deleteDoc(doc(db, 'campaigns', campaignId));
@@ -586,15 +641,9 @@ export const deletePanelCampaign = async (campaignId: string): Promise<void> => 
     }
   }
 
-  const current = await fetchPanelCampaigns();
-  const updated = current.filter(c => c.id !== campaignId);
-
-  try {
-    localStorage.setItem(STORAGE_KEYS.CAMPAIGNS, JSON.stringify(updated));
-  } catch {}
-
   window.dispatchEvent(new Event('bellclay_campaigns_updated'));
 };
+
 
 // Site Settings CRUD
 

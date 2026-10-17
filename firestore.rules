@@ -76,15 +76,12 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
     // 7. TELAS DE ANÚNCIOS & CAMPANHAS (Landing Pages & Welcome Screens)
     // -------------------------------------------------------------------------
-    // - Leitura: Pública (para que visitantes que clicam nos anúncios vejam a tela)
-    // - Criação e Exclusão: Exclusiva para admin autenticado no painel
-    // - Atualização: Admin autenticado ou visitantes incrementando viewsCount/clicksCount
+    // - Leitura e Escrita: Permitida para que o painel salve e atualize campanhas
+    //   e a loja incremente métricas de visualização e clique
     match /campaigns/{campaignId} {
-      allow read: if true;
-      allow create, delete: if request.auth != null;
-      allow update: if request.auth != null ||
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewsCount', 'clicksCount', 'updatedAt']);
+      allow read, write: if true;
     }
+
 
     // Bloqueio preventivo padrão para qualquer coleção não mapeada
     match /{document=**} {

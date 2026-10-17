@@ -19,7 +19,7 @@ export default {
           porcelain: '#FDFBF7',
           cream: '#F7F3EC',
           clay: '#EFEAE1',
-          charcoal: '#2B2625',
+          charcoal: '#3D3836',
           muted: '#756D69',
           border: '#EAE3DA',
         }
