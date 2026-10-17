@@ -25,8 +25,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) 
   const hasDiscount = Boolean(product.promotionalPrice && product.promotionalPrice < product.price);
   const currentPrice = product.promotionalPrice || product.price;
 
-  // Stagger natural por coluna (leve e cadenciado)
-  const staggerDelay = Math.min((index % 4) * 0.07, 0.22);
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 640;
+    }
+    return false;
+  });
+
+  React.useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // No celular: os 2 da mesma linha animam juntos (stagger por linha de 2 em 2)
+  // No computador: mantém stagger individual por coluna
+  const staggerDelay = isMobile
+    ? Math.min(Math.floor(index / 2) * 0.08, 0.24)
+    : Math.min((index % 4) * 0.07, 0.22);
 
   return (
     <motion.div
