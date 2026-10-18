@@ -137,29 +137,31 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
               <h3 className="text-xs font-bold uppercase tracking-wider text-brand-muted">
                 Dados do Cliente
               </h3>
-              <a
-                href={`https://wa.me/55${order.customer.phone.replace(/\D/g, '').replace(/^55/, '')}?text=${encodeURIComponent(`Olá ${order.customer.name}! Aqui é do ateliê Bellclay Artesanatos a respeito do seu pedido #${order.id}.`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-green text-white text-xs font-bold shadow-xs hover:bg-brand-green-hover transition-colors"
-              >
-                <WhatsAppIcon className="w-3.5 h-3.5 fill-current shrink-0" />
-                <span>Conversar no WhatsApp</span>
-              </a>
+              {order.customer?.phone && (
+                <a
+                  href={`https://wa.me/55${order.customer.phone.replace(/\D/g, '').replace(/^55/, '')}?text=${encodeURIComponent(`Olá ${order.customer?.name || 'Cliente'}! Aqui é do ateliê Bellclay Artesanatos a respeito do seu pedido #${order.id}.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-green text-white text-xs font-bold shadow-xs hover:bg-brand-green-hover transition-colors"
+                >
+                  <WhatsAppIcon className="w-3.5 h-3.5 fill-current shrink-0" />
+                  <span>Conversar no WhatsApp</span>
+                </a>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <span className="text-brand-muted">Nome:</span> <strong className="text-brand-charcoal">{order.customer.name}</strong>
+                <span className="text-brand-muted">Nome:</span> <strong className="text-brand-charcoal">{order.customer?.name || 'Não informado'}</strong>
               </div>
               <div>
-                <span className="text-brand-muted">E-mail:</span> <strong className="text-brand-charcoal">{order.customer.email}</strong>
+                <span className="text-brand-muted">E-mail:</span> <strong className="text-brand-charcoal">{order.customer?.email || 'Não informado'}</strong>
               </div>
               <div>
-                <span className="text-brand-muted">Telefone:</span> <strong className="text-brand-charcoal">{order.customer.phone}</strong>
+                <span className="text-brand-muted">Telefone:</span> <strong className="text-brand-charcoal">{order.customer?.phone || 'Não informado'}</strong>
               </div>
               <div>
-                <span className="text-brand-muted">CPF:</span> <strong className="text-brand-charcoal">{order.customer.cpf}</strong>
+                <span className="text-brand-muted">CPF:</span> <strong className="text-brand-charcoal">{order.customer?.cpf || 'Não informado'}</strong>
               </div>
             </div>
           </div>
@@ -171,10 +173,10 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
               <span>Endereço de Entrega Completo</span>
             </h3>
             <p className="text-xs text-brand-charcoal leading-relaxed">
-              <strong>{order.address.street}, {order.address.number}</strong>
-              {order.address.complement && ` (${order.address.complement})`}<br />
-              Bairro: {order.address.neighborhood} • CEP: <strong>{order.address.cep}</strong><br />
-              {order.address.city} - {order.address.state}
+              <strong>{order.address?.street || '-'}, {order.address?.number || ''}</strong>
+              {order.address?.complement && ` (${order.address.complement})`}<br />
+              Bairro: {order.address?.neighborhood || '-'} • CEP: <strong>{order.address?.cep || '-'}</strong><br />
+              {order.address?.city || 'Cidade não informada'}{order.address?.state ? ` - ${order.address.state}` : ''}
             </p>
           </div>
 
@@ -182,7 +184,8 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
           {(() => {
             const hasOrderNotes = Boolean(order.notes?.trim());
             const hasCustomerNotes = Boolean(order.customer?.notes?.trim() && order.customer.notes !== order.notes);
-            const itemsWithObs = order.items.filter((i) => i.customObservation?.trim());
+            const items = Array.isArray(order.items) ? order.items : [];
+            const itemsWithObs = items.filter((i) => i?.customObservation?.trim());
             const hasAnyObservation = hasOrderNotes || hasCustomerNotes || itemsWithObs.length > 0;
 
             return (
@@ -218,7 +221,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                           Nota do Cliente:
                         </span>
                         <p className="text-amber-900 font-semibold whitespace-pre-line mt-1 text-xs sm:text-sm">
-                          "{order.customer.notes}"
+                          "{order.customer?.notes}"
                         </p>
                       </div>
                     )}
@@ -231,12 +234,12 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                         {itemsWithObs.map((item, idx) => (
                           <div key={idx} className="p-2.5 rounded-xl bg-white border border-amber-200 flex items-start gap-2.5 shadow-2xs">
                             <img
-                              src={item.product.images[0]}
+                              src={item.product?.images?.[0] || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=400&q=80'}
                               alt=""
                               className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0 mt-0.5"
                             />
                             <div className="min-w-0 flex-1">
-                              <span className="font-bold text-brand-charcoal block text-xs">{item.product.title}:</span>
+                              <span className="font-bold text-brand-charcoal block text-xs">{item.product?.title || 'Peça'}:</span>
                               <span className="text-brand-pink font-bold text-xs sm:text-sm block mt-0.5">
                                 "{item.customObservation}"
                               </span>
@@ -256,55 +259,71 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
           })()}
 
           {/* Items Purchased */}
-          <div className="space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-brand-muted">
-              Itens do Pedido ({order.items.length})
-            </h3>
-            <div className="space-y-2">
-              {order.items.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-3 p-3 rounded-xl border border-brand-border/60 bg-[#FAF7F2]">
-                  <img
-                    src={item.product.images[0]}
-                    alt=""
-                    className="w-12 h-12 rounded-lg object-cover bg-white shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-xs font-bold text-brand-charcoal truncate">{item.product.title}</h4>
-                    <span className="text-[11px] text-brand-muted">Qtd: {item.quantity} un.</span>
-                    {item.customObservation && (
-                      <div className="mt-1 p-1.5 px-2 rounded-lg bg-pink-50 border border-brand-pink/30 text-[11px] text-brand-pink font-semibold">
-                        Personalização: "{item.customObservation}"
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-xs font-extrabold text-brand-charcoal shrink-0">
-                    R$ {((item.product.promotionalPrice || item.product.price) * item.quantity).toFixed(2).replace('.', ',')}
-                  </span>
-                </div>
-              ))}
-            </div>
+          {(() => {
+            const items = Array.isArray(order.items) ? order.items : [];
+            const subtotalVal = Number(order.subtotal) || 0;
+            const discountVal = Number(order.discount) || 0;
+            const shippingCostVal = Number(order.shippingCost) || 0;
+            const totalVal = Number(order.total) || 0;
 
-            <div className="pt-2 border-t border-brand-border/60 space-y-1 text-xs">
-              <div className="flex justify-between text-brand-muted">
-                <span>Subtotal:</span>
-                <span>R$ {order.subtotal.toFixed(2).replace('.', ',')}</span>
-              </div>
-              {order.discount > 0 && (
-                <div className="flex justify-between text-brand-green font-semibold">
-                  <span>Desconto aplicado:</span>
-                  <span>- R$ {order.discount.toFixed(2).replace('.', ',')}</span>
+            return (
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-brand-muted">
+                  Itens do Pedido ({items.length})
+                </h3>
+                <div className="space-y-2">
+                  {items.map((item, idx) => {
+                    const price = item.product?.promotionalPrice || item.product?.price || 0;
+                    const qty = item.quantity || 1;
+                    const imgUrl = item.product?.images?.[0] || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=400&q=80';
+
+                    return (
+                      <div key={idx} className="flex items-center gap-3 p-3 rounded-xl border border-brand-border/60 bg-[#FAF7F2]">
+                        <img
+                          src={imgUrl}
+                          alt=""
+                          className="w-12 h-12 rounded-lg object-cover bg-white shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xs font-bold text-brand-charcoal truncate">{item.product?.title || 'Peça artesanal'}</h4>
+                          <span className="text-[11px] text-brand-muted">Qtd: {qty} un.</span>
+                          {item.customObservation && (
+                            <div className="mt-1 p-1.5 px-2 rounded-lg bg-pink-50 border border-brand-pink/30 text-[11px] text-brand-pink font-semibold">
+                              Personalização: "{item.customObservation}"
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-xs font-extrabold text-brand-charcoal shrink-0">
+                          R$ {(price * qty).toFixed(2).replace('.', ',')}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-              <div className="flex justify-between text-brand-muted">
-                <span>Envio ({order.shipping.name}):</span>
-                <span>{order.shippingCost === 0 ? 'Grátis' : `R$ ${order.shippingCost.toFixed(2).replace('.', ',')}`}</span>
+
+                <div className="pt-2 border-t border-brand-border/60 space-y-1 text-xs">
+                  <div className="flex justify-between text-brand-muted">
+                    <span>Subtotal:</span>
+                    <span>R$ {subtotalVal.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                  {discountVal > 0 && (
+                    <div className="flex justify-between text-brand-green font-semibold">
+                      <span>Desconto aplicado:</span>
+                      <span>- R$ {discountVal.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-brand-muted">
+                    <span>Envio ({order.shipping?.name || 'Padrão'}):</span>
+                    <span>{shippingCostVal === 0 ? 'Grátis' : `R$ ${shippingCostVal.toFixed(2).replace('.', ',')}`}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-extrabold text-brand-charcoal pt-1 border-t border-brand-border/40">
+                    <span>Total:</span>
+                    <span className="text-brand-pink">R$ {totalVal.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between text-sm font-extrabold text-brand-charcoal pt-1 border-t border-brand-border/40">
-                <span>Total:</span>
-                <span className="text-brand-pink">R$ {order.total.toFixed(2).replace('.', ',')}</span>
-              </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Status Update & Tracking Section */}
           <div className="p-4 rounded-2xl bg-[#FFF6F7] border border-brand-pink/20 space-y-3">

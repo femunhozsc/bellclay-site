@@ -703,8 +703,12 @@ export const fetchPanelOrders = async (): Promise<Order[]> => {
     try {
       const snap = await getDocs(collection(db, 'orders'));
       if (!snap.empty) {
-        const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
-        return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const list = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as Order))
+          .filter(o => o && o.id && o.customer && o.address);
+        if (list.length > 0) {
+          return list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        }
       }
     } catch (err) {
       console.warn('Erro ao carregar pedidos do Firestore:', err);
@@ -714,7 +718,11 @@ export const fetchPanelOrders = async (): Promise<Order[]> => {
   const saved = localStorage.getItem(STORAGE_KEYS.ORDERS);
   if (saved) {
     try {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        const valid = parsed.filter(o => o && o.id && o.customer && o.address);
+        if (valid.length > 0) return valid;
+      }
     } catch {}
   }
 
@@ -821,7 +829,8 @@ export const subscribeToPanelOrders = (
         if (!snap.empty) {
           const list = snap.docs
             .map(d => ({ id: d.id, ...d.data() } as Order))
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            .filter(o => o && o.id && o.customer && o.address)
+            .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
           try {
             localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(list));
           } catch {}

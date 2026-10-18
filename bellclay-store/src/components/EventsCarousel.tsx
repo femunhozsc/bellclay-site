@@ -43,6 +43,41 @@ export const EventsCarousel: React.FC = () => {
     setCurrentIndex(idx);
   };
 
+  const [isTouchDevice, setIsTouchDevice] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
+
+  const touchStartX = React.useRef<number | null>(null);
+  const touchStartY = React.useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+
+    if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.4) {
+      if (deltaX < 0) {
+        handleNext();
+      } else {
+        handlePrev();
+      }
+    }
+  };
+
   const handleDragEnd = (_: any, info: PanInfo) => {
     const swipeThreshold = 40;
     if (info.offset.x < -swipeThreshold || info.velocity.x < -250) {
@@ -115,12 +150,11 @@ export const EventsCarousel: React.FC = () => {
       </motion.div>
 
       {/* High-Impact Banner-style Event Carousel with Rounded Edges */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.99, y: 16 }}
-        whileInView={{ opacity: 1, scale: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.12 }}
-        transition={{ duration: 0.7, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
-        className="relative w-full h-[460px] sm:h-[520px] md:h-[560px] rounded-3xl overflow-hidden select-none bg-black shadow-xl touch-pan-y"
+      <div
+        className="relative w-full h-[460px] sm:h-[520px] md:h-[560px] rounded-3xl overflow-hidden select-none bg-black shadow-xl"
+        style={{ touchAction: 'pan-y' }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
@@ -132,13 +166,13 @@ export const EventsCarousel: React.FC = () => {
             initial="enter"
             animate="center"
             exit="exit"
-            drag="x"
+            drag={isTouchDevice ? false : "x"}
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.2}
             onDragStart={() => setIsPaused(true)}
-            onDragEnd={handleDragEnd}
-            style={{ willChange: 'transform' }}
-            className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing bg-black"
+            onDragEnd={isTouchDevice ? undefined : handleDragEnd}
+            style={{ willChange: 'transform', touchAction: 'pan-y' }}
+            className={`absolute inset-0 w-full h-full ${isTouchDevice ? '' : 'cursor-grab active:cursor-grabbing'} bg-black`}
           >
             {/* Background Cover Image */}
             <img
@@ -259,7 +293,7 @@ export const EventsCarousel: React.FC = () => {
             ))}
           </div>
         )}
-      </motion.div>
+      </div>
     </motion.section>
   );
 };

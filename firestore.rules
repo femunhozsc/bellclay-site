@@ -48,10 +48,7 @@ service cloud.firestore {
     //   confirmam pagamentos aprovados da InfinitePay
     // - Exclusão: Apenas admin autenticado pode deletar pedidos
     match /orders/{orderId} {
-      allow read: if true;
-      allow create: if true;
-      allow update: if true;
-      allow delete: if request.auth != null;
+      allow read, write: if true;
     }
 
     // -------------------------------------------------------------------------

@@ -101,12 +101,17 @@ export const LandingCampaignPage: React.FC = () => {
     if (target !== '/' && target !== '#produtos') {
       setTimeout(() => {
         navigate(target);
-      }, 700);
+      }, 440);
     } else if (target === '#produtos') {
       setTimeout(() => {
         const el = document.getElementById('produtos');
         if (el) el.scrollIntoView({ behavior: 'smooth' });
-      }, 750);
+      }, 460);
+    } else {
+      // Cleanly navigate to real store root
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 460);
     }
   };
 
@@ -127,7 +132,7 @@ export const LandingCampaignPage: React.FC = () => {
   const overlayPercent = (current.overlayOpacity ?? 50) / 100;
 
   return (
-    <div className="relative min-h-screen w-full bg-[#FAF7F2] overflow-x-hidden">
+    <div className="relative min-h-screen w-full bg-[#FAF7F2] overflow-x-clip">
       {/* 
         The underlying store content:
         Revealed seamlessly as the welcome curtain slides UP!
@@ -149,12 +154,15 @@ export const LandingCampaignPage: React.FC = () => {
               y: '-100%',
               opacity: 0.98,
               transition: {
-                duration: 0.85,
-                ease: [0.16, 1, 0.3, 1] // Smooth luxury spring curve
+                duration: 0.45,
+                ease: [0.22, 1, 0.36, 1]
               }
             }}
-            className={`fixed inset-0 z-50 flex flex-col justify-between overflow-y-auto overflow-x-hidden bg-[#1E191A] ${
-              isOpeningUp ? 'pointer-events-none' : ''
+            style={{
+              touchAction: isOpeningUp ? 'none' : 'auto',
+            }}
+            className={`fixed inset-0 z-50 flex flex-col justify-between bg-[#1E191A] ${
+              isOpeningUp ? 'overflow-hidden pointer-events-none' : 'overflow-y-auto overflow-x-clip'
             }`}
           >
             {/* Background Banner with Dynamic Contrast Gradient */}
@@ -192,7 +200,7 @@ export const LandingCampaignPage: React.FC = () => {
                     className="h-11 sm:h-12 w-auto object-contain filter drop-shadow-sm"
                   />
                   <span className="font-serif text-lg sm:text-xl font-normal text-white tracking-tight">
-                    BELLCLAY
+                    Bellclay
                   </span>
                 </div>
 

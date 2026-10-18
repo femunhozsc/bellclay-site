@@ -903,7 +903,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
                     <div className="flex items-center gap-2">
                       <img src="/bellclay_logo.png" alt="Logo" className="h-7 w-auto object-contain" />
                       <span className="font-serif text-[11px] font-normal tracking-tight text-white">
-                        BELLCLAY
+                        Bellclay
                       </span>
                     </div>
                     {badgeText && (

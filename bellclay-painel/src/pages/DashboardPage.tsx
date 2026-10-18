@@ -284,14 +284,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       {order.createdAt ? new Date(order.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '-'}
                     </td>
                     <td className="py-3 text-brand-charcoal">
-                      <span className="font-semibold block">{order.customer.name}</span>
-                      <span className="text-[10px] text-brand-muted">{order.address.city} - {order.address.state}</span>
+                      <span className="font-semibold block">{order.customer?.name || 'Cliente'}</span>
+                      <span className="text-[10px] text-brand-muted">
+                        {order.address?.city || 'Local não informado'}{order.address?.state ? ` - ${order.address.state}` : ''}
+                      </span>
                     </td>
                     <td className="py-3 text-brand-muted">
-                      {order.shipping.name}
+                      {order.shipping?.name || 'Padrão'}
                     </td>
                     <td className="py-3 font-extrabold text-brand-charcoal">
-                      R$ {order.total.toFixed(2).replace('.', ',')}
+                      R$ {(Number(order.total) || 0).toFixed(2).replace('.', ',')}
                     </td>
                     <td className="py-3">
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${st.color}`}>

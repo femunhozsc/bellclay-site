@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAdminAuth } from './context/AdminAuthContext';
 import { LoginPage } from './pages/LoginPage';
 import { Sidebar } from './components/Sidebar';
@@ -47,6 +47,25 @@ export const App: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [analyticsEvents, setAnalyticsEvents] = useState<AnalyticsEvent[]>([]);
   const [campaigns, setCampaigns] = useState<AdCampaign[]>(DEFAULT_PANEL_CAMPAIGNS);
+
+  const mainContentRef = useRef<HTMLDivElement>(null);
+
+  const handleTabChange = (newTab: string) => {
+    setCurrentTab(newTab);
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo({ top: 0, behavior: 'instant' });
+      mainContentRef.current.scrollTop = 0;
+    }
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+
+  useEffect(() => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo({ top: 0, behavior: 'instant' });
+      mainContentRef.current.scrollTop = 0;
+    }
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [currentTab]);
 
   // Modal states
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -251,10 +270,10 @@ export const App: React.FC = () => {
   return (
     <div className="min-h-screen flex bg-[#F8F6F2] text-brand-charcoal font-sans">
       {/* Sidebar Navigation */}
-      <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} />
+      <Sidebar currentTab={currentTab} setCurrentTab={handleTabChange} />
 
       {/* Main Content View */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <div ref={mainContentRef} className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <AdminHeader title={currentInfo.title} subtitle={currentInfo.subtitle} />
 
         <main className="flex-1 pb-16">
@@ -267,7 +286,7 @@ export const App: React.FC = () => {
                 setSelectedOrder(ord);
                 setIsOrderDetailOpen(true);
               }}
-              onNavigateToProducts={() => setCurrentTab('products')}
+              onNavigateToProducts={() => handleTabChange('products')}
             />
           )}
 

@@ -22,6 +22,14 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCat, setSelectedCat] = useState('all');
 
+  const handleSelectCategory = (slug: string) => {
+    setSelectedCat(slug);
+    const scrollContainer = document.querySelector('.overflow-y-auto');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const filtered = products.filter(p => {
     const matchesCat = selectedCat === 'all' || p.category.toLowerCase() === selectedCat.toLowerCase();
     const matchesSearch =
@@ -66,7 +74,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
 
         <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1">
           <button
-            onClick={() => setSelectedCat('all')}
+            onClick={() => handleSelectCategory('all')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
               selectedCat === 'all'
                 ? 'bg-brand-charcoal text-white'
@@ -78,7 +86,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
           {categories.map((c) => (
             <button
               key={c.id}
-              onClick={() => setSelectedCat(c.slug)}
+              onClick={() => handleSelectCategory(c.slug)}
               className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
                 selectedCat === c.slug
                   ? 'bg-brand-pink text-white'

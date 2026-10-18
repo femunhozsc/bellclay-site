@@ -12,6 +12,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ orders, onSelectOrder })
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const getOrderObservations = (order: Order) => {
+    if (!order) return [];
     const list: string[] = [];
     if (order.notes?.trim()) {
       list.push(`Geral: ${order.notes.trim()}`);
@@ -19,25 +20,36 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ orders, onSelectOrder })
     if (order.customer?.notes?.trim() && order.customer.notes !== order.notes) {
       list.push(`Cliente: ${order.customer.notes.trim()}`);
     }
-    order.items?.forEach((item) => {
-      if (item.customObservation?.trim()) {
-        list.push(`${item.product?.title || 'Peça'}: ${item.customObservation.trim()}`);
-      }
-    });
+    if (Array.isArray(order.items)) {
+      order.items.forEach((item) => {
+        if (item?.customObservation?.trim()) {
+          list.push(`${item.product?.title || 'Peça'}: ${item.customObservation.trim()}`);
+        }
+      });
+    }
     return list;
   };
 
-  const filtered = orders.filter(o => {
+  const filtered = (orders || []).filter(o => {
+    if (!o) return false;
     const matchesStatus = statusFilter === 'all' || o.orderStatus === statusFilter;
     const term = searchTerm.toLowerCase();
+    const orderId = (o.id || '').toLowerCase();
+    const customerName = (o.customer?.name || '').toLowerCase();
+    const city = (o.address?.city || '').toLowerCase();
+    const notes = (o.notes || '').toLowerCase();
+    const customerNotes = (o.customer?.notes || '').toLowerCase();
+    const hasItemObs = Array.isArray(o.items) && o.items.some(it => it?.customObservation?.toLowerCase().includes(term));
+
     const matchesSearch =
       searchTerm.trim() === '' ||
-      o.id.toLowerCase().includes(term) ||
-      o.customer.name.toLowerCase().includes(term) ||
-      o.address.city.toLowerCase().includes(term) ||
-      (o.notes && o.notes.toLowerCase().includes(term)) ||
-      (o.customer.notes && o.customer.notes.toLowerCase().includes(term)) ||
-      o.items.some(it => it.customObservation?.toLowerCase().includes(term));
+      orderId.includes(term) ||
+      customerName.includes(term) ||
+      city.includes(term) ||
+      notes.includes(term) ||
+      customerNotes.includes(term) ||
+      hasItemObs;
+
     return matchesStatus && matchesSearch;
   });
 
@@ -129,21 +141,32 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ orders, onSelectOrder })
                 </tr>
               ) : (
                 filtered.map((order) => {
-                  const badge = statusBadges[order.orderStatus] || { label: order.orderStatus, color: 'bg-gray-100 text-gray-700' };
+                  const badge = (order.orderStatus && statusBadges[order.orderStatus]) || { label: order.orderStatus || 'Pendente', color: 'bg-gray-100 text-gray-700' };
                   const obsList = getOrderObservations(order);
                   const isPaid = order.paymentStatus === 'approved' || order.orderStatus === 'paid' || order.orderStatus === 'production' || order.orderStatus === 'shipped' || order.orderStatus === 'delivered';
+                  const orderDate = order.createdAt ? new Date(order.createdAt).toLocaleDateString('pt-BR') : '-';
+                  const totalFormatted = (Number(order.total) || 0).toFixed(2).replace('.', ',');
+                  const itemsCount = Array.isArray(order.items) ? order.items.length : 0;
+                  const customerName = order.customer?.name || 'Cliente sem nome';
+                  const customerPhone = order.customer?.phone || '-';
+                  const city = order.address?.city || 'Local não informado';
+                  const state = order.address?.state ? ` - ${order.address.state}` : '';
+                  const street = order.address?.street || '-';
+                  const number = order.address?.number || '';
+                  const shippingName = order.shipping?.name || 'Envio Padrão';
+                  const paymentMethod = (order.paymentMethod && paymentLabels[order.paymentMethod]) || order.paymentMethod || 'PIX';
 
                   return (
                     <tr key={order.id} className="hover:bg-[#FAF7F2]/60 transition-colors">
                       <td className="py-3.5 px-6">
                         <span className="font-bold text-brand-charcoal block">#{order.id}</span>
                         <span className="text-[10px] text-brand-muted">
-                          {new Date(order.createdAt).toLocaleDateString('pt-BR')}
+                          {orderDate}
                         </span>
                       </td>
                       <td className="py-3.5 px-4">
-                        <span className="font-semibold text-brand-charcoal block">{order.customer.name}</span>
-                        <span className="text-[10px] text-brand-muted block">{order.customer.phone}</span>
+                        <span className="font-semibold text-brand-charcoal block">{customerName}</span>
+                        <span className="text-[10px] text-brand-muted block">{customerPhone}</span>
                         {obsList.length > 0 && (
                           <div
                             onClick={() => onSelectOrder(order)}
@@ -162,16 +185,16 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ orders, onSelectOrder })
                       </td>
                       <td className="py-3.5 px-4">
                         <span className="font-medium text-brand-charcoal block">
-                          {order.address.city} - {order.address.state}
+                          {city}{state}
                         </span>
-                        <span className="text-[10px] text-brand-muted block truncate max-w-[180px]" title={`${order.address.street}, ${order.address.number} - ${order.address.neighborhood} (CEP ${order.address.cep})`}>
-                          {order.address.street}, {order.address.number}
+                        <span className="text-[10px] text-brand-muted block truncate max-w-[180px]" title={`${street}, ${number} - ${order.address?.neighborhood || ''} (CEP ${order.address?.cep || ''})`}>
+                          {street}, {number}
                         </span>
-                        <span className="text-[10px] text-brand-pink font-semibold">{order.shipping.name}</span>
+                        <span className="text-[10px] text-brand-pink font-semibold">{shippingName}</span>
                       </td>
                       <td className="py-3.5 px-4">
                         <span className="uppercase font-bold text-[11px] text-brand-charcoal block">
-                          {paymentLabels[order.paymentMethod] || order.paymentMethod}
+                          {paymentMethod}
                         </span>
                         <span className="text-[10px] text-brand-green font-semibold flex items-center gap-1">
                           {isPaid && <CheckCircle2 className="w-3 h-3" />}
@@ -180,9 +203,9 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ orders, onSelectOrder })
                       </td>
                       <td className="py-3.5 px-4">
                         <span className="font-extrabold text-brand-charcoal block">
-                          R$ {order.total.toFixed(2).replace('.', ',')}
+                          R$ {totalFormatted}
                         </span>
-                        <span className="text-[10px] text-brand-muted">{order.items.length} itens</span>
+                        <span className="text-[10px] text-brand-muted">{itemsCount} {itemsCount === 1 ? 'item' : 'itens'}</span>
                       </td>
                       <td className="py-3.5 px-4">
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${badge.color}`}>
