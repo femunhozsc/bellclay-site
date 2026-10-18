@@ -373,7 +373,9 @@ export const fetchPanelEvents = async (): Promise<BellclayEvent[]> => {
     try {
       const snap = await getDocs(collection(db, 'events'));
       if (!snap.empty) {
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as BellclayEvent));
+        return snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as BellclayEvent))
+          .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
       }
     } catch (err) {
       console.warn('Erro ao carregar eventos do Firestore:', err);
@@ -395,6 +397,26 @@ export const savePanelEvent = async (event: BellclayEvent): Promise<void> => {
     try {
       const docRef = doc(db, 'events', event.id);
       await setDoc(docRef, { ...stripUndefined(event), updatedAt: serverTimestamp() });
+
+      // Synchronize settings/general doc in Firestore
+      try {
+        const settingsSnap = await getDoc(doc(db, 'settings', 'general'));
+        if (settingsSnap.exists()) {
+          const sData = settingsSnap.data() as SiteSettings;
+          const currentEvents = Array.isArray(sData.events) ? sData.events : [];
+          const idx = currentEvents.findIndex(e => e.id === event.id);
+          let updatedEvents: BellclayEvent[];
+          if (idx >= 0) {
+            updatedEvents = [...currentEvents];
+            updatedEvents[idx] = event;
+          } else {
+            updatedEvents = [event, ...currentEvents];
+          }
+          await updateDoc(doc(db, 'settings', 'general'), { events: stripUndefined(updatedEvents) });
+        }
+      } catch (syncErr) {
+        console.warn('Erro ao sincronizar evento no doc de settings:', syncErr);
+      }
     } catch (err) {
       console.warn('Erro ao salvar evento no Firestore:', err);
     }
@@ -432,6 +454,20 @@ export const deletePanelEvent = async (eventId: string): Promise<void> => {
   if (db) {
     try {
       await deleteDoc(doc(db, 'events', eventId));
+
+      // Remove from settings/general in Firestore
+      try {
+        const settingsSnap = await getDoc(doc(db, 'settings', 'general'));
+        if (settingsSnap.exists()) {
+          const sData = settingsSnap.data() as SiteSettings;
+          if (Array.isArray(sData.events)) {
+            const updatedEvents = sData.events.filter(e => e.id !== eventId);
+            await updateDoc(doc(db, 'settings', 'general'), { events: stripUndefined(updatedEvents) });
+          }
+        }
+      } catch (syncErr) {
+        console.warn('Erro ao remover evento no doc de settings:', syncErr);
+      }
     } catch (err) {
       console.warn('Erro ao deletar evento no Firestore:', err);
     }
@@ -462,8 +498,24 @@ export const saveAllPanelEvents = async (events: BellclayEvent[]): Promise<void>
   if (currentDb) {
     try {
       await Promise.all(
-        events.map(ev => setDoc(doc(currentDb, 'events', ev.id), { ...stripUndefined(ev), updatedAt: serverTimestamp() }))
+        events.map((ev, index) =>
+          setDoc(doc(currentDb, 'events', ev.id), {
+            ...stripUndefined(ev),
+            order: typeof ev.order === 'number' ? ev.order : index,
+            updatedAt: serverTimestamp()
+          })
+        )
       );
+
+      // Keep settings/general in Firestore in sync with the ordered list
+      try {
+        const settingsSnap = await getDoc(doc(currentDb, 'settings', 'general'));
+        if (settingsSnap.exists()) {
+          await updateDoc(doc(currentDb, 'settings', 'general'), { events: stripUndefined(events) });
+        }
+      } catch (syncErr) {
+        console.warn('Erro ao atualizar lista ordenada de eventos em settings:', syncErr);
+      }
     } catch (err) {
       console.warn('Erro ao salvar lote de eventos no Firestore:', err);
     }

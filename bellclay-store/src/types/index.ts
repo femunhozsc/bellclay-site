@@ -117,6 +117,7 @@ export interface BellclayEvent {
   description: string;
   buttonText?: string;
   active: boolean;
+  order?: number;
 }
 
 export interface SiteSettings {

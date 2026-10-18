@@ -49,8 +49,8 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setIsLoading(false);
         return { success: true };
       } catch (err: any) {
-        setIsLoading(false);
-        return { success: false, error: 'Credenciais inválidas no Firebase.' };
+        // Fall through to master password check if Firebase Auth has no registered user
+        console.warn('Firebase Auth login falhou, verificando credenciais mestre:', err?.code || err);
       }
     }
 

@@ -79,15 +79,28 @@ export const Footer: React.FC = () => {
               Fale com o Ateliê
             </h4>
             <div className="space-y-2">
-              <a
-                href={`https://wa.me/5544991074932?text=${encodeURIComponent('Olá Bellclay! Estive no site e adorei os artesanatos em cerâmica fria. Gostaria de tirar uma dúvida sobre uma peça!')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-xs text-brand-charcoal hover:text-[#25D366] transition-colors group"
-              >
-                <WhatsAppIcon className="w-4 h-4 text-[#25D366] shrink-0" />
-                <span>WhatsApp: (44) 99107-4932</span>
-              </a>
+              {(() => {
+                const rawPhone = (settings.whatsapp || '5544991074932').replace(/\D/g, '');
+                const ddd = rawPhone.length >= 12 ? rawPhone.slice(2, 4) : rawPhone.slice(0, 2);
+                const num = rawPhone.length >= 12 ? rawPhone.slice(4) : rawPhone.slice(2);
+                const formatted = num.length === 9
+                  ? `(${ddd}) ${num.slice(0, 5)}-${num.slice(5)}`
+                  : num.length === 8
+                    ? `(${ddd}) ${num.slice(0, 4)}-${num.slice(4)}`
+                    : rawPhone;
+
+                return (
+                  <a
+                    href={`https://wa.me/${rawPhone}?text=${encodeURIComponent('Olá Bellclay! Estive no site e adorei os artesanatos em cerâmica fria. Gostaria de tirar uma dúvida sobre uma peça!')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-xs text-brand-charcoal hover:text-[#25D366] transition-colors group"
+                  >
+                    <WhatsAppIcon className="w-4 h-4 text-[#25D366] shrink-0" />
+                    <span>WhatsApp: {formatted}</span>
+                  </a>
+                );
+              })()}
 
               <a
                 href={`https://instagram.com/${(settings.instagram || '@bellclayart').replace('@', '')}`}

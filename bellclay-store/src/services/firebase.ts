@@ -52,7 +52,9 @@ export const getEvents = async (): Promise<BellclayEvent[]> => {
       const colRef = collection(db, 'events');
       const snap = await getDocs(colRef);
       if (!snap.empty) {
-        const events = snap.docs.map(d => ({ id: d.id, ...d.data() } as BellclayEvent));
+        const events = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as BellclayEvent))
+          .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
         try {
           localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
         } catch {}
@@ -100,7 +102,7 @@ export const getSiteSettings = async (): Promise<SiteSettings> => {
           ...settingsObj,
           ...remote,
           infinitePayTag: (remote.infinitePayTag || settingsObj.infinitePayTag || 'isabela-munhoz-4sb').replace(/^[$@]+/, ''),
-          banners: Array.isArray(remote.banners) && remote.banners.length > 0
+          banners: Array.isArray(remote.banners)
             ? remote.banners
             : (settingsObj.banners || []),
           categories: Array.isArray(remote.categories) && remote.categories.length > 0
@@ -155,7 +157,7 @@ export const subscribeToSiteSettings = (
             ...current,
             ...remote,
             infinitePayTag: (remote.infinitePayTag || current.infinitePayTag || 'isabela-munhoz-4sb').replace(/^[$@]+/, ''),
-            banners: Array.isArray(remote.banners) && remote.banners.length > 0
+            banners: Array.isArray(remote.banners)
               ? remote.banners
               : (current.banners || []),
             categories: Array.isArray(remote.categories) && remote.categories.length > 0
@@ -187,13 +189,13 @@ export const subscribeToEvents = (
     return onSnapshot(
       colRef,
       (snap) => {
-        if (!snap.empty) {
-          const events = snap.docs.map(d => ({ id: d.id, ...d.data() } as BellclayEvent));
-          try {
-            localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
-          } catch {}
-          callback(events);
-        }
+        const events = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as BellclayEvent))
+          .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+        try {
+          localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
+        } catch {}
+        callback(events);
       },
       (err) => {
         console.warn('Listener de eventos do Firestore:', err);
@@ -244,15 +246,13 @@ export const subscribeToProducts = (
     return onSnapshot(
       colRef,
       (snap) => {
-        if (!snap.empty) {
-          const prods = snap.docs
-            .map(d => ({ id: d.id, ...d.data() } as Product))
-            .filter(p => p.active !== false);
-          try {
-            localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(prods));
-          } catch {}
-          callback(prods);
-        }
+        const prods = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as Product))
+          .filter(p => p.active !== false);
+        try {
+          localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(prods));
+        } catch {}
+        callback(prods);
       },
       (err) => {
         console.warn('Listener de produtos do Firestore:', err);
