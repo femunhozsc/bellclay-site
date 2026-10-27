@@ -92,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
               {adminUser?.name || 'Administradora'}
             </span>
             <span className="text-[10px] text-brand-muted block truncate">
-              {adminUser?.email || 'admin@bellclay.com'}
+              {adminUser?.email || ''}
             </span>
           </div>
 

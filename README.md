@@ -36,7 +36,7 @@ cd bellclay-painel
 npm run dev
 ```
 Acesse: [http://localhost:3001](http://localhost:3001)  
-*Senha padrão de acesso:* `bellclay2026` ou `admin123`
+*Acesso restrito para administradores credenciados.*
 
 ---
 

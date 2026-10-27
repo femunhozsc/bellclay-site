@@ -50,23 +50,12 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return { success: true };
       } catch (err: any) {
         // Fall through to master password check if Firebase Auth has no registered user
-        console.warn('Firebase Auth login falhou, verificando credenciais mestre:', err?.code || err);
+        console.warn('Firebase Auth login falhou:', err?.code || err);
       }
     }
 
-    // Default admin access for immediate operation & setup
-    if ((email === 'admin@bellclay.com' || email.includes('bellclay')) && pass.length >= 4) {
-      setIsAuthenticated(true);
-      const user = { name: 'Bellclay Artesanatos (Gestão)', email };
-      setAdminUser(user);
-      localStorage.setItem('bellclay_admin_auth', 'true');
-      localStorage.setItem('bellclay_admin_user', JSON.stringify(user));
-      setIsLoading(false);
-      return { success: true };
-    }
-
     // Master code fallback
-    if (pass === 'bellclay2026' || pass === 'admin123') {
+    if (pass === 'bellclay2026') {
       setIsAuthenticated(true);
       const user = { name: 'Bellclay Artesanatos (Gestão)', email: email || 'admin@bellclay.com' };
       setAdminUser(user);
@@ -77,7 +66,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
 
     setIsLoading(false);
-    return { success: false, error: 'E-mail ou senha incorretos. Dica: use senha "bellclay2026" ou "admin123".' };
+    return { success: false, error: 'E-mail ou senha incorretos.' };
   };
 
   const logout = () => {

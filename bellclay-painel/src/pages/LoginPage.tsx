@@ -4,7 +4,7 @@ import { useAdminAuth } from '../context/AdminAuthContext';
 
 export const LoginPage: React.FC = () => {
   const { login, isLoading } = useAdminAuth();
-  const [email, setEmail] = useState('admin@bellclay.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -55,7 +55,7 @@ export const LoginPage: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@bellclay.com"
+                placeholder="seu@email.com"
                 className="w-full text-xs pl-10 pr-4 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink"
               />
             </div>
@@ -74,10 +74,6 @@ export const LoginPage: React.FC = () => {
                 className="w-full text-xs pl-10 pr-4 py-2.5 rounded-xl border border-brand-border bg-[#FAF7F2] outline-hidden focus:border-brand-pink"
               />
             </div>
-          </div>
-
-          <div className="p-3 rounded-xl bg-brand-pink-light/60 border border-brand-pink/20 text-[11px] text-brand-charcoal">
-            💡 Dica para primeiro acesso rápido: você pode usar a senha mestre <strong>bellclay2026</strong>.
           </div>
 
           <button
